@@ -1,0 +1,111 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You translate requests into a single safe git command."
+    },
+    {
+      "role": "user",
+      "content": "Stage all changes and commit them with a sensible message."
+    }
+  ],
+  "model": "Qwen3.5-9B-UD-Q6_K_XL.gguf",
+  "max_completion_tokens": 512,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "GitCommand",
+      "schema": {
+        "properties": {
+          "action": {
+            "enum": [
+              "status",
+              "diff",
+              "add",
+              "commit",
+              "checkout_new_branch",
+              "refuse"
+            ],
+            "type": "string"
+          },
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "message": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "reason"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "strict": false
+    }
+  },
+  "stream": false,
+  "structured_outputs": {
+    "json": {
+      "properties": {
+        "action": {
+          "enum": [
+            "status",
+            "diff",
+            "add",
+            "commit",
+            "checkout_new_branch",
+            "refuse"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Paths",
+          "type": "array"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "reason"
+      ],
+      "title": "GitCommand",
+      "type": "object"
+    }
+  },
+  "guided_decoding_backend": "xgrammar"
+}
