@@ -18,7 +18,7 @@ base URL.
 ## Quick start
 
 ```bash
-cp .env.example .env       # then edit MODEL, VLLM_API_KEY, LORA_MODULES, MODELS_HOST_DIR
+cp .env.example .env       # then edit MODEL, VLLM_API_KEY, LORA_MODULES
 docker compose up --build
 curl -fsS http://localhost:8000/v1/models -H "Authorization: Bearer $VLLM_API_KEY"
 ```
@@ -51,10 +51,35 @@ The XGrammar test asserts the returned text actually matches the regex, so it on
 passes once a real XGrammar backend (this container) is serving — that's the part the
 llama.cpp box can't satisfy.
 
-## Host model layout (bind-mounted read-only at `/models`)
+## Model storage — WSL2-backed named volumes (not a host bind mount)
 
+Weights are kept in Docker **named volumes**, never bind-mounted from the host. On
+Docker Desktop (Windows/WSL2) named volumes live inside the WSL2 ext4 VM disk, so
+multi-GB weights stay in the fast Linux filesystem instead of crossing the
+Windows/NTFS `drvfs` boundary (which makes weight reads — and first-token latency —
+painfully slow):
+
+| Volume                 | Mount          | Holds                                              |
+|------------------------|----------------|----------------------------------------------------|
+| `remora-vllm-hf-cache` | `/hf`          | HuggingFace downloads (the default `MODEL=<repo>`)  |
+| `remora-vllm-models`   | `/models` (ro) | optional local base weights + LoRA adapters         |
+
+`HF_HOME=/hf` (set in `docker-compose.yml`) points the HuggingFace cache at the
+`hf-cache` volume. When `MODEL` is an HF repo id (the default), weights download there
+on first boot — nothing to pre-stage.
+
+To serve **local** safetensors or LoRA adapters, populate the `models` volume before
+`up` (it's a named volume, so there's no host directory to drop files into directly):
+
+```bash
+docker volume create remora-vllm-models
+docker run --rm -v remora-vllm-models:/models -v <your-weights-dir>:/src:ro alpine \
+  cp -r /src/. /models/
 ```
-$MODELS_HOST_DIR/
+
+Layout inside the `models` volume:
+```
+/models/
 ├── base/                 # HF-format (safetensors) base weights  — NOT GGUF
 └── lora/
     ├── file-edit/        # one dir per fine-tuned adapter

@@ -1,0 +1,13 @@
+# Normalize line endings so files checked out on Windows don't break Linux containers.
+* text=auto
+
+# Shell scripts are executed inside the (Linux) Docker image — they MUST stay LF,
+# or a Windows checkout (core.autocrlf=true) corrupts the shebang:
+#   `bad interpreter: /usr/bin/env bash^M`  (e.g. deploy/vllm/entrypoint.sh)
+*.sh text eol=lf
+
+# Container/compose files run in the Linux VM too; keep them LF.
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+.env.example text eol=lf

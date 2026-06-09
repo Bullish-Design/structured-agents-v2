@@ -9,11 +9,22 @@ services:
     image: structured-agents-vllm:latest
     container_name: remora-vllm
     env_file: .env
+    environment:
+      # Relocate the HuggingFace cache into the WSL2-backed `hf-cache` volume (below)
+      # so the default MODEL=<repo id> weights download into the WSL2 ext4 VM disk,
+      # never onto a Windows/NTFS bind mount (drvfs makes multi-GB reads painfully slow).
+      HF_HOME: /hf
     ports:
       - "8000:8000"
     volumes:
-      # Host layout expected:  $MODELS_HOST_DIR/base/<weights>  and  /lora/<adapter>/
-      - ${MODELS_HOST_DIR:-./models}:/models:ro
+      # Weights live in named volumes, NOT a host bind mount. On Docker Desktop
+      # (Windows/WSL2) named volumes are stored inside the WSL2 ext4 VM disk, so weights
+      # stay off the Windows E:/NTFS drive — fast reads + persistence across recreation.
+      # Populate `models` (local base weights / LoRA adapters) out of band, e.g.:
+      #   docker run --rm -v remora-vllm-models:/models -v <src>:/src:ro alpine \
+      #     cp -r /src/. /models/
+      - hf-cache:/hf          # HuggingFace downloads — the default MODEL=<repo id> path
+      - models:/models:ro     # optional local base weights (/models/base) + LoRA (/models/lora)
     ipc: host                 # vLLM needs large /dev/shm for tensor-parallel + paged attn
     deploy:
       resources:
@@ -29,3 +40,12 @@ services:
       retries: 10
       start_period: 600s      # model load can be slow on first boot
     restart: unless-stopped
+
+# WSL2-backed model storage. Named volumes are stored in the WSL2 ext4 VM disk on
+# Docker Desktop, so weights never touch the Windows/NTFS host drive. Explicit `name:`
+# keeps them addressable regardless of compose project name (for the populate commands).
+volumes:
+  hf-cache:
+    name: remora-vllm-hf-cache
+  models:
+    name: remora-vllm-models
