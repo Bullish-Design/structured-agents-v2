@@ -59,6 +59,9 @@ include = [
 [tool.pytest.ini_options]
 addopts = "-q --cov=structured_agents_v2 --cov-report=term-missing"
 testpaths = ["tests"]
+markers = [
+  "live: hits the real $LLM_BASE_URL server (skipped unless SAV_LIVE=1).",
+]
 
 [tool.ty.environment]
 python-version = "3.13"

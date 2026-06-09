@@ -355,14 +355,28 @@ suite runs without a GPU, plus a `live` marker for runs against `$LLM_BASE_URL` 
 - **#1 (output typing):** folded into `ConstrainedOutput`. Mode is declared on the model;
   json_schema (incl. `Literal`-enum routers) is the typed default; grammar/regex/choice
   are opt-in bare-string modes (`output_type=str` + `extra_body`, library-guarded).
-- **#3 (capture):** per-`Backend` opt-in; results attached to `AgentResult`.
+- **#3 (capture):** per-`Backend` opt-in (`Backend(capture=True)`); the last request body is
+  attached to `AgentResult.request_body`. **(Implemented in Phase 2.)**
 - **#4 (routing):** Option C — routing as validated data + explicit dispatch sugar.
 - **Compile check:** feasible client-side, shipped as optional dev extra `[grammar-check]`.
+
+**Phase 2 outcomes (Backend + AgentProfile + StructuredAgent — on `main`)**
+- `Backend.build(profile)` is the agent factory; cap-gating raises `BackendCapabilityError`
+  at build time (grammar/regex/choice need `caps.xgrammar`; an adapter needs `caps.lora`;
+  json_schema is never gated). `backend.py` is the sole importer of `pydantic_ai.models.openai`.
+- `AgentProfile.resolve()` resolves `output_type_ref` (`module:Name`) and the `DecoderSpec`:
+  a `ConstrainedOutput` supplies its own; a plain Model defaults to json_schema; `decoder`
+  overrides / drives a bare-string mode with no output type.
+- `AgentResult` is `output` / `usage` (PydanticAI `result.usage()` as-is) / `request_body`
+  (capture-gated) / `raw`; `.agent` exposes the underlying `pydantic_ai.Agent`. Tests are
+  GPU-free via the ASGI mock, with a `live` marker (`SAV_LIVE=1`) reproducing the round-trip.
 
 **Still open**
 1. **Strict-mode schema rewriting.** `__strict__=True` should set `additionalProperties:false`
    + all-required and reshape `Optional` fields. Do we rewrite the schema we send, or rely on
    PydanticAI's `NativeOutput(strict=...)`? (Spike showed NativeOutput sends `strict:false`.)
+   *Phase 2 stance:* pass `strict=spec.strict` to `NativeOutput` (in `DecoderSpec.apply`);
+   the full schema rewrite is still deferred.
 2. **`choice` typing return.** Coerce the guarded string back to the declared `Literal`
    automatically, or return `str` and let the caller cast? (Lean: coerce.)
 3. **Sync surface.** Provide `run_batch_sync`/`route_and_run_sync`, or rely on `asyncio.run`?

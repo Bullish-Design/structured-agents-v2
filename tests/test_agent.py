@@ -1,0 +1,101 @@
+"""`StructuredAgent.run` end-to-end against the in-process mock OpenAI server."""
+
+from __future__ import annotations
+
+import asyncio
+from typing import Any, Literal
+
+import httpx
+
+from structured_agents_v2 import AgentProfile, Backend, ConstrainedOutput, DecoderSpec
+
+
+class Route(ConstrainedOutput):
+    route: Literal["file_edit", "git_ops", "answer"]
+
+
+def _backend(transport: httpx.ASGITransport, *, capture: bool = True) -> Backend:
+    return Backend(base_url="http://mock/v1", default_model="base", capture=capture).attach_transport(transport)
+
+
+def test_json_schema_run_returns_validated_model(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: '{"route": "git_ops"}'
+    backend = _backend(transport)
+    profile = AgentProfile(name="router", instructions="route", output_type_ref="test_agent:Route")
+    agent = backend.build(profile)
+
+    result = asyncio.run(agent.run("pick one"))
+
+    assert isinstance(result.output, Route)
+    assert result.output.route == "git_ops"
+    # capture is on → request body present, native response_format on the wire
+    assert result.request_body is not None
+    assert result.request_body["response_format"]["type"] == "json_schema"
+    assert "tools" not in result.request_body
+    assert result.usage is not None
+    assert result.raw is not None
+
+
+def test_regex_run_returns_str(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: "git status ."
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="git", instructions="cmd", decoder=DecoderSpec(mode="regex", regex=r"git (status|diff) [\w./-]*")
+    )
+    agent = backend.build(profile)
+
+    result = asyncio.run(agent.run("show status"))
+
+    assert result.output == "git status ."
+    assert result.request_body is not None
+    assert "structured_outputs" in result.request_body
+    assert result.request_body["structured_outputs"] == {"regex": r"git (status|diff) [\w./-]*"}
+
+
+def test_adapter_sets_wire_model_field(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: '{"route": "answer"}'
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="router", adapter="router-lora", instructions="route", output_type_ref="test_agent:Route"
+    )
+    agent = backend.build(profile)
+
+    result = asyncio.run(agent.run("hi"))
+
+    assert result.request_body is not None
+    assert result.request_body["model"] == "router-lora"
+
+
+def test_capture_off_yields_no_request_body(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: '{"route": "answer"}'
+    backend = _backend(transport, capture=False)
+    profile = AgentProfile(name="router", instructions="route", output_type_ref="test_agent:Route")
+    agent = backend.build(profile)
+
+    result = asyncio.run(agent.run("hi"))
+
+    assert result.request_body is None
+    assert isinstance(result.output, Route)
+
+
+def test_run_sync_returns_validated_model(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: '{"route": "file_edit"}'
+    backend = _backend(transport)
+    profile = AgentProfile(name="router", instructions="route", output_type_ref="test_agent:Route")
+    agent = backend.build(profile)
+
+    result = agent.run_sync("pick one")
+
+    assert isinstance(result.output, Route)
+    assert result.output.route == "file_edit"
+    assert result.request_body is not None
+
+
+def test_agent_escape_hatch_exposed(transport: httpx.ASGITransport) -> None:
+    from pydantic_ai import Agent
+
+    backend = _backend(transport)
+    profile = AgentProfile(name="router", instructions="route", output_type_ref="test_agent:Route")
+    agent = backend.build(profile)
+
+    assert isinstance(agent.agent, Agent)

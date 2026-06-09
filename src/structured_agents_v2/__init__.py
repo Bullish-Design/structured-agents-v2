@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .agent import AgentResult, StructuredAgent
+from .backend import Backend, BackendCaps
 from .capture import RequestCapture, RequestRecord
 from .constrained import ConstrainedOutput
 from .decoder import DecodeMode, DecoderApplication, DecoderSpec
@@ -12,12 +14,18 @@ from .errors import (
     ConstraintConfigError,
     StructuredAgentsError,
 )
+from .profile import AgentProfile
 
 __all__ = [
     "ConstrainedOutput",
     "DecoderSpec",
     "DecoderApplication",
     "DecodeMode",
+    "Backend",
+    "BackendCaps",
+    "AgentProfile",
+    "StructuredAgent",
+    "AgentResult",
     "RequestCapture",
     "RequestRecord",
     "StructuredAgentsError",
