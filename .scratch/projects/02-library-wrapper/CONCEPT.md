@@ -326,8 +326,12 @@ suite runs without a GPU, plus a `live` marker for runs against `$LLM_BASE_URL` 
    (NativeOutput→response_format; str+extra_body) against the in-process mock.
 2. **Backend + agent:** `Backend`/caps, `AgentProfile` + ref resolution, `StructuredAgent.run`.
    Caps-gate tests; a `live` test reproduces the json_schema round-trip.
-3. **Fleet + routing:** `AgentSet.run_batch`, `RoutingTable`, `route_and_run`. Concurrency
-   test (mock) + optional `live` 2.4× reproduction.
+3. **Fleet + routing — ✅ BUILT (2026-06-09).** `fleet.py`: `AgentSet.build/run_batch`
+   (order-preserving top-level `asyncio.gather`), `RoutingTable` (router/routes/default/route_field,
+   validated at build incl. Literal-coverage), `route`/`route_and_run` (explicit dispatch),
+   `RoutedResult`; `FleetError`/`RoutingError`. `tests/test_fleet.py` (17 tests, incl. a tracking
+   ASGI app that asserts >1 request in flight — concurrency proven on the mock; the `live` 2.4×
+   reproduction stays for the vLLM cutover). fleet.py 93% cov, ty+ruff clean.
 4. **Executor boundary:** `Executor`, `DryRunExecutor`, router→specialist→executor example.
 5. **vLLM cutover + polish:** point `Backend` at `deploy/vllm`; verify grammar/regex/choice
    + LoRA live; enable `[grammar-check]` in CI; YAML/JSON profile loading; examples; mypy+ruff.
