@@ -119,11 +119,7 @@ def build_comparison_record(
     cmp = comparator or ExactFieldComparator()
     primary_valid = isinstance(primary_output, BaseModel)
     reference_valid = isinstance(reference_output, BaseModel)
-    signal = (
-        cmp.compare(primary_output, reference_output)
-        if (primary_valid and reference_valid)
-        else None
-    )
+    signal = cmp.compare(primary_output, reference_output) if (primary_valid and reference_valid) else None
     return ComparisonRecord(
         run_id=run_id,
         profile_version=profile_version(profile),

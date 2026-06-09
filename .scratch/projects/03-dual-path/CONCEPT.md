@@ -303,9 +303,17 @@ spike; `psycopg` ships with `dbos`). Tests live in `tests/` and skip without `db
    guard). Tests: `tests/test_dual_path_record.py` (pure) + `tests/test_dual_path_store.py`
    (Postgres-gated). 100% cov on the subpackage, ty+ruff clean. `[dual-path]` extra + a scoped
    `tool.ty.overrides` for the subpackage added to `pyproject.toml`.
-2. **Runtime + runner (DBOS):** `runtime.py` register→launch→shutdown, `runner.py` gather + sampling
-   + persist, against the ASGI mock. Asserts wire-shape survival + two durable workflows. *(This is
-   the spike, productionized and tested.)*
+2. **Runtime + runner (DBOS) — ✅ BUILT (2026-06-09).** `runtime.py` (`DualPathConfig`,
+   `DualPathRuntime` register→launch→shutdown + context manager; json_schema-only + register-after-launch
+   guards; owns the process-global DBOS singleton and the shared `ComparisonStore`), `runner.py`
+   (`DualPathRunner.run`: sampling via `force_reference`/`sample_rate`, `SetWorkflowID`, top-level
+   `asyncio.gather` over two `DBOSAgent` legs, per-leg error capture, `ModelIdentity` derived off the
+   wire model, usage, `build_comparison_record` + `store.save`; `primary`/`reference` escape hatches).
+   `__init__.py` exports them + the import guard now covers `dbos`. Tests:
+   `tests/test_dual_path_runtime.py` (Postgres+DBOS-gated, one lifecycle on a dedicated loop, ASGI mock):
+   guards, wire-shape survival, one-row dual persist + correlatable `*_workflow_id`, sampling skip/force,
+   reference-error capture. runner 100% / runtime 90% cov, ty+ruff clean, full suite green. *(The spike,
+   productionized and tested.)*
 3. **Reference path hardening:** `reference.py` capability ladder; live OpenAI json_schema (Gate 4);
    resolve the strict-schema rewrite (core CONCEPT §10 #1) so frontier strict mode doesn't 400;
    DeepSeek/OpenRouter fallbacks.

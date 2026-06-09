@@ -4,8 +4,9 @@ Every *sampled* agent run executes against the local vLLM `Backend` **and** a fr
 OpenAI-compatible API; both outputs are validated against the same type and persisted as a versioned
 `ComparisonRecord` (Postgres `jsonb`) for SFT data + local-vs-frontier evals.
 
-**Phase 1 (this module set):** the DBOS-free *data core* — records, comparators, store/export. The
-durable runner (`DualPathRuntime`/`DualPathRunner`, which import DBOS) arrives in Phase 2.
+**Phase 1:** the DBOS-free *data core* — records, comparators, store/export.
+**Phase 2 (this module set adds):** the durable runtime — `DualPathRuntime`/`DualPathRunner`, which
+import DBOS and run two `DBOSAgent` legs concurrently (Architecture C).
 
 Importing this package requires the extra:  ``pip install 'structured-agents-v2[dual-path]'``.
 """
@@ -13,11 +14,11 @@ Importing this package requires the extra:  ``pip install 'structured-agents-v2[
 from __future__ import annotations
 
 try:
+    import dbos  # noqa: F401  (ships with the [dual-path] extra)
     import psycopg  # noqa: F401  (ships with the [dual-path] extra)
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
-        "structured_agents_v2.dual_path requires the [dual-path] extra "
-        "(pip install 'structured-agents-v2[dual-path]')."
+        "structured_agents_v2.dual_path requires the [dual-path] extra (pip install 'structured-agents-v2[dual-path]')."
     ) from exc
 
 from .comparator import Comparator, ComparisonSignal, ExactFieldComparator
@@ -31,6 +32,8 @@ from .record import (
     profile_version,
     schema_version,
 )
+from .runner import DualPathRunner
+from .runtime import DualPathConfig, DualPathRuntime
 from .store import ComparisonExport, ComparisonStore, EvalSummary, GroupEval
 
 __all__ = [
@@ -42,6 +45,10 @@ __all__ = [
     "profile_version",
     "schema_version",
     "lib_version",
+    # runtime / runner
+    "DualPathRuntime",
+    "DualPathConfig",
+    "DualPathRunner",
     # comparators
     "Comparator",
     "ComparisonSignal",
