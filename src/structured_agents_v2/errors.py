@@ -29,3 +29,7 @@ class FleetError(StructuredAgentsError):
 
 class RoutingError(FleetError):
     """A `RoutingTable` is invalid, or a router emitted an unroutable value at runtime."""
+
+
+class PolicyError(StructuredAgentsError):
+    """An executor refused a command, or a policy/executor is misconfigured."""

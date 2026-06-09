@@ -25,11 +25,12 @@ from typing import TYPE_CHECKING, Any, Literal, get_args, get_origin
 
 from pydantic import BaseModel
 
-from .errors import FleetError, RoutingError
+from .errors import FleetError, PolicyError, RoutingError
 
 if TYPE_CHECKING:
     from .agent import AgentResult, StructuredAgent
     from .backend import Backend
+    from .executor import Decision, ExecResult, Executor
     from .profile import AgentProfile
 
 
@@ -58,6 +59,17 @@ class RoutedResult:
     agent: str  # the specialist agent name it mapped to
     output: Any  # the specialist's validated output
     result: AgentResult[Any]  # the specialist's full AgentResult (escape hatch)
+
+
+@dataclass
+class RoutedExecution:
+    """The outcome of `route_and_execute`: the routed output plus the authority decision/effect."""
+
+    route: str  # the route value the router emitted
+    agent: str  # the specialist that produced the command
+    output: Any  # the specialist's validated command
+    decision: Decision  # the executor's authority verdict
+    result: ExecResult | None  # the side-effect result, or None when the command was denied
 
 
 class AgentSet:
@@ -109,6 +121,24 @@ class AgentSet:
             raise RoutingError(f"router {rt.router!r} emitted route {value!r} with no `routes` entry and no default.")
         result = await self.agents[specialist].run(msg)
         return RoutedResult(route=value, agent=specialist, output=result.output, result=result)
+
+    async def route_and_execute(self, msg: str, executor: Executor, *, policy: str | None = None) -> RoutedExecution:
+        """Route `msg` to a specialist, then authorize + (if allowed) execute its command.
+
+        The fully-automatic pipeline — still explicit (you call it and pass the `executor`), so
+        nothing executes implicitly. The policy is `policy=` or the specialist's
+        `AgentProfile.policy`. A denial is returned as **data** (`decision.allowed` False, `result`
+        None), not raised, so autonomous/batch callers can log refusals instead of crashing.
+        """
+        routed = await self.route_and_run(msg)
+        pol = policy or self.agents[routed.agent].profile.policy
+        if pol is None:
+            raise PolicyError(f"agent {routed.agent!r} has no policy; set its AgentProfile.policy or pass policy=.")
+        decision = executor.authorize(pol, routed.output)
+        result = executor.execute(pol, routed.output) if decision.allowed else None
+        return RoutedExecution(
+            route=routed.route, agent=routed.agent, output=routed.output, decision=decision, result=result
+        )
 
     # --- internals ---------------------------------------------------------------------
 

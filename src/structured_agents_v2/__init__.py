@@ -13,10 +13,20 @@ from .errors import (
     ConstraintCompileError,
     ConstraintConfigError,
     FleetError,
+    PolicyError,
     RoutingError,
     StructuredAgentsError,
 )
-from .fleet import AgentSet, RoutedResult, RoutingTable
+from .executor import (
+    AllowlistExecutor,
+    BaseExecutor,
+    Decision,
+    DryRunExecutor,
+    ExecResult,
+    Executor,
+    Policy,
+)
+from .fleet import AgentSet, RoutedExecution, RoutedResult, RoutingTable
 from .profile import AgentProfile
 
 __all__ = [
@@ -32,6 +42,14 @@ __all__ = [
     "AgentSet",
     "RoutingTable",
     "RoutedResult",
+    "RoutedExecution",
+    "Executor",
+    "BaseExecutor",
+    "DryRunExecutor",
+    "AllowlistExecutor",
+    "Policy",
+    "Decision",
+    "ExecResult",
     "RequestCapture",
     "RequestRecord",
     "StructuredAgentsError",
@@ -41,4 +59,5 @@ __all__ = [
     "BackendCapabilityError",
     "FleetError",
     "RoutingError",
+    "PolicyError",
 ]

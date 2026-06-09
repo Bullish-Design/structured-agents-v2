@@ -12,13 +12,17 @@ import pytest
 from structured_agents_v2 import (
     AgentProfile,
     AgentSet,
+    AllowlistExecutor,
     Backend,
     ConstrainedOutput,
     DecoderSpec,
     FleetError,
+    Policy,
+    RoutedExecution,
     RoutingError,
     RoutingTable,
 )
+from structured_agents_v2.errors import PolicyError
 
 
 class Route(ConstrainedOutput):
@@ -233,9 +237,7 @@ class MultiRoute(ConstrainedOutput):
 
 
 def _multi_router() -> AgentProfile:
-    return AgentProfile(
-        name="router", adapter="router", instructions="route", output_type_ref="test_fleet:MultiRoute"
-    )
+    return AgentProfile(name="router", adapter="router", instructions="route", output_type_ref="test_fleet:MultiRoute")
 
 
 def test_multi_field_router_needs_route_field(mock_openai: Any, transport: httpx.ASGITransport) -> None:
@@ -264,3 +266,73 @@ def test_route_field_names_the_field(mock_openai: Any, transport: httpx.ASGITran
         ),
     )
     assert asyncio.run(fleet.route("x")) == "git_ops"
+
+
+# --- route_and_execute: router -> specialist -> executor (the autonomous pipeline) ------
+
+
+def _specialist_with_policy(name: str, adapter: str, policy: str | None) -> AgentProfile:
+    return AgentProfile(
+        name=name, adapter=adapter, instructions="answer", output_type_ref="test_fleet:Answer", policy=policy
+    )
+
+
+def _routed_exec_fleet(transport: httpx.ASGITransport, *, policy: str | None) -> AgentSet:
+    fleet = AgentSet(_backend(transport))
+    fleet.build(
+        [
+            _router_profile(),
+            _specialist_with_policy("file_edit", "fe", policy),
+            _specialist_with_policy("git_ops", "go", policy),
+        ],
+        routing=RoutingTable(router="router", routes=_full_routes()),
+    )
+    return fleet
+
+
+def test_route_and_execute_auto_runs_allowed_command(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = _keyed_responder  # router -> git_ops; specialist -> Answer(text="go handled")
+    sink: list[str] = []
+    executor = AllowlistExecutor(
+        [Policy("answer_v1", allow=lambda c: "handled" in c.text, action=lambda c: sink.append(c.text))]
+    )
+    fleet = _routed_exec_fleet(transport, policy="answer_v1")
+
+    outcome = asyncio.run(fleet.route_and_execute("do something", executor))
+    assert isinstance(outcome, RoutedExecution)
+    assert outcome.agent == "git_ops"
+    assert outcome.output.text == "go handled"
+    assert outcome.decision.allowed
+    assert outcome.result is not None and outcome.result.ok
+    assert sink == ["go handled"]  # the side effect actually fired, no human in the loop
+
+
+def test_route_and_execute_denial_is_data_not_effect(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = _keyed_responder
+    sink: list[str] = []
+    executor = AllowlistExecutor([Policy("answer_v1", allow=lambda _c: False, action=lambda c: sink.append(c.text))])
+    fleet = _routed_exec_fleet(transport, policy="answer_v1")
+
+    outcome = asyncio.run(fleet.route_and_execute("do something", executor))
+    assert outcome.decision.allowed is False
+    assert outcome.result is None  # denied -> no effect
+    assert sink == []
+
+
+def test_route_and_execute_requires_a_policy(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = _keyed_responder
+    executor = AllowlistExecutor([Policy("answer_v1", allow=lambda _c: True)])
+    fleet = _routed_exec_fleet(transport, policy=None)  # specialists carry no policy
+    with pytest.raises(PolicyError, match="has no policy"):
+        asyncio.run(fleet.route_and_execute("do something", executor))
+
+
+def test_route_and_execute_policy_override(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    # specialists have no policy, but an explicit policy= drives the executor anyway.
+    mock_openai.responder = _keyed_responder
+    sink: list[str] = []
+    executor = AllowlistExecutor([Policy("answer_v1", allow=lambda _c: True, action=lambda c: sink.append(c.text))])
+    fleet = _routed_exec_fleet(transport, policy=None)
+
+    outcome = asyncio.run(fleet.route_and_execute("do something", executor, policy="answer_v1"))
+    assert outcome.decision.allowed and sink == ["go handled"]

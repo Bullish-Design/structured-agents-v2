@@ -332,7 +332,15 @@ suite runs without a GPU, plus a `live` marker for runs against `$LLM_BASE_URL` 
    `RoutedResult`; `FleetError`/`RoutingError`. `tests/test_fleet.py` (17 tests, incl. a tracking
    ASGI app that asserts >1 request in flight — concurrency proven on the mock; the `live` 2.4×
    reproduction stays for the vLLM cutover). fleet.py 93% cov, ty+ruff clean.
-4. **Executor boundary:** `Executor`, `DryRunExecutor`, router→specialist→executor example.
+4. **Executor boundary — ✅ BUILT (2026-06-09).** `executor.py`: `Executor` Protocol (authorize/
+   execute) + `BaseExecutor.run` sugar; `DryRunExecutor` (authorizes, performs NO side effect —
+   records intent), `AllowlistExecutor` (**default-deny**, auto-approves + runs commands matching a
+   `Policy.allow` rule — automatic execution, no human); `Policy`/`Decision`/`ExecResult`;
+   `PolicyError`. `AgentSet.route_and_execute(msg, executor, policy=?)` → `RoutedExecution` automates
+   router→specialist→authorize→(execute if allowed); denials are data, not exceptions. Wires the
+   `AgentProfile.policy` field. Nothing executes implicitly. `tests/test_executor.py` +
+   route_and_execute tests in `test_fleet.py` (incl. the worked router→specialist→executor example).
+   executor.py 100% cov, ty+ruff clean.
 5. **vLLM cutover + polish:** point `Backend` at `deploy/vllm`; verify grammar/regex/choice
    + LoRA live; enable `[grammar-check]` in CI; YAML/JSON profile loading; examples; mypy+ruff.
 
