@@ -31,6 +31,26 @@ LLM_API_KEY=<VLLM_API_KEY>
 LLM_MODEL=base            # or a LoRA adapter name from LORA_MODULES
 ```
 
+## Run the library's live tests against this service
+
+The `LLM_*` block in `.env` is the client-side mirror of the server settings
+(`LLM_API_KEY == VLLM_API_KEY`, `LLM_MODEL == SERVED_MODEL_NAME`). Load it and run the
+`live`-marked tests (skipped by default, so the normal suite stays GPU-free):
+
+```bash
+export $(grep -E '^LLM_' deploy/vllm/.env | xargs)
+
+# json_schema round-trip (also works against the current llama.cpp box):
+SAV_LIVE=1 devenv shell -- uv run --extra dev pytest -q -m live
+
+# XGrammar bare-string (regex) round-trip — vLLM-only, proves constrained decoding:
+SAV_LIVE_XGRAMMAR=1 devenv shell -- uv run --extra dev pytest -q -m live
+```
+
+The XGrammar test asserts the returned text actually matches the regex, so it only
+passes once a real XGrammar backend (this container) is serving — that's the part the
+llama.cpp box can't satisfy.
+
 ## Host model layout (bind-mounted read-only at `/models`)
 
 ```
@@ -46,8 +66,9 @@ $MODELS_HOST_DIR/
 
 | Concept piece            | vLLM mechanism (set here)                                   |
 |--------------------------|-------------------------------------------------------------|
-| XGrammar constraint      | `--guided-decoding-backend xgrammar` (server-level)         |
+| XGrammar constraint      | structured-outputs backend flag, **auto-detected** from `vllm serve --help` (modern `--structured-outputs-config.backend xgrammar`, else `--guided-decoding-backend`, else vLLM's xgrammar default) |
 | Per-agent output schema  | client sends `response_format: json_schema` (NativeOutput)  |
+| Bare-string constraints  | client sends `structured_outputs: {regex\|choice\|grammar: …}` in the body (modern vLLM form) |
 | Per-agent LoRA           | `--enable-lora --lora-modules name=path`; client `model=name` |
 | Batched parallelism      | vLLM continuous batching (no flag; inherent)                |
 | Auth                     | `--api-key $VLLM_API_KEY`                                    |
@@ -66,8 +87,11 @@ Confirmed constraints (2026-06-09): single **12 GB RTX 3060**, newest **Qwen3.5*
   several concurrent LoRAs. A **3-4B-class Qwen3.5** fits comfortably and matches the
   "small models, constrained toolsets, batched" intent — `.env` defaults to a 4B; bump
   `MODEL` to the 9B only if you accept ~1-2 small-rank LoRAs and 8k context.
-- **vLLM version + flag.** Confirm the structured-outputs flag against the pinned
-  `VLLM_TAG` (`--guided-decoding-backend` vs `--structured-outputs-config.backend`).
+- **vLLM version + flag.** `VLLM_TAG` is pinned (default `v0.11.0`); bump it to the
+  newest tag that supports your Qwen3.5. The structured-outputs flag is auto-detected
+  at startup (see `entrypoint.sh`) — the boot log prints the resolved `vllm serve …`
+  line, so you can confirm which flag was used. The tag must be new enough (vLLM 0.10+)
+  to accept the client's modern `structured_outputs` request body.
 - **LoRA.** `LORA_MODULES` empty until fine-tunes land; `MAX_LORA_RANK` must be ≥ the
   training rank, and verify LoRA + quantization compatibility on the pinned tag.
 

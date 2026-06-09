@@ -5,7 +5,7 @@ services:
     build:
       context: .
       args:
-        VLLM_TAG: ${VLLM_TAG:-latest}
+        VLLM_TAG: ${VLLM_TAG:-v0.11.0}
     image: structured-agents-vllm:latest
     container_name: remora-vllm
     env_file: .env
