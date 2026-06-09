@@ -12,8 +12,11 @@ from .errors import (
     ConfigError,
     ConstraintCompileError,
     ConstraintConfigError,
+    FleetError,
+    RoutingError,
     StructuredAgentsError,
 )
+from .fleet import AgentSet, RoutedResult, RoutingTable
 from .profile import AgentProfile
 
 __all__ = [
@@ -26,6 +29,9 @@ __all__ = [
     "AgentProfile",
     "StructuredAgent",
     "AgentResult",
+    "AgentSet",
+    "RoutingTable",
+    "RoutedResult",
     "RequestCapture",
     "RequestRecord",
     "StructuredAgentsError",
@@ -33,4 +39,6 @@ __all__ = [
     "ConstraintConfigError",
     "ConstraintCompileError",
     "BackendCapabilityError",
+    "FleetError",
+    "RoutingError",
 ]

@@ -21,3 +21,11 @@ class ConstraintCompileError(StructuredAgentsError):
 
 class BackendCapabilityError(StructuredAgentsError):
     """An agent requires a capability the configured backend does not provide."""
+
+
+class FleetError(StructuredAgentsError):
+    """An `AgentSet`/fleet is misconfigured (duplicate names, unknown agent, …)."""
+
+
+class RoutingError(FleetError):
+    """A `RoutingTable` is invalid, or a router emitted an unroutable value at runtime."""
