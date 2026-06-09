@@ -27,6 +27,11 @@ dev = [
 grammar-check = [
   "xgrammar>=0.2",
 ]
+# Optional: dual-path inference (local ‖ frontier) durable-execution capture via DBOS.
+# Pulls DBOS Transact (durable workflows/steps). Keeps the lean core DBOS/Postgres-free.
+dual-path = [
+  "dbos>=0.26",
+]
 
 [tool.uv.sources]
 grail = { git = "https://github.com/Bullish-Design/grail.git", rev = "main" }
@@ -70,6 +75,14 @@ python-version = "3.13"
 # constrained.py. Scope the unresolved-import suppression to just that file.
 [[tool.ty.overrides]]
 include = ["src/structured_agents_v2/constrained.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+
+# Optional [dual-path] extra (psycopg, and DBOS in later phases). The dual_path subpackage
+# only imports under the extra; suppress unresolved-import for it (it's gated at runtime).
+[[tool.ty.overrides]]
+include = ["src/structured_agents_v2/dual_path/**"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
