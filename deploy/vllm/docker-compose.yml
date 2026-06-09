@@ -1,0 +1,31 @@
+# Standalone vLLM container intended to replace the current llama.cpp remora-server.
+# Exposes the same contract: OpenAI-compatible API on :8000.
+services:
+  vllm:
+    build:
+      context: .
+      args:
+        VLLM_TAG: ${VLLM_TAG:-latest}
+    image: structured-agents-vllm:latest
+    container_name: remora-vllm
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Host layout expected:  $MODELS_HOST_DIR/base/<weights>  and  /lora/<adapter>/
+      - ${MODELS_HOST_DIR:-./models}:/models:ro
+    ipc: host                 # vLLM needs large /dev/shm for tensor-parallel + paged attn
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 600s      # model load can be slow on first boot
+    restart: unless-stopped
