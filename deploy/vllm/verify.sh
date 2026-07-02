@@ -114,9 +114,13 @@ fi
 # 4. xgrammar (regex) ------------------------------------------------------------------
 hdr "4. XGrammar bare-string (regex) — vLLM-only"
 REGEX='git (status|diff|add|commit) [a-zA-Z0-9._/ -]*'
+# max_tokens is REQUIRED here: the regex ends in an unbounded `*`, so without a cap the
+# model generates to max_model_len and the request exceeds curl's timeout (code 000) on
+# slow GPUs. XGrammar still guarantees every emitted token matches the regex, so a capped
+# (possibly truncated) output is a valid full match for the anchored grep below.
 read -r -d '' RX_REQ <<EOF
 {"model":"$MODEL","messages":[{"role":"user","content":"Show the working tree status with git."}],
- "structured_outputs":{"regex":"$REGEX"}}
+ "structured_outputs":{"regex":"$REGEX"},"max_tokens":64}
 EOF
 curl_json POST "$BASE_URL/chat/completions" "$RX_REQ"
 content="$(extract_content)"
