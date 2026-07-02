@@ -220,3 +220,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Host-specific compose override (auto-merges; keep host-local, use docker-compose.no-build.yml in-repo)
+deploy/vllm/docker-compose.override.yml

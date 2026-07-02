@@ -84,6 +84,38 @@ fails.
 
 ---
 
+## Gotchas seen on the real box (2026-07-01 bring-up)
+
+The current `tower` is **not** the "clean 12 GB RTX 3060" the sizing notes assume — it's a busy
+multi-service Windows host with an **8 GB Quadro RTX 4000 (Turing, sm_75)**. Things that bit us,
+so the next person doesn't rediscover them:
+
+- **SSH install stages behind a reboot.** `Add-WindowsCapability … OpenSSH.Server` can report
+  `InstallPending` (no `sshd` service yet) if another servicing op is queued. Reboot, then
+  `Start-Service sshd`.
+- **Docker over SSH can't build.** Docker Desktop's credential helper (`docker-credential-desktop`)
+  fails in a non-interactive SSH session ("A specified logon session does not exist"), which breaks
+  BuildKit — so `docker compose build` (and thus the Dockerfile `COPY`) is impossible remotely.
+  `--config <dir-with-{}>` fixes plain `docker pull` but **not** BuildKit. Workaround: don't build —
+  pre-pull the base image and start with the opt-in [`../vllm/docker-compose.no-build.yml`](../vllm/docker-compose.no-build.yml),
+  which mounts `entrypoint.sh` at runtime:
+  ```powershell
+  docker --config E:\dockercfg pull vllm/vllm-openai:v0.11.0
+  cd E:\structured-agents-v2\deploy\vllm
+  docker compose -f docker-compose.yml -f docker-compose.no-build.yml up -d
+  ```
+  (Keep a host-local `docker-compose.override.yml` copy if you want bare `docker compose up` to work —
+  it's gitignored.)
+- **Firewall:** open inbound TCP 8000 (`New-NetFirewallRule … -LocalPort 8000`) or `tower:8000` is
+  unreachable over Tailscale even though the port publishes fine on `localhost`.
+- **Turing needs two settings** (in `.env`): `VLLM_USE_FLASHINFER_SAMPLER=0` (FlashInfer's sampler
+  crashes on compute-cap 7.x → engine crash-loop), and `--quantization awq` **not** `awq_marlin`
+  (Marlin needs Ampere+). FA2 is unavailable → vLLM falls back to FlexAttention automatically.
+- **8 GB sizing:** a 4B fp16 model won't fit; use a pre-quantized **AWQ** repo (e.g.
+  `Qwen/Qwen3-4B-AWQ`, ~3 GB) and `GPU_MEMORY_UTILIZATION=0.85` to leave room for the desktop.
+- **vLLM 0.11.0 supports Gemma up to `gemma3n`, not `gemma4`.** Newer models may need a newer
+  `VLLM_TAG` — but verify that tag still supports sm_75 before bumping (newer vLLM is dropping old archs).
+
 ## Files here
 
 | File             | What it does                                                          |
@@ -91,3 +123,4 @@ fails.
 | `enable-ssh.ps1` | One-time: enable OpenSSH Server + authorize the deploy key (at the box).|
 | `bootstrap.ps1`  | Idempotent prereq setup: WSL2 features, driver/Docker checks, code dir.|
 | `../vllm/verify.sh` | Endpoint verification (health → models → json_schema → xgrammar → lora).|
+| `../vllm/docker-compose.no-build.yml` | Opt-in no-build override for Docker-Desktop-over-SSH hosts.|

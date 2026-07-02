@@ -1,0 +1,22 @@
+# OPT-IN override for hosts where `docker compose build` can't run — notably
+# Docker Desktop on Windows driven over SSH, whose BuildKit credential helper
+# (`docker-credential-desktop`) fails in a non-interactive session with
+# "A specified logon session does not exist". See ../tower/README.md.
+#
+# It skips the Dockerfile build entirely: use the pre-pulled base image directly
+# and mount entrypoint.sh at runtime instead of COPY-ing it in a build layer.
+#
+# This is NOT named docker-compose.override.yml on purpose — that name would
+# auto-merge on every `docker compose` call and silently disable the build on
+# hosts that CAN build. Opt in explicitly:
+#
+#   docker pull vllm/vllm-openai:v0.11.0     # once, via a creds-helper-free path
+#   docker compose -f docker-compose.yml -f docker-compose.no-build.yml up -d
+#
+# Keep `image:` in sync with VLLM_TAG in .env (there's no build to read the arg).
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.11.0
+    entrypoint: ["bash", "/entrypoint.sh"]
+    volumes:
+      - ./entrypoint.sh:/entrypoint.sh:ro
