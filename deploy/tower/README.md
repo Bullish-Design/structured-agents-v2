@@ -123,4 +123,5 @@ so the next person doesn't rediscover them:
 | `enable-ssh.ps1` | One-time: enable OpenSSH Server + authorize the deploy key (at the box).|
 | `bootstrap.ps1`  | Idempotent prereq setup: WSL2 features, driver/Docker checks, code dir.|
 | `../vllm/verify.sh` | Endpoint verification (health → models → json_schema → xgrammar → lora).|
+| `../vllm/bench.py` | Batched-throughput profile (diverse prompts; json + text workloads).|
 | `../vllm/docker-compose.no-build.yml` | Opt-in no-build override for Docker-Desktop-over-SSH hosts.|
