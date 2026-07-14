@@ -1,0 +1,16 @@
+[project]
+name = "structured-agents-vllm-native"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "vllm==0.25.0",
+  "vllm-gguf-plugin==0.0.4",
+]
+
+[tool.uv.sources]
+vllm-gguf-plugin = { path = "vendor/vllm-gguf-plugin" }
+
+[dependency-groups]
+dev = [
+  "pytest>=8,<9",
+]

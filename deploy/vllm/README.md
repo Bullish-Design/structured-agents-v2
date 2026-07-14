@@ -1,4 +1,14 @@
-# vLLM container — drop-in replacement for `remora-server`
+# vLLM deployment — native NixOS path and legacy container fallback
+
+The production deployment path for this NixOS host is now the native, locked
+devenv service in [native/README.md](native/README.md). It binds vLLM to
+`127.0.0.1:8000` and exposes it only through Tailscale Serve HTTPS at
+`https://server.tail770f47.ts.net/v1`. Do not expose port 8000 directly and do
+not use Tailscale Funnel. Native access control is enforced by the tailnet ACL;
+the native launcher does not configure a vLLM API key. The Docker material below remains a legacy fallback
+for the Windows/tower workflow; its Compose port is loopback-only as well.
+
+## Legacy Docker fallback
 
 A standalone, OpenAI-compatible vLLM server that replaces the current llama.cpp
 `remora-server` while keeping the **same contract**: `http://<host>:8000/v1`.
@@ -112,7 +122,7 @@ Confirmed constraints (2026-06-09): single **12 GB RTX 3060**, newest **Qwen3.5*
   several concurrent LoRAs. A **3-4B-class Qwen3.5** fits comfortably and matches the
   "small models, constrained toolsets, batched" intent — `.env` defaults to a 4B; bump
   `MODEL` to the 9B only if you accept ~1-2 small-rank LoRAs and 8k context.
-- **vLLM version + flag.** `VLLM_TAG` is pinned (default `v0.11.0`); bump it to the
+- **vLLM version + flag.** `VLLM_TAG` is pinned (default `v0.25.0`); bump it to the
   newest tag that supports your Qwen3.5. The structured-outputs flag is auto-detected
   at startup (see `entrypoint.sh`) — the boot log prints the resolved `vllm serve …`
   line, so you can confirm which flag was used. The tag must be new enough (vLLM 0.10+)

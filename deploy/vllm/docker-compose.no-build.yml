@@ -10,13 +10,14 @@
 # auto-merge on every `docker compose` call and silently disable the build on
 # hosts that CAN build. Opt in explicitly:
 #
-#   docker pull vllm/vllm-openai:v0.11.0     # once, via a creds-helper-free path
+#   docker pull vllm/vllm-openai:v0.25.0     # once, via a creds-helper-free path
 #   docker compose -f docker-compose.yml -f docker-compose.no-build.yml up -d
 #
-# Keep `image:` in sync with VLLM_TAG in .env (there's no build to read the arg).
+# Read VLLM_TAG from .env so the no-build path cannot silently diverge from the
+# normal Compose build argument.
 services:
   vllm:
-    image: vllm/vllm-openai:v0.11.0
+    image: vllm/vllm-openai:${VLLM_TAG:?set VLLM_TAG in .env}
     entrypoint: ["bash", "/entrypoint.sh"]
     volumes:
       - ./entrypoint.sh:/entrypoint.sh:ro

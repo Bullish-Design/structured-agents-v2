@@ -17,7 +17,7 @@ Config comes from the environment (defaults mirror deploy/vllm/.env and verify.s
   LLM_BASE_URL   default http://localhost:8000/v1   (e.g. http://tower:8000/v1)
   LLM_API_KEY    default $VLLM_API_KEY               (sent as Bearer when non-empty)
   LLM_MODEL      default base                        (SERVED_MODEL_NAME)
-  BENCH_LEVELS   default 1,4,8,16,32                 (comma-separated concurrencies)
+  BENCH_LEVELS   default 1,2,4,8,16                  (comma-separated concurrencies)
   BENCH_TEXT_TOKENS  default 256                     (max_tokens for the text workload)
 
 Usage:
@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 BASE = os.environ.get("LLM_BASE_URL", "http://localhost:8000/v1").rstrip("/") + "/chat/completions"
 KEY = os.environ.get("LLM_API_KEY", os.environ.get("VLLM_API_KEY", ""))
 MODEL = os.environ.get("LLM_MODEL", "base")
-LEVELS = [int(x) for x in os.environ.get("BENCH_LEVELS", "1,4,8,16,32").split(",") if x.strip()]
+LEVELS = [int(x) for x in os.environ.get("BENCH_LEVELS", "1,2,4,8,16").split(",") if x.strip()]
 TEXT_TOKENS = int(os.environ.get("BENCH_TEXT_TOKENS", "256"))
 
 HEADERS = {"Content-Type": "application/json"}
