@@ -5,6 +5,7 @@ __pycache__/
 
 # Personal Dev Environment:
 .devenv/**
+**/.devenv/**
 .direnv/**
 #.tmuxp.yaml
 .python-version
@@ -223,3 +224,10 @@ __marimo__/
 
 # Host-specific compose override (auto-merges; keep host-local, use docker-compose.no-build.yml in-repo)
 deploy/vllm/docker-compose.override.yml
+
+# Host-local native vLLM deployment environment. Keep the pinned local GGUF
+# plugin fork versioned; all other untracked native runtime files stay local.
+/deploy/vllm/native/*
+!/deploy/vllm/native/vendor/
+!/deploy/vllm/native/vendor/vllm-gguf-plugin/
+!/deploy/vllm/native/vendor/vllm-gguf-plugin/**

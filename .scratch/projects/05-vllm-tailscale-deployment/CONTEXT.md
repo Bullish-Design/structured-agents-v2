@@ -1,0 +1,15 @@
+# Context
+
+Planning is complete; no deployment or repository runtime configuration has been changed.
+
+`KICKOFF_PROMPT.md` is a self-contained prompt for starting the implementation in a clean session.
+
+The service should be local-only in Docker and published through Tailscale Serve over HTTPS. The next work item is host readiness, not Compose deployment: this session could not use `nvidia-smi`, see `/dev/nvidia*`, access the Docker socket, or query Tailscale status. The host nevertheless appears to have two RTX 3060 cards, 62 GiB RAM, and about 350 GiB free disk.
+
+On 2026-07-13, the required host-readiness commands were run directly from this restricted workspace session. It cannot see host GPU device nodes, access Docker, or reach the Tailscale daemon. The operator subsequently reported that the host-terminal NVIDIA checks passed; take that as the host GPU readiness confirmation, while recognizing it cannot be independently reproduced inside this sandbox. The deployment architecture has changed to a direct host `vllm serve` process managed by a dedicated devenv environment (D4), so Docker readiness is no longer a gate. Tailscale identity, MagicDNS name, Serve configuration, and ACL/tag authority remain unconfirmed because this session's `tailscale status` and `tailscale serve status` still cannot reach `/var/run/tailscale/tailscaled.sock`.
+
+Tailscale policy is confirmed from operator-supplied output: `server.tail770f47.ts.net` has `tag:server` and `tag:vllm`; Preview Rules shows `tag:vllm:443` allowed from `group:agents, autogroup:admin`. Existing Serve forwards TCP 8122/8123 to loopback and does not conflict with HTTPS 443. Use `https://server.tail770f47.ts.net/v1` for clients. Docker is not the runtime path; native serving is D4.
+
+Repository implementation is complete but not activated: `deploy/vllm/native/` contains a standalone locked Python 3.12/devenv environment (`vllm==0.11.0`), native secure launcher, a focused launcher test, a NixOS systemd module, a mode-0600 secret template, and the operating runbook. The first profile is `Qwen/Qwen3-4B-AWQ` at revision `136f16ffdca9c9e49527391169e042634b9ad0d6`, AWQ 4-bit, one GPU, 8192 context, 0.90 GPU memory, and no LoRAs. `serve.sh` hardcodes 127.0.0.1:8000. Compose was also changed to loopback-only and its no-build image now reads `VLLM_TAG` from `.env`; benchmark default levels are 1,2,4,8,16. Launcher test, shell syntax, Python compilation, Nix parsing, `uv lock --check`, and diff check passed.
+
+Next: on the host, run the documented `uv sync --locked --no-dev` plus host GPU check; import and enable `nixos-module.nix` from this repository in the separate NixOS configuration repository and apply `nixos-rebuild switch`; then start the service. The module defines the serving profile directly, with no host-local environment file. Do not publish Tailscale Serve until local `verify.sh --pytest` succeeds. After that, run Serve and remote verification/benchmarking exactly as documented. Preserve the no-subagent rule.

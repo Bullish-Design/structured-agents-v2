@@ -1,11 +1,11 @@
 # Standalone vLLM container intended to replace the current llama.cpp remora-server.
-# Exposes the same contract: OpenAI-compatible API on :8000.
+# Binds the OpenAI-compatible API only to loopback on :8000.
 services:
   vllm:
     build:
       context: .
       args:
-        VLLM_TAG: ${VLLM_TAG:-v0.11.0}
+        VLLM_TAG: ${VLLM_TAG:-v0.25.0}
     image: structured-agents-vllm:latest
     container_name: remora-vllm
     env_file: .env
@@ -15,7 +15,7 @@ services:
       # never onto a Windows/NTFS bind mount (drvfs makes multi-GB reads painfully slow).
       HF_HOME: /hf
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       # Weights live in named volumes, NOT a host bind mount. On Docker Desktop
       # (Windows/WSL2) named volumes are stored inside the WSL2 ext4 VM disk, so weights
