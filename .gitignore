@@ -48,6 +48,7 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+deploy/vllm/profile_tps.csv
 
 # Unit test / coverage reports
 htmlcov/

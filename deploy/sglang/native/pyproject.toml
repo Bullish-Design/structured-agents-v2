@@ -1,0 +1,22 @@
+[project]
+name = "structured-agents-sglang-native"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "sglang==0.5.14",
+  "transformers",
+]
+
+[tool.uv.sources]
+# Gemma 4's `gemma4_unified` config is newer than the released Transformers
+# package bundled by SGLang 0.5.14. Pin the resolved Git commit in uv.lock.
+transformers = { git = "https://github.com/huggingface/transformers.git", rev = "main" }
+
+[tool.uv]
+# This is a CUDA server spike, intentionally locked only for its actual host.
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+# Required by SGLang 0.5.14's pinned flash-attn-4 dependency.
+prerelease = "allow"
+# The source checkout is intentionally used for Gemma 4 config support; its
+# development version string no longer equals SGLang's released pin.
+override-dependencies = ["transformers"]

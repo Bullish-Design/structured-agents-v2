@@ -29,6 +29,11 @@ The client base URL is:
 https://server.tail770f47.ts.net/v1
 ```
 
+For a simultaneous llama.cpp comparison using the same GGUF, see
+[`../../llama-cpp/native/README.md`](../../llama-cpp/native/README.md). It runs on
+GPU 0 at local port 8001 (Tailnet HTTPS `:8443`); this vLLM service remains on GPU 1
+at port 8000.
+
 ## Pinned first profile
 
 | Setting | Value |
