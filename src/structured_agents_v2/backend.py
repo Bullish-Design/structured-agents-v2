@@ -14,6 +14,7 @@ with `attach_transport(...)` so the suite runs against the in-process mock with 
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import httpx
@@ -29,13 +30,27 @@ from .profile import AgentProfile
 
 _GATED_MODES = frozenset({"grammar", "regex", "choice"})
 
+# Valid top-level keys for OpenAIChatModelSettings (covers inherited ModelSettings keys too).
+# A TypedDict silently drops unknown keys, so a typo'd setting name would vanish without
+# error — we warn at build time instead.
+_ALLOWED_SETTINGS: frozenset[str] = frozenset(getattr(OpenAIChatModelSettings, "__annotations__", {}))
+
+
+def _warn_unknown_settings(profile: AgentProfile, settings: dict[str, Any]) -> None:
+    unknown = sorted(k for k in settings if k not in _ALLOWED_SETTINGS)
+    if unknown:
+        warnings.warn(
+            f"{profile.name!r}: model_settings has key(s) not in OpenAIChatModelSettings {unknown}; "
+            "a TypedDict silently drops these — check for typos.",
+            stacklevel=3,
+        )
+
 
 class BackendCaps(BaseModel):
     """What an OpenAI-compatible server can do, gating which agents it can build."""
 
     xgrammar: bool = True  # honors XGrammar grammar/regex/choice via extra_body
     lora: bool = True  # selects adapters via the model field
-    server_default_backend: bool = True  # XGrammar set via a server flag, not per-request
 
 
 class Backend(BaseModel):
@@ -48,28 +63,51 @@ class Backend(BaseModel):
     capture: bool = False  # opt-in: wire a RequestCapture into every built agent
 
     _transport: httpx.AsyncBaseTransport | None = PrivateAttr(default=None)
+    _client: httpx.AsyncClient | None = PrivateAttr(default=None)
+    _capture_obj: RequestCapture | None = PrivateAttr(default=None)
+    _client_built: bool = PrivateAttr(default=False)
 
     def attach_transport(self, transport: httpx.AsyncBaseTransport) -> Backend:
         """Route this backend's HTTP through `transport` (e.g. the in-process mock). Returns self."""
         self._transport = transport
         return self
 
-    def _http_client(self, capture: RequestCapture | None) -> httpx.AsyncClient | None:
-        """Build the httpx client, if any, for capture and/or a test transport."""
-        if capture is not None:
-            return capture.client(transport=self._transport)
-        if self._transport is not None:
-            return httpx.AsyncClient(transport=self._transport)
-        return None
+    def _capture(self) -> RequestCapture | None:
+        """The single `RequestCapture` shared by every agent this backend builds (if capture on)."""
+        if self.capture and self._capture_obj is None:
+            self._capture_obj = RequestCapture()
+        return self._capture_obj
 
-    def model_for(self, adapter: str | None = None, *, capture: RequestCapture | None = None) -> OpenAIChatModel:
+    def _shared_client(self) -> httpx.AsyncClient:
+        """One `httpx.AsyncClient` per `Backend`, built lazily and shared across built agents.
+
+        N agents then reuse one connection pool against the single vLLM server (better for
+        `run_batch`), and the whole backend closes with one `aclose()`. Capture stays correct
+        via the per-run contextvar sink even though the client (and its hook) is shared.
+        """
+        if not self._client_built:
+            self._client_built = True
+            capture = self._capture()
+            if capture is not None:
+                self._client = capture.client(transport=self._transport)
+            elif self._transport is not None:
+                self._client = httpx.AsyncClient(transport=self._transport)
+            else:
+                self._client = httpx.AsyncClient()
+        assert self._client is not None
+        return self._client
+
+    def model_for(self, adapter: str | None = None) -> OpenAIChatModel:
         """An `OpenAIChatModel` whose wire `model` field is the adapter (or the default)."""
-        client = self._http_client(capture)
-        provider_kwargs: dict[str, Any] = {"base_url": self.base_url, "api_key": self.api_key}
-        if client is not None:
-            provider_kwargs["http_client"] = client
-        provider = OpenAIProvider(**provider_kwargs)
+        provider = OpenAIProvider(base_url=self.base_url, api_key=self.api_key, http_client=self._shared_client())
         return OpenAIChatModel(adapter or self.default_model, provider=provider)
+
+    async def aclose(self) -> None:
+        """Close the shared HTTP client. Call once during teardown; safe to call repeatedly."""
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+            self._client_built = False
 
     def _check_caps(self, profile: AgentProfile, mode: str) -> None:
         if mode in _GATED_MODES and not self.caps.xgrammar:
@@ -86,8 +124,8 @@ class Backend(BaseModel):
         output_type, spec = profile.resolve()
         self._check_caps(profile, spec.mode)
 
-        capture = RequestCapture() if self.capture else None
-        model = self.model_for(profile.adapter, capture=capture)
+        capture = self._capture()
+        model = self.model_for(profile.adapter)
         app = spec.apply(output_type)
 
         settings: dict[str, Any] = dict(profile.model_settings)
@@ -96,6 +134,7 @@ class Backend(BaseModel):
             # sampling extensions). Decoder keys win on conflict — the constraint is
             # non-negotiable.
             settings["extra_body"] = {**settings.get("extra_body", {}), **app.extra_body}
+        _warn_unknown_settings(profile, settings)
         model_settings = OpenAIChatModelSettings(**settings)  # type: ignore[typeddict-item]
 
         agent: Agent[None, Any] = Agent(

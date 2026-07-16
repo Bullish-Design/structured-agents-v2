@@ -8,6 +8,18 @@ singleton. This runtime makes that the API shape: construct it (which constructs
 
 Only `json_schema` agents get a reference teacher (decision #4), so `register()` refuses any leg
 whose resolved decode mode is not `json_schema`, and refuses any `register()` after `launch()`.
+
+**Required shape** (register BEFORE the `with`): because `__enter__` launches, and `register()`
+refuses to run after launch, you must register first and use the context manager only for the
+launch/shutdown lifecycle::
+
+    rt = DualPathRuntime(cfg)
+    runner = rt.register("agent", primary=..., reference=...)   # all registration first
+    with rt:                                                     # __enter__ launches
+        result = await runner.run(prompt)                       # __exit__ shuts down
+
+The tempting `with DualPathRuntime(cfg) as rt: rt.register(...)` does NOT work — `__enter__`
+has already launched, so the `register()` raises.
 """
 
 from __future__ import annotations
@@ -109,6 +121,7 @@ class DualPathRuntime:
         self._launched = False
 
     def __enter__(self) -> DualPathRuntime:
+        # Launches immediately — all register() calls must already be done (see class docstring).
         self.launch()
         return self
 

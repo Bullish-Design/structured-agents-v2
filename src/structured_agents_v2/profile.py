@@ -43,6 +43,12 @@ class AgentProfile(BaseModel):
 
         Raises `ConfigError` with a clear message if the reference is malformed, the module
         can't be imported, the attribute is missing, or it isn't a Pydantic model type.
+
+        Note: this **executes an import** of the referenced module — a profile is therefore
+        code-equivalent config, not inert data. That is fine for a personal library where
+        profiles are authored in-tree; once profiles load from YAML/JSON (CONCEPT phase 5),
+        gate importable module prefixes behind an allowlist so a config file can't import
+        arbitrary modules.
         """
         ref = self.output_type_ref
         if ref is None:
@@ -73,9 +79,17 @@ class AgentProfile(BaseModel):
         - explicit `decoder` → used as-is (override for a non-subclassable type, or a
           bare-string mode with no output type).
         - plain Pydantic model with no `decoder` → `json_schema`.
+
+        A `ConstrainedOutput` subclass *and* an explicit `decoder` is a conflict (two sources
+        of truth for the constraint) and raises `ConfigError` rather than silently ignoring one.
         """
         output_type = self.resolve_output_type()
         if isinstance(output_type, type) and issubclass(output_type, ConstrainedOutput):
+            if self.decoder is not None:
+                raise ConfigError(
+                    f"{self.name!r}: output_type_ref points to a ConstrainedOutput (carries its own "
+                    "decoder_spec) AND an explicit decoder is set — remove one; they conflict."
+                )
             return output_type, output_type.decoder_spec()
         if self.decoder is not None:
             return output_type, self.decoder

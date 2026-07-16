@@ -37,8 +37,7 @@ def test_adapter_gated_on_lora() -> None:
         name="a",
         adapter="some-lora",
         instructions="x",
-        decoder=DecoderSpec(mode="json_schema"),
-        output_type_ref="test_backend:Cmd",
+        output_type_ref="test_backend:Cmd",  # ConstrainedOutput carries its own decoder_spec
     )
     with pytest.raises(BackendCapabilityError, match="LoRA"):
         backend.build(profile)
@@ -56,3 +55,23 @@ def test_model_for_uses_adapter_then_default() -> None:
     backend = Backend(base_url="http://mock/v1", default_model="base")
     assert backend.model_for(None).model_name == "base"
     assert backend.model_for("file-edit-lora").model_name == "file-edit-lora"
+
+
+def test_backend_shares_one_client_across_agents() -> None:
+    # Phase 5 item 2: one httpx client per Backend, reused by every built agent (so N agents
+    # share one connection pool against the single server).
+    backend = Backend(base_url="http://mock/v1", default_model="base", capture=True)
+    backend.build(AgentProfile(name="a", instructions="x", output_type_ref="test_backend:Cmd"))
+    backend.build(AgentProfile(name="b", adapter="lora-b", instructions="x", output_type_ref="test_backend:Cmd"))
+    assert backend._shared_client() is backend._shared_client()  # single shared instance
+
+
+def test_backend_aclose_closes_client() -> None:
+    import asyncio
+
+    backend = Backend(base_url="http://mock/v1", default_model="base")
+    backend.build(AgentProfile(name="a", instructions="x", output_type_ref="test_backend:Cmd"))
+    client = backend._shared_client()
+    assert not client.is_closed
+    asyncio.run(backend.aclose())
+    assert client.is_closed
