@@ -135,7 +135,10 @@ class AgentSet:
         if pol is None:
             raise PolicyError(f"agent {routed.agent!r} has no policy; set its AgentProfile.policy or pass policy=.")
         decision = executor.authorize(pol, routed.output)
-        result = executor.execute(pol, routed.output) if decision.allowed else None
+        # Run the (synchronous, possibly blocking — e.g. subprocess) action off the event loop
+        # so it doesn't stall the concurrency run_batch is built to deliver. authorize is cheap
+        # and stays inline.
+        result = await asyncio.to_thread(executor.execute, pol, routed.output) if decision.allowed else None
         return RoutedExecution(
             route=routed.route, agent=routed.agent, output=routed.output, decision=decision, result=result
         )

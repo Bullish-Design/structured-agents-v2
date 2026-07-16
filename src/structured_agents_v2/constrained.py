@@ -16,6 +16,13 @@ params) with class-level dunder attributes:
 The constraint is enforced server-side by XGrammar. An *optional* dev-only check
 (`check_compilable`, behind the `[grammar-check]` extra) can compile the constraint with
 xgrammar at class-definition time to fail fast on an un-compilable schema.
+
+**Mode determines the runtime type.** In `json_schema` mode the agent run returns a
+validated instance of the subclass. In the bare-string modes (`regex`/`choice`/`grammar`)
+the subclass is only a **spec carrier**: the run returns a guarded `str`, not a model
+instance — its declared fields (e.g. `value` above) are never populated. For `regex`/`choice`
+the returned string is validated client-side against the declared constraint (a
+`ConstraintViolationError` is raised on mismatch); `grammar` mode is trusted to the server.
 """
 
 from __future__ import annotations

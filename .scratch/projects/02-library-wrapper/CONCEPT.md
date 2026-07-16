@@ -160,6 +160,12 @@ For the bare-string modes the library validates the returned string against
 the caller still gets a typed value. `DecoderSpec` stays public for the rare case of
 applying a constraint to an output type you don't own (can't subclass).
 
+> **Status (v0.2.0):** the **guard is implemented** — `regex`/`choice` outputs are
+> validated client-side and raise `ConstraintViolationError` on mismatch. The
+> **model-coercion is deferred** (open question #2): the run returns a guarded `str`, not
+> a `ConstrainedOutput` instance, and `choice` is not yet coerced back to a `Literal`.
+> `grammar` mode is trusted to the server (not client-checkable without xgrammar).
+
 ### 4.3 `Backend` — server + capabilities (only file importing `pydantic_ai.models.openai`)
 
 ```python
