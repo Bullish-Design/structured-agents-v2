@@ -44,8 +44,8 @@ def _identity(agent: StructuredAgent, *, kind: str) -> ModelIdentity:
 def _usage(result: Any) -> dict[str, Any] | None:
     """Best-effort token-usage extraction from a pydantic_ai run result."""
     try:
-        u = result.usage()
-    except Exception:  # pragma: no cover - defensive; usage() is cheap and total
+        u = result.usage  # pydantic-ai v2: property, not a method
+    except Exception:  # pragma: no cover - defensive; .usage is a cheap attribute read
         return None
     return {k: getattr(u, k, None) for k in ("input_tokens", "output_tokens", "total_tokens", "requests")}
 
@@ -67,8 +67,8 @@ class DualPathRunner:
         name: str,
         primary_agent: StructuredAgent,
         reference_agent: StructuredAgent,
-        primary_dbos: DBOSAgent,
-        reference_dbos: DBOSAgent,
+        primary_dbos: DBOSAgent[Any, Any],
+        reference_dbos: DBOSAgent[Any, Any],
         store: ComparisonStore,
         sample_rate: float,
         comparator: Comparator | None = None,
@@ -86,12 +86,12 @@ class DualPathRunner:
         self._output_type = output_type
 
     @property
-    def primary(self) -> DBOSAgent:
+    def primary(self) -> DBOSAgent[Any, Any]:
         """The primary (local vLLM) `DBOSAgent` (escape hatch)."""
         return self._primary_dbos
 
     @property
-    def reference(self) -> DBOSAgent:
+    def reference(self) -> DBOSAgent[Any, Any]:
         """The reference (frontier teacher) `DBOSAgent` (escape hatch)."""
         return self._reference_dbos
 

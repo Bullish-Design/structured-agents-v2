@@ -48,7 +48,7 @@ class StructuredAgent:
 
     def _result(self, raw: Any) -> AgentResult[Any]:
         request_body = self._capture.last.body if (self._capture and self._capture.records) else None
-        return AgentResult(output=raw.output, usage=raw.usage(), request_body=request_body, raw=raw)
+        return AgentResult(output=raw.output, usage=raw.usage, request_body=request_body, raw=raw)
 
     async def run(self, prompt: str, **kwargs: Any) -> AgentResult[Any]:
         """Run the agent and wrap the result; kwargs pass through to `Agent.run`."""
