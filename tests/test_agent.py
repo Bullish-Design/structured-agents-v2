@@ -14,6 +14,10 @@ class Route(ConstrainedOutput):
     route: Literal["file_edit", "git_ops", "answer"]
 
 
+class ActionOut(ConstrainedOutput):
+    kind: Literal["no_action", "edit"]
+
+
 def _backend(transport: httpx.ASGITransport, *, capture: bool = True) -> Backend:
     return Backend(base_url="http://mock/v1", default_model="base", capture=capture).attach_transport(transport)
 
@@ -88,6 +92,35 @@ def test_run_sync_returns_validated_model(mock_openai: Any, transport: httpx.ASG
 
     assert isinstance(result.output, Route)
     assert result.output.route == "file_edit"
+    assert result.request_body is not None
+
+
+def test_valid_output_constructs_agent_result_without_capture(
+    mock_openai: Any, transport: httpx.ASGITransport
+) -> None:
+    """ISSUE.md regression: a valid json_schema completion must yield AgentResult
+    without raising, with capture OFF (usage access must not depend on capture)."""
+    mock_openai.responder = lambda _req: '{"kind": "no_action"}'
+    backend = _backend(transport, capture=False)
+    agent = backend.build(AgentProfile(name="p", instructions="i", output_type_ref="test_agent:ActionOut"))
+    result = asyncio.run(agent.run("go"))
+    assert result.output.kind == "no_action"
+    assert result.usage is not None  # RunUsage value, not a bound method
+    assert not callable(result.usage)  # guards against re-introducing .usage()
+    assert result.request_body is None  # capture off -> no body
+
+
+def test_valid_output_constructs_agent_result_with_capture(
+    mock_openai: Any, transport: httpx.ASGITransport
+) -> None:
+    """Same ISSUE.md path with capture ON: result still constructs, body present."""
+    mock_openai.responder = lambda _req: '{"kind": "no_action"}'
+    backend = _backend(transport, capture=True)
+    agent = backend.build(AgentProfile(name="p", instructions="i", output_type_ref="test_agent:ActionOut"))
+    result = asyncio.run(agent.run("go"))
+    assert result.output.kind == "no_action"
+    assert result.usage is not None
+    assert not callable(result.usage)
     assert result.request_body is not None
 
 
