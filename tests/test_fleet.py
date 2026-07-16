@@ -120,6 +120,56 @@ def test_run_batch_is_concurrent() -> None:
     assert tracker.max_inflight >= 2  # genuinely concurrent, not serialized
 
 
+def _user_content(request_body: dict[str, Any] | None) -> str | None:
+    if not request_body:
+        return None
+    for m in reversed(request_body.get("messages", [])):
+        if m.get("role") == "user":
+            return m.get("content")
+    return None
+
+
+def test_capture_attributes_request_body_per_concurrent_run() -> None:
+    """A5 regression: the SAME agent run concurrently must get its OWN request body.
+
+    The old code read `capture.last` at completion, so overlapping runs of one agent all
+    saw whichever request was recorded last. Here each run uses a distinct prompt; each
+    result's captured body must echo its own prompt.
+    """
+
+    async def _server(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        body = b""
+        while True:
+            event = await receive()
+            body += event.get("body", b"")
+            if not event.get("more_body", False):
+                break
+        # Hold the slot so the N runs genuinely overlap and their records interleave.
+        await asyncio.sleep(0.02)
+        payload = {
+            "id": "x",
+            "object": "chat.completion",
+            "created": 0,
+            "model": "base",
+            "choices": [
+                {"index": 0, "message": {"role": "assistant", "content": '{"text": "ok"}'}, "finish_reason": "stop"}
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }
+        data = json.dumps(payload).encode()
+        await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
+        await send({"type": "http.response.body", "body": data})
+
+    fleet = AgentSet(_backend(httpx.ASGITransport(app=_server)))
+    fleet.build([_specialist("echo", "echo")])
+
+    prompts = [f"prompt-{i}" for i in range(6)]
+    results = asyncio.run(fleet.run_batch([("echo", p) for p in prompts]))
+
+    # Each result must carry the request body for ITS OWN prompt, not a neighbor's.
+    assert [_user_content(r.request_body) for r in results] == prompts
+
+
 # --- routing-table validation ----------------------------------------------------------
 
 
