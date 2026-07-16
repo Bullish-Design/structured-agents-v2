@@ -1,0 +1,28 @@
+ M .gitignore
+A  deploy/llama-cpp/native/README.md
+AM deploy/llama-cpp/native/head_to_head_essay.py
+AM deploy/llama-cpp/native/nixos-module.nix
+A  deploy/llama-cpp/native/serve.sh
+A  deploy/llama-cpp/native/test_serve.sh
+A  deploy/llama-cpp/native/verify.sh
+ A deploy/sglang/native/README.md
+ A deploy/sglang/native/devenv.nix
+ A deploy/sglang/native/devenv.yaml
+ A deploy/sglang/native/nixos-module.nix
+ A deploy/sglang/native/pyproject.toml
+ A deploy/sglang/native/run.sh
+ A deploy/sglang/native/serve.sh
+ A deploy/sglang/native/test_serve.sh
+ A deploy/sglang/native/uv.lock
+ A deploy/sglang/native/verify.sh
+M  deploy/vllm/native/README.md
+MM flake.nix
+?? .scratch/projects/07-sglang-gguf-spike/
+?? .scratch/projects/08-unsloth-gemma4-gguf-compatibility/
+?? artifacts/
+?? deploy/llama-cpp/native/benchmark_mtp.py
+?? deploy/llama-cpp/native/runtime_mtp_q8_evaluate.sh
+?? deploy/sglang/native/devenv.lock
+?? deploy/sglang/native/sitecustomize.py
+?? deploy/vllm/profile_tps.py
+?? result

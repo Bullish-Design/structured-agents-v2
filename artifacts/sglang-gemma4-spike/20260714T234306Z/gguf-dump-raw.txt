@@ -1,0 +1,742 @@
+• Validating lock
+✓ Validating lock in 29.3ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 2.32ms
+• Evaluating shell
+✓ Evaluating shell in 7.24ms (cached)
+✓ Configuring shell in 12.0ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 370µs (cached)
+✓ Loading tasks in 1.14ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 9.06ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 8.64ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 10.6µs (no command)
+✓ Running tasks in 18.0ms
+INFO:gguf-dump:* Loading: /var/lib/structured-agents-vllm/hf/hub/models--unsloth--gemma-4-12B-it-qat-GGUF/blobs/cc9ff072e0a8203429ed854e6662c17a6c2bc1e5dca5b475dd4736caaacbc165
+* File is LITTLE endian, script is running on a LITTLE endian host.
+* Dumping 51 key/value pair(s)
+      1: UINT32     |        1 | GGUF.version = 3
+      2: UINT64     |        1 | GGUF.tensor_count = 667
+      3: UINT64     |        1 | GGUF.kv_count = 48
+      4: STRING     |        1 | general.architecture = 'gemma4'
+      5: STRING     |        1 | general.type = 'model'
+      6: INT32      |        1 | general.sampling.top_k = 64
+      7: FLOAT32    |        1 | general.sampling.top_p = 0.949999988079071
+      8: FLOAT32    |        1 | general.sampling.temp = 1.0
+      9: STRING     |        1 | general.size_label = '12B'
+     10: UINT32     |        1 | gemma4.block_count = 48
+     11: UINT32     |        1 | gemma4.context_length = 262144
+     12: UINT32     |        1 | gemma4.embedding_length = 3840
+     13: UINT32     |        1 | gemma4.feed_forward_length = 15360
+     14: UINT32     |        1 | gemma4.attention.head_count = 16
+     15: [INT32]    |       48 | gemma4.attention.head_count_kv = [8, 8, 8, 8, 8, 1, ...]
+     16: FLOAT32    |        1 | gemma4.rope.freq_base = 1000000.0
+     17: FLOAT32    |        1 | gemma4.rope.freq_base_swa = 10000.0
+     18: FLOAT32    |        1 | gemma4.attention.layer_norm_rms_epsilon = 9.999999974752427e-07
+     19: UINT32     |        1 | gemma4.attention.key_length = 512
+     20: UINT32     |        1 | gemma4.attention.value_length = 512
+     21: FLOAT32    |        1 | gemma4.final_logit_softcapping = 30.0
+     22: UINT32     |        1 | gemma4.attention.sliding_window = 1024
+     23: UINT32     |        1 | gemma4.attention.shared_kv_layers = 0
+     24: UINT32     |        1 | gemma4.embedding_length_per_layer_input = 0
+     25: [BOOL]     |       48 | gemma4.attention.sliding_window_pattern = [True, True, True, True, True, False, ...]
+     26: UINT32     |        1 | gemma4.attention.key_length_swa = 256
+     27: UINT32     |        1 | gemma4.attention.value_length_swa = 256
+     28: UINT32     |        1 | gemma4.rope.dimension_count = 512
+     29: UINT32     |        1 | gemma4.rope.dimension_count_swa = 256
+     30: [INT32]    |        2 | tokenizer.ggml.suppress_tokens = [258883, 258882]
+     31: STRING     |        1 | tokenizer.ggml.model = 'gemma4'
+     32: [STRING]   |   262144 | tokenizer.ggml.tokens = ['<pad>', '<eos>', '<bos>', '<unk>', '<mask>', '[multimodal]', ...]
+     33: [FLOAT32]  |   262144 | tokenizer.ggml.scores = [-1000.0, -1000.0, -1000.0, -1000.0, -1000.0, -1000.0, ...]
+     34: [INT32]    |   262144 | tokenizer.ggml.token_type = [3, 3, 3, 3, 3, 1, ...]
+     35: [STRING]   |   514906 | tokenizer.ggml.merges = ['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n', '▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▁', '\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t \t', '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n\n', '▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▁▁', '\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t \t\t', ...]
+     36: UINT32     |        1 | tokenizer.ggml.bos_token_id = 2
+     37: UINT32     |        1 | tokenizer.ggml.eos_token_id = 1
+     38: UINT32     |        1 | tokenizer.ggml.unknown_token_id = 3
+     39: UINT32     |        1 | tokenizer.ggml.padding_token_id = 0
+     40: UINT32     |        1 | tokenizer.ggml.mask_token_id = 4
+     41: STRING     |        1 | tokenizer.chat_template = '{%- macro format_parameters(properties, required, filter_...'
+     42: BOOL       |        1 | tokenizer.ggml.add_space_prefix = False
+     43: BOOL       |        1 | tokenizer.ggml.add_bos_token = True
+     44: UINT32     |        1 | general.file_type = 2
+     45: UINT32     |        1 | tokenizer.ggml.eot_token_id = 106
+     46: STRING     |        1 | general.quantized_by = 'unsloth'
+     47: STRING     |        1 | general.basename = 'gemma-4-12B-it'
+     48: STRING     |        1 | general.name = 'Gemma-4 12B IT (smart Q4_0, QAT-lossless)'
+     49: STRING     |        1 | general.finetune = 'qat-it'
+     50: STRING     |        1 | general.license = 'gemma'
+     51: UINT32     |        1 | general.quantization_version = 2
+* Dumping 667 tensor(s)
+      1:       3840 |  3840,     1,     1,     1 | F32     | output_norm.weight
+      2:        256 |   256,     1,     1,     1 | F32     | rope_freqs.weight
+      3: 1006632960 |  3840, 262144,     1,     1 | Q4_0    | token_embd.weight
+      4:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.0.attn_k.weight
+      5:        256 |   256,     1,     1,     1 | F32     | blk.0.attn_k_norm.weight
+      6:       3840 |  3840,     1,     1,     1 | F32     | blk.0.attn_norm.weight
+      7:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.0.attn_output.weight
+      8:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.0.attn_q.weight
+      9:        256 |   256,     1,     1,     1 | F32     | blk.0.attn_q_norm.weight
+     10:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.0.attn_v.weight
+     11:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.0.ffn_down.weight
+     12:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.0.ffn_gate.weight
+     13:       3840 |  3840,     1,     1,     1 | F32     | blk.0.ffn_norm.weight
+     14:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.0.ffn_up.weight
+     15:          1 |     1,     1,     1,     1 | F32     | blk.0.layer_output_scale.weight
+     16:       3840 |  3840,     1,     1,     1 | F32     | blk.0.post_attention_norm.weight
+     17:       3840 |  3840,     1,     1,     1 | F32     | blk.0.post_ffw_norm.weight
+     18:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.1.attn_k.weight
+     19:        256 |   256,     1,     1,     1 | F32     | blk.1.attn_k_norm.weight
+     20:       3840 |  3840,     1,     1,     1 | F32     | blk.1.attn_norm.weight
+     21:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.1.attn_output.weight
+     22:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.1.attn_q.weight
+     23:        256 |   256,     1,     1,     1 | F32     | blk.1.attn_q_norm.weight
+     24:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.1.attn_v.weight
+     25:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.1.ffn_down.weight
+     26:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.1.ffn_gate.weight
+     27:       3840 |  3840,     1,     1,     1 | F32     | blk.1.ffn_norm.weight
+     28:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.1.ffn_up.weight
+     29:          1 |     1,     1,     1,     1 | F32     | blk.1.layer_output_scale.weight
+     30:       3840 |  3840,     1,     1,     1 | F32     | blk.1.post_attention_norm.weight
+     31:       3840 |  3840,     1,     1,     1 | F32     | blk.1.post_ffw_norm.weight
+     32:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.2.attn_k.weight
+     33:        256 |   256,     1,     1,     1 | F32     | blk.2.attn_k_norm.weight
+     34:       3840 |  3840,     1,     1,     1 | F32     | blk.2.attn_norm.weight
+     35:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.2.attn_output.weight
+     36:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.2.attn_q.weight
+     37:        256 |   256,     1,     1,     1 | F32     | blk.2.attn_q_norm.weight
+     38:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.2.attn_v.weight
+     39:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.2.ffn_down.weight
+     40:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.2.ffn_gate.weight
+     41:       3840 |  3840,     1,     1,     1 | F32     | blk.2.ffn_norm.weight
+     42:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.2.ffn_up.weight
+     43:          1 |     1,     1,     1,     1 | F32     | blk.2.layer_output_scale.weight
+     44:       3840 |  3840,     1,     1,     1 | F32     | blk.2.post_attention_norm.weight
+     45:       3840 |  3840,     1,     1,     1 | F32     | blk.2.post_ffw_norm.weight
+     46:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.3.attn_k.weight
+     47:        256 |   256,     1,     1,     1 | F32     | blk.3.attn_k_norm.weight
+     48:       3840 |  3840,     1,     1,     1 | F32     | blk.3.attn_norm.weight
+     49:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.3.attn_output.weight
+     50:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.3.attn_q.weight
+     51:        256 |   256,     1,     1,     1 | F32     | blk.3.attn_q_norm.weight
+     52:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.3.attn_v.weight
+     53:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.3.ffn_down.weight
+     54:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.3.ffn_gate.weight
+     55:       3840 |  3840,     1,     1,     1 | F32     | blk.3.ffn_norm.weight
+     56:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.3.ffn_up.weight
+     57:          1 |     1,     1,     1,     1 | F32     | blk.3.layer_output_scale.weight
+     58:       3840 |  3840,     1,     1,     1 | F32     | blk.3.post_attention_norm.weight
+     59:       3840 |  3840,     1,     1,     1 | F32     | blk.3.post_ffw_norm.weight
+     60:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.4.attn_k.weight
+     61:        256 |   256,     1,     1,     1 | F32     | blk.4.attn_k_norm.weight
+     62:       3840 |  3840,     1,     1,     1 | F32     | blk.4.attn_norm.weight
+     63:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.4.attn_output.weight
+     64:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.4.attn_q.weight
+     65:        256 |   256,     1,     1,     1 | F32     | blk.4.attn_q_norm.weight
+     66:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.4.attn_v.weight
+     67:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.4.ffn_down.weight
+     68:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.4.ffn_gate.weight
+     69:       3840 |  3840,     1,     1,     1 | F32     | blk.4.ffn_norm.weight
+     70:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.4.ffn_up.weight
+     71:          1 |     1,     1,     1,     1 | F32     | blk.4.layer_output_scale.weight
+     72:       3840 |  3840,     1,     1,     1 | F32     | blk.4.post_attention_norm.weight
+     73:       3840 |  3840,     1,     1,     1 | F32     | blk.4.post_ffw_norm.weight
+     74:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.5.attn_k.weight
+     75:        512 |   512,     1,     1,     1 | F32     | blk.5.attn_k_norm.weight
+     76:       3840 |  3840,     1,     1,     1 | F32     | blk.5.attn_norm.weight
+     77:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.5.attn_output.weight
+     78:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.5.attn_q.weight
+     79:        512 |   512,     1,     1,     1 | F32     | blk.5.attn_q_norm.weight
+     80:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.5.ffn_down.weight
+     81:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.5.ffn_gate.weight
+     82:       3840 |  3840,     1,     1,     1 | F32     | blk.5.ffn_norm.weight
+     83:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.5.ffn_up.weight
+     84:          1 |     1,     1,     1,     1 | F32     | blk.5.layer_output_scale.weight
+     85:       3840 |  3840,     1,     1,     1 | F32     | blk.5.post_attention_norm.weight
+     86:       3840 |  3840,     1,     1,     1 | F32     | blk.5.post_ffw_norm.weight
+     87:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.6.attn_k.weight
+     88:        256 |   256,     1,     1,     1 | F32     | blk.6.attn_k_norm.weight
+     89:       3840 |  3840,     1,     1,     1 | F32     | blk.6.attn_norm.weight
+     90:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.6.attn_output.weight
+     91:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.6.attn_q.weight
+     92:        256 |   256,     1,     1,     1 | F32     | blk.6.attn_q_norm.weight
+     93:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.6.attn_v.weight
+     94:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.6.ffn_down.weight
+     95:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.6.ffn_gate.weight
+     96:       3840 |  3840,     1,     1,     1 | F32     | blk.6.ffn_norm.weight
+     97:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.6.ffn_up.weight
+     98:          1 |     1,     1,     1,     1 | F32     | blk.6.layer_output_scale.weight
+     99:       3840 |  3840,     1,     1,     1 | F32     | blk.6.post_attention_norm.weight
+    100:       3840 |  3840,     1,     1,     1 | F32     | blk.6.post_ffw_norm.weight
+    101:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.7.attn_k.weight
+    102:        256 |   256,     1,     1,     1 | F32     | blk.7.attn_k_norm.weight
+    103:       3840 |  3840,     1,     1,     1 | F32     | blk.7.attn_norm.weight
+    104:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.7.attn_output.weight
+    105:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.7.attn_q.weight
+    106:        256 |   256,     1,     1,     1 | F32     | blk.7.attn_q_norm.weight
+    107:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.7.attn_v.weight
+    108:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.7.ffn_down.weight
+    109:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.7.ffn_gate.weight
+    110:       3840 |  3840,     1,     1,     1 | F32     | blk.7.ffn_norm.weight
+    111:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.7.ffn_up.weight
+    112:          1 |     1,     1,     1,     1 | F32     | blk.7.layer_output_scale.weight
+    113:       3840 |  3840,     1,     1,     1 | F32     | blk.7.post_attention_norm.weight
+    114:       3840 |  3840,     1,     1,     1 | F32     | blk.7.post_ffw_norm.weight
+    115:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.8.attn_k.weight
+    116:        256 |   256,     1,     1,     1 | F32     | blk.8.attn_k_norm.weight
+    117:       3840 |  3840,     1,     1,     1 | F32     | blk.8.attn_norm.weight
+    118:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.8.attn_output.weight
+    119:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.8.attn_q.weight
+    120:        256 |   256,     1,     1,     1 | F32     | blk.8.attn_q_norm.weight
+    121:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.8.attn_v.weight
+    122:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.8.ffn_down.weight
+    123:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.8.ffn_gate.weight
+    124:       3840 |  3840,     1,     1,     1 | F32     | blk.8.ffn_norm.weight
+    125:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.8.ffn_up.weight
+    126:          1 |     1,     1,     1,     1 | F32     | blk.8.layer_output_scale.weight
+    127:       3840 |  3840,     1,     1,     1 | F32     | blk.8.post_attention_norm.weight
+    128:       3840 |  3840,     1,     1,     1 | F32     | blk.8.post_ffw_norm.weight
+    129:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.9.attn_k.weight
+    130:        256 |   256,     1,     1,     1 | F32     | blk.9.attn_k_norm.weight
+    131:       3840 |  3840,     1,     1,     1 | F32     | blk.9.attn_norm.weight
+    132:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.9.attn_output.weight
+    133:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.9.attn_q.weight
+    134:        256 |   256,     1,     1,     1 | F32     | blk.9.attn_q_norm.weight
+    135:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.9.attn_v.weight
+    136:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.9.ffn_down.weight
+    137:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.9.ffn_gate.weight
+    138:       3840 |  3840,     1,     1,     1 | F32     | blk.9.ffn_norm.weight
+    139:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.9.ffn_up.weight
+    140:          1 |     1,     1,     1,     1 | F32     | blk.9.layer_output_scale.weight
+    141:       3840 |  3840,     1,     1,     1 | F32     | blk.9.post_attention_norm.weight
+    142:       3840 |  3840,     1,     1,     1 | F32     | blk.9.post_ffw_norm.weight
+    143:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.10.attn_k.weight
+    144:        256 |   256,     1,     1,     1 | F32     | blk.10.attn_k_norm.weight
+    145:       3840 |  3840,     1,     1,     1 | F32     | blk.10.attn_norm.weight
+    146:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.10.attn_output.weight
+    147:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.10.attn_q.weight
+    148:        256 |   256,     1,     1,     1 | F32     | blk.10.attn_q_norm.weight
+    149:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.10.attn_v.weight
+    150:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.10.ffn_down.weight
+    151:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.10.ffn_gate.weight
+    152:       3840 |  3840,     1,     1,     1 | F32     | blk.10.ffn_norm.weight
+    153:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.10.ffn_up.weight
+    154:          1 |     1,     1,     1,     1 | F32     | blk.10.layer_output_scale.weight
+    155:       3840 |  3840,     1,     1,     1 | F32     | blk.10.post_attention_norm.weight
+    156:       3840 |  3840,     1,     1,     1 | F32     | blk.10.post_ffw_norm.weight
+    157:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.11.attn_k.weight
+    158:        512 |   512,     1,     1,     1 | F32     | blk.11.attn_k_norm.weight
+    159:       3840 |  3840,     1,     1,     1 | F32     | blk.11.attn_norm.weight
+    160:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.11.attn_output.weight
+    161:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.11.attn_q.weight
+    162:        512 |   512,     1,     1,     1 | F32     | blk.11.attn_q_norm.weight
+    163:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.11.ffn_down.weight
+    164:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.11.ffn_gate.weight
+    165:       3840 |  3840,     1,     1,     1 | F32     | blk.11.ffn_norm.weight
+    166:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.11.ffn_up.weight
+    167:          1 |     1,     1,     1,     1 | F32     | blk.11.layer_output_scale.weight
+    168:       3840 |  3840,     1,     1,     1 | F32     | blk.11.post_attention_norm.weight
+    169:       3840 |  3840,     1,     1,     1 | F32     | blk.11.post_ffw_norm.weight
+    170:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.12.attn_k.weight
+    171:        256 |   256,     1,     1,     1 | F32     | blk.12.attn_k_norm.weight
+    172:       3840 |  3840,     1,     1,     1 | F32     | blk.12.attn_norm.weight
+    173:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.12.attn_output.weight
+    174:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.12.attn_q.weight
+    175:        256 |   256,     1,     1,     1 | F32     | blk.12.attn_q_norm.weight
+    176:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.12.attn_v.weight
+    177:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.12.ffn_down.weight
+    178:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.12.ffn_gate.weight
+    179:       3840 |  3840,     1,     1,     1 | F32     | blk.12.ffn_norm.weight
+    180:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.12.ffn_up.weight
+    181:          1 |     1,     1,     1,     1 | F32     | blk.12.layer_output_scale.weight
+    182:       3840 |  3840,     1,     1,     1 | F32     | blk.12.post_attention_norm.weight
+    183:       3840 |  3840,     1,     1,     1 | F32     | blk.12.post_ffw_norm.weight
+    184:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.13.attn_k.weight
+    185:        256 |   256,     1,     1,     1 | F32     | blk.13.attn_k_norm.weight
+    186:       3840 |  3840,     1,     1,     1 | F32     | blk.13.attn_norm.weight
+    187:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.13.attn_output.weight
+    188:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.13.attn_q.weight
+    189:        256 |   256,     1,     1,     1 | F32     | blk.13.attn_q_norm.weight
+    190:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.13.attn_v.weight
+    191:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.13.ffn_down.weight
+    192:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.13.ffn_gate.weight
+    193:       3840 |  3840,     1,     1,     1 | F32     | blk.13.ffn_norm.weight
+    194:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.13.ffn_up.weight
+    195:          1 |     1,     1,     1,     1 | F32     | blk.13.layer_output_scale.weight
+    196:       3840 |  3840,     1,     1,     1 | F32     | blk.13.post_attention_norm.weight
+    197:       3840 |  3840,     1,     1,     1 | F32     | blk.13.post_ffw_norm.weight
+    198:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.14.attn_k.weight
+    199:        256 |   256,     1,     1,     1 | F32     | blk.14.attn_k_norm.weight
+    200:       3840 |  3840,     1,     1,     1 | F32     | blk.14.attn_norm.weight
+    201:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.14.attn_output.weight
+    202:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.14.attn_q.weight
+    203:        256 |   256,     1,     1,     1 | F32     | blk.14.attn_q_norm.weight
+    204:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.14.attn_v.weight
+    205:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.14.ffn_down.weight
+    206:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.14.ffn_gate.weight
+    207:       3840 |  3840,     1,     1,     1 | F32     | blk.14.ffn_norm.weight
+    208:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.14.ffn_up.weight
+    209:          1 |     1,     1,     1,     1 | F32     | blk.14.layer_output_scale.weight
+    210:       3840 |  3840,     1,     1,     1 | F32     | blk.14.post_attention_norm.weight
+    211:       3840 |  3840,     1,     1,     1 | F32     | blk.14.post_ffw_norm.weight
+    212:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.15.attn_k.weight
+    213:        256 |   256,     1,     1,     1 | F32     | blk.15.attn_k_norm.weight
+    214:       3840 |  3840,     1,     1,     1 | F32     | blk.15.attn_norm.weight
+    215:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.15.attn_output.weight
+    216:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.15.attn_q.weight
+    217:        256 |   256,     1,     1,     1 | F32     | blk.15.attn_q_norm.weight
+    218:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.15.attn_v.weight
+    219:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.15.ffn_down.weight
+    220:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.15.ffn_gate.weight
+    221:       3840 |  3840,     1,     1,     1 | F32     | blk.15.ffn_norm.weight
+    222:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.15.ffn_up.weight
+    223:          1 |     1,     1,     1,     1 | F32     | blk.15.layer_output_scale.weight
+    224:       3840 |  3840,     1,     1,     1 | F32     | blk.15.post_attention_norm.weight
+    225:       3840 |  3840,     1,     1,     1 | F32     | blk.15.post_ffw_norm.weight
+    226:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.16.attn_k.weight
+    227:        256 |   256,     1,     1,     1 | F32     | blk.16.attn_k_norm.weight
+    228:       3840 |  3840,     1,     1,     1 | F32     | blk.16.attn_norm.weight
+    229:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.16.attn_output.weight
+    230:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.16.attn_q.weight
+    231:        256 |   256,     1,     1,     1 | F32     | blk.16.attn_q_norm.weight
+    232:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.16.attn_v.weight
+    233:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.16.ffn_down.weight
+    234:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.16.ffn_gate.weight
+    235:       3840 |  3840,     1,     1,     1 | F32     | blk.16.ffn_norm.weight
+    236:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.16.ffn_up.weight
+    237:          1 |     1,     1,     1,     1 | F32     | blk.16.layer_output_scale.weight
+    238:       3840 |  3840,     1,     1,     1 | F32     | blk.16.post_attention_norm.weight
+    239:       3840 |  3840,     1,     1,     1 | F32     | blk.16.post_ffw_norm.weight
+    240:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.17.attn_k.weight
+    241:        512 |   512,     1,     1,     1 | F32     | blk.17.attn_k_norm.weight
+    242:       3840 |  3840,     1,     1,     1 | F32     | blk.17.attn_norm.weight
+    243:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.17.attn_output.weight
+    244:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.17.attn_q.weight
+    245:        512 |   512,     1,     1,     1 | F32     | blk.17.attn_q_norm.weight
+    246:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.17.ffn_down.weight
+    247:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.17.ffn_gate.weight
+    248:       3840 |  3840,     1,     1,     1 | F32     | blk.17.ffn_norm.weight
+    249:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.17.ffn_up.weight
+    250:          1 |     1,     1,     1,     1 | F32     | blk.17.layer_output_scale.weight
+    251:       3840 |  3840,     1,     1,     1 | F32     | blk.17.post_attention_norm.weight
+    252:       3840 |  3840,     1,     1,     1 | F32     | blk.17.post_ffw_norm.weight
+    253:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.18.attn_k.weight
+    254:        256 |   256,     1,     1,     1 | F32     | blk.18.attn_k_norm.weight
+    255:       3840 |  3840,     1,     1,     1 | F32     | blk.18.attn_norm.weight
+    256:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.18.attn_output.weight
+    257:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.18.attn_q.weight
+    258:        256 |   256,     1,     1,     1 | F32     | blk.18.attn_q_norm.weight
+    259:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.18.attn_v.weight
+    260:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.18.ffn_down.weight
+    261:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.18.ffn_gate.weight
+    262:       3840 |  3840,     1,     1,     1 | F32     | blk.18.ffn_norm.weight
+    263:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.18.ffn_up.weight
+    264:          1 |     1,     1,     1,     1 | F32     | blk.18.layer_output_scale.weight
+    265:       3840 |  3840,     1,     1,     1 | F32     | blk.18.post_attention_norm.weight
+    266:       3840 |  3840,     1,     1,     1 | F32     | blk.18.post_ffw_norm.weight
+    267:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.19.attn_k.weight
+    268:        256 |   256,     1,     1,     1 | F32     | blk.19.attn_k_norm.weight
+    269:       3840 |  3840,     1,     1,     1 | F32     | blk.19.attn_norm.weight
+    270:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.19.attn_output.weight
+    271:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.19.attn_q.weight
+    272:        256 |   256,     1,     1,     1 | F32     | blk.19.attn_q_norm.weight
+    273:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.19.attn_v.weight
+    274:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.19.ffn_down.weight
+    275:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.19.ffn_gate.weight
+    276:       3840 |  3840,     1,     1,     1 | F32     | blk.19.ffn_norm.weight
+    277:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.19.ffn_up.weight
+    278:          1 |     1,     1,     1,     1 | F32     | blk.19.layer_output_scale.weight
+    279:       3840 |  3840,     1,     1,     1 | F32     | blk.19.post_attention_norm.weight
+    280:       3840 |  3840,     1,     1,     1 | F32     | blk.19.post_ffw_norm.weight
+    281:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.20.attn_k.weight
+    282:        256 |   256,     1,     1,     1 | F32     | blk.20.attn_k_norm.weight
+    283:       3840 |  3840,     1,     1,     1 | F32     | blk.20.attn_norm.weight
+    284:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.20.attn_output.weight
+    285:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.20.attn_q.weight
+    286:        256 |   256,     1,     1,     1 | F32     | blk.20.attn_q_norm.weight
+    287:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.20.attn_v.weight
+    288:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.20.ffn_down.weight
+    289:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.20.ffn_gate.weight
+    290:       3840 |  3840,     1,     1,     1 | F32     | blk.20.ffn_norm.weight
+    291:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.20.ffn_up.weight
+    292:          1 |     1,     1,     1,     1 | F32     | blk.20.layer_output_scale.weight
+    293:       3840 |  3840,     1,     1,     1 | F32     | blk.20.post_attention_norm.weight
+    294:       3840 |  3840,     1,     1,     1 | F32     | blk.20.post_ffw_norm.weight
+    295:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.21.attn_k.weight
+    296:        256 |   256,     1,     1,     1 | F32     | blk.21.attn_k_norm.weight
+    297:       3840 |  3840,     1,     1,     1 | F32     | blk.21.attn_norm.weight
+    298:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.21.attn_output.weight
+    299:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.21.attn_q.weight
+    300:        256 |   256,     1,     1,     1 | F32     | blk.21.attn_q_norm.weight
+    301:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.21.attn_v.weight
+    302:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.21.ffn_down.weight
+    303:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.21.ffn_gate.weight
+    304:       3840 |  3840,     1,     1,     1 | F32     | blk.21.ffn_norm.weight
+    305:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.21.ffn_up.weight
+    306:          1 |     1,     1,     1,     1 | F32     | blk.21.layer_output_scale.weight
+    307:       3840 |  3840,     1,     1,     1 | F32     | blk.21.post_attention_norm.weight
+    308:       3840 |  3840,     1,     1,     1 | F32     | blk.21.post_ffw_norm.weight
+    309:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.22.attn_k.weight
+    310:        256 |   256,     1,     1,     1 | F32     | blk.22.attn_k_norm.weight
+    311:       3840 |  3840,     1,     1,     1 | F32     | blk.22.attn_norm.weight
+    312:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.22.attn_output.weight
+    313:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.22.attn_q.weight
+    314:        256 |   256,     1,     1,     1 | F32     | blk.22.attn_q_norm.weight
+    315:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.22.attn_v.weight
+    316:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.22.ffn_down.weight
+    317:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.22.ffn_gate.weight
+    318:       3840 |  3840,     1,     1,     1 | F32     | blk.22.ffn_norm.weight
+    319:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.22.ffn_up.weight
+    320:          1 |     1,     1,     1,     1 | F32     | blk.22.layer_output_scale.weight
+    321:       3840 |  3840,     1,     1,     1 | F32     | blk.22.post_attention_norm.weight
+    322:       3840 |  3840,     1,     1,     1 | F32     | blk.22.post_ffw_norm.weight
+    323:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.23.attn_k.weight
+    324:        512 |   512,     1,     1,     1 | F32     | blk.23.attn_k_norm.weight
+    325:       3840 |  3840,     1,     1,     1 | F32     | blk.23.attn_norm.weight
+    326:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.23.attn_output.weight
+    327:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.23.attn_q.weight
+    328:        512 |   512,     1,     1,     1 | F32     | blk.23.attn_q_norm.weight
+    329:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.23.ffn_down.weight
+    330:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.23.ffn_gate.weight
+    331:       3840 |  3840,     1,     1,     1 | F32     | blk.23.ffn_norm.weight
+    332:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.23.ffn_up.weight
+    333:          1 |     1,     1,     1,     1 | F32     | blk.23.layer_output_scale.weight
+    334:       3840 |  3840,     1,     1,     1 | F32     | blk.23.post_attention_norm.weight
+    335:       3840 |  3840,     1,     1,     1 | F32     | blk.23.post_ffw_norm.weight
+    336:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.24.attn_k.weight
+    337:        256 |   256,     1,     1,     1 | F32     | blk.24.attn_k_norm.weight
+    338:       3840 |  3840,     1,     1,     1 | F32     | blk.24.attn_norm.weight
+    339:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.24.attn_output.weight
+    340:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.24.attn_q.weight
+    341:        256 |   256,     1,     1,     1 | F32     | blk.24.attn_q_norm.weight
+    342:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.24.attn_v.weight
+    343:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.24.ffn_down.weight
+    344:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.24.ffn_gate.weight
+    345:       3840 |  3840,     1,     1,     1 | F32     | blk.24.ffn_norm.weight
+    346:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.24.ffn_up.weight
+    347:          1 |     1,     1,     1,     1 | F32     | blk.24.layer_output_scale.weight
+    348:       3840 |  3840,     1,     1,     1 | F32     | blk.24.post_attention_norm.weight
+    349:       3840 |  3840,     1,     1,     1 | F32     | blk.24.post_ffw_norm.weight
+    350:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.25.attn_k.weight
+    351:        256 |   256,     1,     1,     1 | F32     | blk.25.attn_k_norm.weight
+    352:       3840 |  3840,     1,     1,     1 | F32     | blk.25.attn_norm.weight
+    353:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.25.attn_output.weight
+    354:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.25.attn_q.weight
+    355:        256 |   256,     1,     1,     1 | F32     | blk.25.attn_q_norm.weight
+    356:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.25.attn_v.weight
+    357:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.25.ffn_down.weight
+    358:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.25.ffn_gate.weight
+    359:       3840 |  3840,     1,     1,     1 | F32     | blk.25.ffn_norm.weight
+    360:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.25.ffn_up.weight
+    361:          1 |     1,     1,     1,     1 | F32     | blk.25.layer_output_scale.weight
+    362:       3840 |  3840,     1,     1,     1 | F32     | blk.25.post_attention_norm.weight
+    363:       3840 |  3840,     1,     1,     1 | F32     | blk.25.post_ffw_norm.weight
+    364:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.26.attn_k.weight
+    365:        256 |   256,     1,     1,     1 | F32     | blk.26.attn_k_norm.weight
+    366:       3840 |  3840,     1,     1,     1 | F32     | blk.26.attn_norm.weight
+    367:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.26.attn_output.weight
+    368:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.26.attn_q.weight
+    369:        256 |   256,     1,     1,     1 | F32     | blk.26.attn_q_norm.weight
+    370:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.26.attn_v.weight
+    371:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.26.ffn_down.weight
+    372:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.26.ffn_gate.weight
+    373:       3840 |  3840,     1,     1,     1 | F32     | blk.26.ffn_norm.weight
+    374:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.26.ffn_up.weight
+    375:          1 |     1,     1,     1,     1 | F32     | blk.26.layer_output_scale.weight
+    376:       3840 |  3840,     1,     1,     1 | F32     | blk.26.post_attention_norm.weight
+    377:       3840 |  3840,     1,     1,     1 | F32     | blk.26.post_ffw_norm.weight
+    378:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.27.attn_k.weight
+    379:        256 |   256,     1,     1,     1 | F32     | blk.27.attn_k_norm.weight
+    380:       3840 |  3840,     1,     1,     1 | F32     | blk.27.attn_norm.weight
+    381:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.27.attn_output.weight
+    382:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.27.attn_q.weight
+    383:        256 |   256,     1,     1,     1 | F32     | blk.27.attn_q_norm.weight
+    384:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.27.attn_v.weight
+    385:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.27.ffn_down.weight
+    386:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.27.ffn_gate.weight
+    387:       3840 |  3840,     1,     1,     1 | F32     | blk.27.ffn_norm.weight
+    388:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.27.ffn_up.weight
+    389:          1 |     1,     1,     1,     1 | F32     | blk.27.layer_output_scale.weight
+    390:       3840 |  3840,     1,     1,     1 | F32     | blk.27.post_attention_norm.weight
+    391:       3840 |  3840,     1,     1,     1 | F32     | blk.27.post_ffw_norm.weight
+    392:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.28.attn_k.weight
+    393:        256 |   256,     1,     1,     1 | F32     | blk.28.attn_k_norm.weight
+    394:       3840 |  3840,     1,     1,     1 | F32     | blk.28.attn_norm.weight
+    395:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.28.attn_output.weight
+    396:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.28.attn_q.weight
+    397:        256 |   256,     1,     1,     1 | F32     | blk.28.attn_q_norm.weight
+    398:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.28.attn_v.weight
+    399:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.28.ffn_down.weight
+    400:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.28.ffn_gate.weight
+    401:       3840 |  3840,     1,     1,     1 | F32     | blk.28.ffn_norm.weight
+    402:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.28.ffn_up.weight
+    403:          1 |     1,     1,     1,     1 | F32     | blk.28.layer_output_scale.weight
+    404:       3840 |  3840,     1,     1,     1 | F32     | blk.28.post_attention_norm.weight
+    405:       3840 |  3840,     1,     1,     1 | F32     | blk.28.post_ffw_norm.weight
+    406:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.29.attn_k.weight
+    407:        512 |   512,     1,     1,     1 | F32     | blk.29.attn_k_norm.weight
+    408:       3840 |  3840,     1,     1,     1 | F32     | blk.29.attn_norm.weight
+    409:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.29.attn_output.weight
+    410:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.29.attn_q.weight
+    411:        512 |   512,     1,     1,     1 | F32     | blk.29.attn_q_norm.weight
+    412:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.29.ffn_down.weight
+    413:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.29.ffn_gate.weight
+    414:       3840 |  3840,     1,     1,     1 | F32     | blk.29.ffn_norm.weight
+    415:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.29.ffn_up.weight
+    416:          1 |     1,     1,     1,     1 | F32     | blk.29.layer_output_scale.weight
+    417:       3840 |  3840,     1,     1,     1 | F32     | blk.29.post_attention_norm.weight
+    418:       3840 |  3840,     1,     1,     1 | F32     | blk.29.post_ffw_norm.weight
+    419:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.30.attn_k.weight
+    420:        256 |   256,     1,     1,     1 | F32     | blk.30.attn_k_norm.weight
+    421:       3840 |  3840,     1,     1,     1 | F32     | blk.30.attn_norm.weight
+    422:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.30.attn_output.weight
+    423:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.30.attn_q.weight
+    424:        256 |   256,     1,     1,     1 | F32     | blk.30.attn_q_norm.weight
+    425:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.30.attn_v.weight
+    426:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.30.ffn_down.weight
+    427:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.30.ffn_gate.weight
+    428:       3840 |  3840,     1,     1,     1 | F32     | blk.30.ffn_norm.weight
+    429:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.30.ffn_up.weight
+    430:          1 |     1,     1,     1,     1 | F32     | blk.30.layer_output_scale.weight
+    431:       3840 |  3840,     1,     1,     1 | F32     | blk.30.post_attention_norm.weight
+    432:       3840 |  3840,     1,     1,     1 | F32     | blk.30.post_ffw_norm.weight
+    433:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.31.attn_k.weight
+    434:        256 |   256,     1,     1,     1 | F32     | blk.31.attn_k_norm.weight
+    435:       3840 |  3840,     1,     1,     1 | F32     | blk.31.attn_norm.weight
+    436:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.31.attn_output.weight
+    437:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.31.attn_q.weight
+    438:        256 |   256,     1,     1,     1 | F32     | blk.31.attn_q_norm.weight
+    439:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.31.attn_v.weight
+    440:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.31.ffn_down.weight
+    441:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.31.ffn_gate.weight
+    442:       3840 |  3840,     1,     1,     1 | F32     | blk.31.ffn_norm.weight
+    443:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.31.ffn_up.weight
+    444:          1 |     1,     1,     1,     1 | F32     | blk.31.layer_output_scale.weight
+    445:       3840 |  3840,     1,     1,     1 | F32     | blk.31.post_attention_norm.weight
+    446:       3840 |  3840,     1,     1,     1 | F32     | blk.31.post_ffw_norm.weight
+    447:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.32.attn_k.weight
+    448:        256 |   256,     1,     1,     1 | F32     | blk.32.attn_k_norm.weight
+    449:       3840 |  3840,     1,     1,     1 | F32     | blk.32.attn_norm.weight
+    450:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.32.attn_output.weight
+    451:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.32.attn_q.weight
+    452:        256 |   256,     1,     1,     1 | F32     | blk.32.attn_q_norm.weight
+    453:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.32.attn_v.weight
+    454:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.32.ffn_down.weight
+    455:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.32.ffn_gate.weight
+    456:       3840 |  3840,     1,     1,     1 | F32     | blk.32.ffn_norm.weight
+    457:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.32.ffn_up.weight
+    458:          1 |     1,     1,     1,     1 | F32     | blk.32.layer_output_scale.weight
+    459:       3840 |  3840,     1,     1,     1 | F32     | blk.32.post_attention_norm.weight
+    460:       3840 |  3840,     1,     1,     1 | F32     | blk.32.post_ffw_norm.weight
+    461:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.33.attn_k.weight
+    462:        256 |   256,     1,     1,     1 | F32     | blk.33.attn_k_norm.weight
+    463:       3840 |  3840,     1,     1,     1 | F32     | blk.33.attn_norm.weight
+    464:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.33.attn_output.weight
+    465:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.33.attn_q.weight
+    466:        256 |   256,     1,     1,     1 | F32     | blk.33.attn_q_norm.weight
+    467:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.33.attn_v.weight
+    468:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.33.ffn_down.weight
+    469:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.33.ffn_gate.weight
+    470:       3840 |  3840,     1,     1,     1 | F32     | blk.33.ffn_norm.weight
+    471:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.33.ffn_up.weight
+    472:          1 |     1,     1,     1,     1 | F32     | blk.33.layer_output_scale.weight
+    473:       3840 |  3840,     1,     1,     1 | F32     | blk.33.post_attention_norm.weight
+    474:       3840 |  3840,     1,     1,     1 | F32     | blk.33.post_ffw_norm.weight
+    475:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.34.attn_k.weight
+    476:        256 |   256,     1,     1,     1 | F32     | blk.34.attn_k_norm.weight
+    477:       3840 |  3840,     1,     1,     1 | F32     | blk.34.attn_norm.weight
+    478:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.34.attn_output.weight
+    479:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.34.attn_q.weight
+    480:        256 |   256,     1,     1,     1 | F32     | blk.34.attn_q_norm.weight
+    481:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.34.attn_v.weight
+    482:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.34.ffn_down.weight
+    483:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.34.ffn_gate.weight
+    484:       3840 |  3840,     1,     1,     1 | F32     | blk.34.ffn_norm.weight
+    485:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.34.ffn_up.weight
+    486:          1 |     1,     1,     1,     1 | F32     | blk.34.layer_output_scale.weight
+    487:       3840 |  3840,     1,     1,     1 | F32     | blk.34.post_attention_norm.weight
+    488:       3840 |  3840,     1,     1,     1 | F32     | blk.34.post_ffw_norm.weight
+    489:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.35.attn_k.weight
+    490:        512 |   512,     1,     1,     1 | F32     | blk.35.attn_k_norm.weight
+    491:       3840 |  3840,     1,     1,     1 | F32     | blk.35.attn_norm.weight
+    492:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.35.attn_output.weight
+    493:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.35.attn_q.weight
+    494:        512 |   512,     1,     1,     1 | F32     | blk.35.attn_q_norm.weight
+    495:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.35.ffn_down.weight
+    496:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.35.ffn_gate.weight
+    497:       3840 |  3840,     1,     1,     1 | F32     | blk.35.ffn_norm.weight
+    498:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.35.ffn_up.weight
+    499:          1 |     1,     1,     1,     1 | F32     | blk.35.layer_output_scale.weight
+    500:       3840 |  3840,     1,     1,     1 | F32     | blk.35.post_attention_norm.weight
+    501:       3840 |  3840,     1,     1,     1 | F32     | blk.35.post_ffw_norm.weight
+    502:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.36.attn_k.weight
+    503:        256 |   256,     1,     1,     1 | F32     | blk.36.attn_k_norm.weight
+    504:       3840 |  3840,     1,     1,     1 | F32     | blk.36.attn_norm.weight
+    505:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.36.attn_output.weight
+    506:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.36.attn_q.weight
+    507:        256 |   256,     1,     1,     1 | F32     | blk.36.attn_q_norm.weight
+    508:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.36.attn_v.weight
+    509:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.36.ffn_down.weight
+    510:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.36.ffn_gate.weight
+    511:       3840 |  3840,     1,     1,     1 | F32     | blk.36.ffn_norm.weight
+    512:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.36.ffn_up.weight
+    513:          1 |     1,     1,     1,     1 | F32     | blk.36.layer_output_scale.weight
+    514:       3840 |  3840,     1,     1,     1 | F32     | blk.36.post_attention_norm.weight
+    515:       3840 |  3840,     1,     1,     1 | F32     | blk.36.post_ffw_norm.weight
+    516:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.37.attn_k.weight
+    517:        256 |   256,     1,     1,     1 | F32     | blk.37.attn_k_norm.weight
+    518:       3840 |  3840,     1,     1,     1 | F32     | blk.37.attn_norm.weight
+    519:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.37.attn_output.weight
+    520:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.37.attn_q.weight
+    521:        256 |   256,     1,     1,     1 | F32     | blk.37.attn_q_norm.weight
+    522:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.37.attn_v.weight
+    523:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.37.ffn_down.weight
+    524:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.37.ffn_gate.weight
+    525:       3840 |  3840,     1,     1,     1 | F32     | blk.37.ffn_norm.weight
+    526:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.37.ffn_up.weight
+    527:          1 |     1,     1,     1,     1 | F32     | blk.37.layer_output_scale.weight
+    528:       3840 |  3840,     1,     1,     1 | F32     | blk.37.post_attention_norm.weight
+    529:       3840 |  3840,     1,     1,     1 | F32     | blk.37.post_ffw_norm.weight
+    530:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.38.attn_k.weight
+    531:        256 |   256,     1,     1,     1 | F32     | blk.38.attn_k_norm.weight
+    532:       3840 |  3840,     1,     1,     1 | F32     | blk.38.attn_norm.weight
+    533:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.38.attn_output.weight
+    534:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.38.attn_q.weight
+    535:        256 |   256,     1,     1,     1 | F32     | blk.38.attn_q_norm.weight
+    536:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.38.attn_v.weight
+    537:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.38.ffn_down.weight
+    538:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.38.ffn_gate.weight
+    539:       3840 |  3840,     1,     1,     1 | F32     | blk.38.ffn_norm.weight
+    540:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.38.ffn_up.weight
+    541:          1 |     1,     1,     1,     1 | F32     | blk.38.layer_output_scale.weight
+    542:       3840 |  3840,     1,     1,     1 | F32     | blk.38.post_attention_norm.weight
+    543:       3840 |  3840,     1,     1,     1 | F32     | blk.38.post_ffw_norm.weight
+    544:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.39.attn_k.weight
+    545:        256 |   256,     1,     1,     1 | F32     | blk.39.attn_k_norm.weight
+    546:       3840 |  3840,     1,     1,     1 | F32     | blk.39.attn_norm.weight
+    547:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.39.attn_output.weight
+    548:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.39.attn_q.weight
+    549:        256 |   256,     1,     1,     1 | F32     | blk.39.attn_q_norm.weight
+    550:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.39.attn_v.weight
+    551:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.39.ffn_down.weight
+    552:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.39.ffn_gate.weight
+    553:       3840 |  3840,     1,     1,     1 | F32     | blk.39.ffn_norm.weight
+    554:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.39.ffn_up.weight
+    555:          1 |     1,     1,     1,     1 | F32     | blk.39.layer_output_scale.weight
+    556:       3840 |  3840,     1,     1,     1 | F32     | blk.39.post_attention_norm.weight
+    557:       3840 |  3840,     1,     1,     1 | F32     | blk.39.post_ffw_norm.weight
+    558:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.40.attn_k.weight
+    559:        256 |   256,     1,     1,     1 | F32     | blk.40.attn_k_norm.weight
+    560:       3840 |  3840,     1,     1,     1 | F32     | blk.40.attn_norm.weight
+    561:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.40.attn_output.weight
+    562:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.40.attn_q.weight
+    563:        256 |   256,     1,     1,     1 | F32     | blk.40.attn_q_norm.weight
+    564:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.40.attn_v.weight
+    565:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.40.ffn_down.weight
+    566:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.40.ffn_gate.weight
+    567:       3840 |  3840,     1,     1,     1 | F32     | blk.40.ffn_norm.weight
+    568:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.40.ffn_up.weight
+    569:          1 |     1,     1,     1,     1 | F32     | blk.40.layer_output_scale.weight
+    570:       3840 |  3840,     1,     1,     1 | F32     | blk.40.post_attention_norm.weight
+    571:       3840 |  3840,     1,     1,     1 | F32     | blk.40.post_ffw_norm.weight
+    572:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.41.attn_k.weight
+    573:        512 |   512,     1,     1,     1 | F32     | blk.41.attn_k_norm.weight
+    574:       3840 |  3840,     1,     1,     1 | F32     | blk.41.attn_norm.weight
+    575:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.41.attn_output.weight
+    576:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.41.attn_q.weight
+    577:        512 |   512,     1,     1,     1 | F32     | blk.41.attn_q_norm.weight
+    578:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.41.ffn_down.weight
+    579:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.41.ffn_gate.weight
+    580:       3840 |  3840,     1,     1,     1 | F32     | blk.41.ffn_norm.weight
+    581:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.41.ffn_up.weight
+    582:          1 |     1,     1,     1,     1 | F32     | blk.41.layer_output_scale.weight
+    583:       3840 |  3840,     1,     1,     1 | F32     | blk.41.post_attention_norm.weight
+    584:       3840 |  3840,     1,     1,     1 | F32     | blk.41.post_ffw_norm.weight
+    585:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.42.attn_k.weight
+    586:        256 |   256,     1,     1,     1 | F32     | blk.42.attn_k_norm.weight
+    587:       3840 |  3840,     1,     1,     1 | F32     | blk.42.attn_norm.weight
+    588:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.42.attn_output.weight
+    589:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.42.attn_q.weight
+    590:        256 |   256,     1,     1,     1 | F32     | blk.42.attn_q_norm.weight
+    591:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.42.attn_v.weight
+    592:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.42.ffn_down.weight
+    593:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.42.ffn_gate.weight
+    594:       3840 |  3840,     1,     1,     1 | F32     | blk.42.ffn_norm.weight
+    595:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.42.ffn_up.weight
+    596:          1 |     1,     1,     1,     1 | F32     | blk.42.layer_output_scale.weight
+    597:       3840 |  3840,     1,     1,     1 | F32     | blk.42.post_attention_norm.weight
+    598:       3840 |  3840,     1,     1,     1 | F32     | blk.42.post_ffw_norm.weight
+    599:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.43.attn_k.weight
+    600:        256 |   256,     1,     1,     1 | F32     | blk.43.attn_k_norm.weight
+    601:       3840 |  3840,     1,     1,     1 | F32     | blk.43.attn_norm.weight
+    602:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.43.attn_output.weight
+    603:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.43.attn_q.weight
+    604:        256 |   256,     1,     1,     1 | F32     | blk.43.attn_q_norm.weight
+    605:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.43.attn_v.weight
+    606:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.43.ffn_down.weight
+    607:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.43.ffn_gate.weight
+    608:       3840 |  3840,     1,     1,     1 | F32     | blk.43.ffn_norm.weight
+    609:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.43.ffn_up.weight
+    610:          1 |     1,     1,     1,     1 | F32     | blk.43.layer_output_scale.weight
+    611:       3840 |  3840,     1,     1,     1 | F32     | blk.43.post_attention_norm.weight
+    612:       3840 |  3840,     1,     1,     1 | F32     | blk.43.post_ffw_norm.weight
+    613:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.44.attn_k.weight
+    614:        256 |   256,     1,     1,     1 | F32     | blk.44.attn_k_norm.weight
+    615:       3840 |  3840,     1,     1,     1 | F32     | blk.44.attn_norm.weight
+    616:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.44.attn_output.weight
+    617:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.44.attn_q.weight
+    618:        256 |   256,     1,     1,     1 | F32     | blk.44.attn_q_norm.weight
+    619:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.44.attn_v.weight
+    620:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.44.ffn_down.weight
+    621:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.44.ffn_gate.weight
+    622:       3840 |  3840,     1,     1,     1 | F32     | blk.44.ffn_norm.weight
+    623:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.44.ffn_up.weight
+    624:          1 |     1,     1,     1,     1 | F32     | blk.44.layer_output_scale.weight
+    625:       3840 |  3840,     1,     1,     1 | F32     | blk.44.post_attention_norm.weight
+    626:       3840 |  3840,     1,     1,     1 | F32     | blk.44.post_ffw_norm.weight
+    627:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.45.attn_k.weight
+    628:        256 |   256,     1,     1,     1 | F32     | blk.45.attn_k_norm.weight
+    629:       3840 |  3840,     1,     1,     1 | F32     | blk.45.attn_norm.weight
+    630:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.45.attn_output.weight
+    631:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.45.attn_q.weight
+    632:        256 |   256,     1,     1,     1 | F32     | blk.45.attn_q_norm.weight
+    633:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.45.attn_v.weight
+    634:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.45.ffn_down.weight
+    635:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.45.ffn_gate.weight
+    636:       3840 |  3840,     1,     1,     1 | F32     | blk.45.ffn_norm.weight
+    637:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.45.ffn_up.weight
+    638:          1 |     1,     1,     1,     1 | F32     | blk.45.layer_output_scale.weight
+    639:       3840 |  3840,     1,     1,     1 | F32     | blk.45.post_attention_norm.weight
+    640:       3840 |  3840,     1,     1,     1 | F32     | blk.45.post_ffw_norm.weight
+    641:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.46.attn_k.weight
+    642:        256 |   256,     1,     1,     1 | F32     | blk.46.attn_k_norm.weight
+    643:       3840 |  3840,     1,     1,     1 | F32     | blk.46.attn_norm.weight
+    644:   15728640 |  4096,  3840,     1,     1 | Q4_0    | blk.46.attn_output.weight
+    645:   15728640 |  3840,  4096,     1,     1 | Q4_0    | blk.46.attn_q.weight
+    646:        256 |   256,     1,     1,     1 | F32     | blk.46.attn_q_norm.weight
+    647:    7864320 |  3840,  2048,     1,     1 | Q4_0    | blk.46.attn_v.weight
+    648:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.46.ffn_down.weight
+    649:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.46.ffn_gate.weight
+    650:       3840 |  3840,     1,     1,     1 | F32     | blk.46.ffn_norm.weight
+    651:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.46.ffn_up.weight
+    652:          1 |     1,     1,     1,     1 | F32     | blk.46.layer_output_scale.weight
+    653:       3840 |  3840,     1,     1,     1 | F32     | blk.46.post_attention_norm.weight
+    654:       3840 |  3840,     1,     1,     1 | F32     | blk.46.post_ffw_norm.weight
+    655:    1966080 |  3840,   512,     1,     1 | Q4_0    | blk.47.attn_k.weight
+    656:        512 |   512,     1,     1,     1 | F32     | blk.47.attn_k_norm.weight
+    657:       3840 |  3840,     1,     1,     1 | F32     | blk.47.attn_norm.weight
+    658:   31457280 |  8192,  3840,     1,     1 | Q4_0    | blk.47.attn_output.weight
+    659:   31457280 |  3840,  8192,     1,     1 | Q4_0    | blk.47.attn_q.weight
+    660:        512 |   512,     1,     1,     1 | F32     | blk.47.attn_q_norm.weight
+    661:   58982400 | 15360,  3840,     1,     1 | Q4_0    | blk.47.ffn_down.weight
+    662:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.47.ffn_gate.weight
+    663:       3840 |  3840,     1,     1,     1 | F32     | blk.47.ffn_norm.weight
+    664:   58982400 |  3840, 15360,     1,     1 | Q4_0    | blk.47.ffn_up.weight
+    665:          1 |     1,     1,     1,     1 | F32     | blk.47.layer_output_scale.weight
+    666:       3840 |  3840,     1,     1,     1 | F32     | blk.47.post_attention_norm.weight
+    667:       3840 |  3840,     1,     1,     1 | F32     | blk.47.post_ffw_norm.weight

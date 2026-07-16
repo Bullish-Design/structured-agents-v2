@@ -1,0 +1,45 @@
+• Validating lock
+✓ Validating lock in 24.6ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 3.87ms
+• Evaluating shell
+✓ Evaluating shell in 10.5ms (cached)
+✓ Configuring shell in 18.8ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 591µs (cached)
+✓ Loading tasks in 1.86ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 21.1ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 17.4ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 16.7µs (no command)
+✓ Running tasks in 39.0ms
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 810, in _get_config_dict
+    config_dict = cls._dict_from_json_file(resolved_config_file)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 922, in _dict_from_json_file
+    text = reader.read()
+           ^^^^^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x9b in position 8: invalid start byte
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/test_gemma4_gguf_compat.py", line 25, in <module>
+    config = AutoConfig.from_pretrained(MODEL_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/models/auto/configuration_auto.py", line 376, in from_pretrained
+    config_dict, unused_kwargs = PreTrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 721, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 814, in _get_config_dict
+    raise OSError(f"It looks like the config file at '{resolved_config_file}' is not a valid JSON file.")
+OSError: It looks like the config file at '/var/lib/structured-agents-vllm/hf/hub/models--unsloth--gemma-4-12B-it-qat-GGUF/blobs/cc9ff072e0a8203429ed854e6662c17a6c2bc1e5dca5b475dd4736caaacbc165' is not a valid JSON file.

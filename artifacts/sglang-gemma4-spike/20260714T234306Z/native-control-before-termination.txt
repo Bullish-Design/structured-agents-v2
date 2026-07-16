@@ -1,0 +1,8 @@
+2026-07-15T00:02:53Z
+    PID    PPID    PGID STAT COMMAND
+2029704 2029625 2029625 SNl  python3 -m sglang.launch_server --model-path /var/lib/structured-agents-vllm/hf/hub/models--google--gemma-4-12B-it-qat-w4a16-ct/snapshots/456400e035b6ac89e6a39057c39d53f8a5b2db53 --tokenizer-path /var/lib/structured-agents-vllm/hf/hub/models--google--gemma-4-12B-it-qat-w4a16-ct/snapshots/456400e035b6ac89e6a39057c39d53f8a5b2db53 --load-format safetensors --host 127.0.0.1 --port 8002 --served-model-name gemma4-native-qat --context-length 16384 --mem-fraction-static 0.80 --max-running-requests 1 --cpu-offload-gb 0 --grammar-backend xgrammar --disable-cuda-graph
+2030038 2029704 2029625 SNl  /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/bin/python3 -s -c from multiprocessing.resource_tracker import main;main(32)
+2030039 2029704 2029625 RNl  sglang::scheduler
+2030040 2029704 2029625 SNl  sglang::detokenizer
+0, 9863 MiB
+1, 10801 MiB

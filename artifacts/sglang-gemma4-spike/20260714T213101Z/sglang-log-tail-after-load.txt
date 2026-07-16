@@ -1,0 +1,75 @@
+• Validating lock
+✓ Validating lock in 24.4ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 3.71ms
+• Evaluating shell
+✓ Evaluating shell in 8.54ms (cached)
+✓ Configuring shell in 15.2ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 777µs (cached)
+✓ Loading tasks in 2.60ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 21.2ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 18.5ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 23.2µs (no command)
+✓ Running tasks in 40.3ms
++ python3 + -m + sglang.launch_server + --model-path + /var/lib/structured-agents-vllm/hf/hub/models--unsloth--gemma-4-12B-it-qat-GGUF/blobs/cc9ff072e0a8203429ed854e6662c17a6c2bc1e5dca5b475dd4736caaacbc165 + --tokenizer-path + /var/lib/structured-agents-vllm/hf/gemma4-config-0e2b1058541244490925fbacf8972041435691ac + --load-format + gguf + --host + 127.0.0.1 + --port + 8002 + --served-model-name + base + --context-length + 16384 + --mem-fraction-static + 0.80 + --max-running-requests + 1 + --cpu-offload-gb + 0 + --grammar-backend + xgrammar + --disable-cuda-graph 
+/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/launch_server.py:55: UserWarning: 'python -m sglang.launch_server' is still supported, but 'sglang serve' is the recommended entrypoint.
+  Example: sglang serve --model-path <model> [options]
+  warnings.warn(
+[1;33m'--disable-cuda-graph' is deprecated and will be removed in a future release. Use '--cuda-graph-backend-{decode,prefill}=disabled' instead.[0m
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/launch_server.py", line 67, in <module>
+    server_args = prepare_server_args(sys.argv[1:])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 7232, in prepare_server_args
+    return ServerArgs.from_cli_args(raw_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 6506, in from_cli_args
+    return cls(**{attr: getattr(args, attr) for attr in attrs})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 407, in __init__
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 2524, in __post_init__
+    self._handle_gpu_memory_settings(gpu_mem)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 3243, in _handle_gpu_memory_settings
+    if not self.use_mla_backend():
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 6575, in use_mla_backend
+    model_config = self.get_model_config()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 6556, in get_model_config
+    self.model_config = ModelConfig.from_server_args(self)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/configs/model_config.py", line 500, in from_server_args
+    return ModelConfig(
+           ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/configs/model_config.py", line 274, in __init__
+    get_config(
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/utils/common.py", line 3558, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/utils/hf_transformers/config.py", line 249, in get_config
+    config = parser.parse(
+             ^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/utils/hf_transformers/config.py", line 63, in parse
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/models/auto/configuration_auto.py", line 374, in from_pretrained
+    config_dict, unused_kwargs = PreTrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 682, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 768, in _get_config_dict
+    config_dict = load_gguf_checkpoint(resolved_config_file, return_tensors=False)["config"]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/modeling_gguf_pytorch_utils.py", line 648, in load_gguf_checkpoint
+    raise ValueError(f"GGUF model with architecture {architecture} is not supported yet.")
+ValueError: GGUF model with architecture gemma4 is not supported yet.

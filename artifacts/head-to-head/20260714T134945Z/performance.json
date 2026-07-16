@@ -1,0 +1,51 @@
+{
+  "timestamp_utc": "20260714T134945Z",
+  "prompt": "Write an essay of 950 to 1,050 words in exactly five paragraphs about how\nspecialized inference engines shape the practical use of local language models. Compare\nlatency, throughput, memory management, and operational trade-offs. Do not include a\ntitle, headings, bullet lists, notes, or citations. Return only the five essay paragraphs.\nThe 950-to-1,050-word requirement applies to the visible essay, not any private reasoning.",
+  "max_tokens": 4000,
+  "engines": {
+    "vllm": {
+      "endpoint": "http://127.0.0.1:8000/v1",
+      "wall_time_s": 117.494,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 116,
+        "total_tokens": 1175,
+        "completion_tokens": 1059,
+        "prompt_tokens_details": null
+      },
+      "visible_word_count": 900,
+      "visible_paragraph_count": 5,
+      "thinking_word_count": 0,
+      "visible_output_tokens_per_s": 9.013,
+      "server_timings": null
+    },
+    "llama_cpp": {
+      "endpoint": "http://127.0.0.1:8001/v1",
+      "wall_time_s": 119.709,
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 4000,
+        "prompt_tokens": 119,
+        "total_tokens": 4119,
+        "prompt_tokens_details": {
+          "cached_tokens": 7
+        }
+      },
+      "visible_word_count": 0,
+      "visible_paragraph_count": 0,
+      "thinking_word_count": 2915,
+      "visible_output_tokens_per_s": 33.414,
+      "server_timings": {
+        "cache_n": 7,
+        "prompt_n": 112,
+        "prompt_ms": 371.564,
+        "prompt_per_token_ms": 3.3175357142857145,
+        "prompt_per_second": 301.42855604956344,
+        "predicted_n": 4000,
+        "predicted_ms": 119292.24,
+        "predicted_per_token_ms": 29.82306,
+        "predicted_per_second": 33.53109975971614
+      }
+    }
+  }
+}

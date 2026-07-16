@@ -1,0 +1,220 @@
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.60: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core8.so
+
+FFmpeg version 7:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.59: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core7.so
+
+FFmpeg version 6:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.58: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core6.so
+
+FFmpeg version 5:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.57: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core5.so
+
+FFmpeg version 4:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.56: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core4.so
+[end of libtorchcodec loading traceback].
+[2026-07-14 18:16:23] Ignore import error when loading sglang.srt.multimodal.processors.mimo_v2_asr: Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6, 7, and 8, and we attempt to load libtorchcodec
+             for each of those versions. Errors for versions not installed on
+             your system are expected; only the error for your installed FFmpeg
+             version is relevant. On Windows, ensure you've installed the
+             "full-shared" version which ships DLLs.
+          2. The PyTorch version (2.11.0+cu130) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+
+        The following exceptions were raised as we tried to load libtorchcodec:
+        
+[start of libtorchcodec loading traceback]
+FFmpeg version 8:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.60: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core8.so
+
+FFmpeg version 7:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.59: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core7.so
+
+FFmpeg version 6:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.58: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core6.so
+
+FFmpeg version 5:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.57: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core5.so
+
+FFmpeg version 4:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/nix/store/d69yn2v7lzyh29rykj0ldnih67xps5s0-python3-3.12.13/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libavutil.so.56: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/_internally_replaced_utils.py", line 93, in load_torchcodec_shared_libraries
+    torch.ops.load_library(core_library_path)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/torchcodec/libtorchcodec_core4.so
+[end of libtorchcodec loading traceback].
+[2026-07-14 18:16:23] Hybrid swa model: self.hf_config.architectures=['Gemma4UnifiedForConditionalGeneration']
+[2026-07-14 18:16:23] Init torch distributed begin.
+[2026-07-14 18:16:23] Init torch distributed ends. elapsed=0.47 s, mem usage=0.02 GB
+[2026-07-14 18:16:25] Load weight begin. avail mem=11.48 GB
+Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards: 100% Completed | 1/1 [00:15<00:00, 15.08s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:15<00:00, 15.08s/it]
+[2026-07-14 18:16:49] Load weight end. elapsed=24.45 s, type=Gemma4UnifiedForConditionalGeneration, quant=compressed-tensors, avail mem=2.74 GB, mem usage=8.74 GB.
+[2026-07-14 18:16:53] Use sliding window memory pool. full_layer_tokens=1710, swa_layer_tokens=1368
+[2026-07-14 18:16:53] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 1368, K size: 0.21 GB, V size: 0.21 GB
+[2026-07-14 18:16:53] KV Cache is allocated. dtype: torch.bfloat16, #tokens: 1710, K size: 0.01 GB, V size: 0.01 GB
+[2026-07-14 18:16:53] SWAKVPool mem usage: 0.44 GB, swa size: 1368, full size: 1710
+[2026-07-14 18:16:53] Memory pool end. avail mem=2.31 GB
+[2026-07-14 18:16:53] Disable prefill CUDA graph because cuda_graph_config resolved prefill.backend='disabled' (e.g. via --cuda-graph-backend-prefill=disabled or auto-disable rules).
+[2026-07-14 18:16:53] max_total_num_tokens=1710, chunked_prefill_size=2048, max_prefill_tokens=16384, max_running_requests=1, context_len=16384, available_gpu_mem=2.28 GB
+[2026-07-14 18:16:53] Tree cache initialized: source=default impl=SWARadixCache hybrid_swa=True hybrid_ssm=False hierarchical=False streaming_wrapped=False
+[2026-07-14 18:16:55] INFO:     Started server process [2029704]
+[2026-07-14 18:16:55] INFO:     Waiting for application startup.
+[2026-07-14 18:16:55] Using default chat sampling params from model generation config: {'temperature': 1.0, 'top_k': 64, 'top_p': 0.95}
+[2026-07-14 18:16:55] INFO:     Application startup complete.
+[2026-07-14 18:16:55] INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+[2026-07-14 18:16:56] INFO:     127.0.0.1:44568 - "GET /model_info HTTP/1.1" 200 OK
+2026-07-14 18:17:01,725 - CUTE_DSL - WARNING - [handle_import_error] - Unexpected error during package walk: cutlass.cute.experimental
+[2026-07-14 18:17:01] Unexpected error during package walk: cutlass.cute.experimental
+[2026-07-14 18:17:05] INFO:     127.0.0.1:37690 - "GET /health HTTP/1.1" 503 Service Unavailable
+/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/fastapi/routing.py:136: FastAPIDeprecationWarning: ORJSONResponse is deprecated, FastAPI now serializes data directly to JSON bytes via Pydantic when a return type or response model is set, which is faster and doesn't need a custom response class. Read more in the FastAPI docs: https://fastapi.tiangolo.com/advanced/custom-response/#orjson-or-response-model and https://fastapi.tiangolo.com/tutorial/response-model/
+  response = await f(request)
+[2026-07-14 18:17:05] INFO:     127.0.0.1:37704 - "GET /v1/models HTTP/1.1" 200 OK

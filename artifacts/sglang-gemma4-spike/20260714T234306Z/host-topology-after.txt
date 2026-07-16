@@ -1,0 +1,18 @@
+2026-07-14T23:49:11Z
+0, NVIDIA GeForce RTX 3060, 595.84, 12288 MiB, 9863 MiB
+1, NVIDIA GeForce RTX 3060, 595.84, 12288 MiB, 10801 MiB
+GPU-fba2e42b-69c3-4a4d-54c2-1cdfa5fc2c04, 2029704, python3, 182 MiB
+GPU-fba2e42b-69c3-4a4d-54c2-1cdfa5fc2c04, 2030039, sglang::scheduler, 9666 MiB
+GPU-86a0d144-cb97-1dda-b961-da021fcb1718, 969639, VLLM::EngineCore, 10784 MiB
+ 967874       1 andrew   structured-agents-vllm.service  uv run --locked --no-sync bash /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/serve.sh
+ 968005  967874 andrew   structured-agents-vllm.service  /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/bin/python3 /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/bin/vllm serve unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL --revision f18012b8f690e563b7f872cb764b4cb3de90b14a --tokenizer google/gemma-4-12B-it --tokenizer-revision 0e2b1058541244490925fbacf8972041435691ac --hf-config-path /var/lib/structured-agents-vllm/hf/gemma4-config-0e2b1058541244490925fbacf8972041435691ac --host 127.0.0.1 --port 8000 --served-model-name base --max-model-len 16384 --gpu-memory-utilization 0.82 --quantization gguf --dtype bfloat16 --enforce-eager --max-num-batched-tokens 768 --limit-mm-per-prompt {"video": 0} --cpu-offload-gb 0 --structured-outputs-config.backend xgrammar
+ 969638  968005 andrew   structured-agents-vllm.service  /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/bin/python3 -s -c from multiprocessing.resource_tracker import main;main(50)
+ 969639  968005 andrew   structured-agents-vllm.service  VLLM::EngineCore
+2029625       1 andrew   paseo.service                   uv run --locked --no-sync bash /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/serve.sh
+2029704 2029625 andrew   paseo.service                   python3 -m sglang.launch_server --model-path /var/lib/structured-agents-vllm/hf/hub/models--google--gemma-4-12B-it-qat-w4a16-ct/snapshots/456400e035b6ac89e6a39057c39d53f8a5b2db53 --tokenizer-path /var/lib/structured-agents-vllm/hf/hub/models--google--gemma-4-12B-it-qat-w4a16-ct/snapshots/456400e035b6ac89e6a39057c39d53f8a5b2db53 --load-format safetensors --host 127.0.0.1 --port 8002 --served-model-name gemma4-native-qat --context-length 16384 --mem-fraction-static 0.80 --max-running-requests 1 --cpu-offload-gb 0 --grammar-backend xgrammar --disable-cuda-graph
+2030038 2029704 andrew   paseo.service                   /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/bin/python3 -s -c from multiprocessing.resource_tracker import main;main(32)
+2030039 2029704 andrew   paseo.service                   sglang::scheduler
+2030040 2029704 andrew   paseo.service                   sglang::detokenizer
+2241534 2224551 andrew   paseo.service                   /run/current-system/sw/bin/zsh -c set -euo pipefail out="artifacts/sglang-gemma4-spike/20260714T234306Z" {   date -u +%FT%TZ   nvidia-smi --query-gpu=index,name,driver_version,memory.total,memory.used --format=csv,noheader   nvidia-smi --query-compute-apps=gpu_uuid,pid,process_name,used_memory --format=csv,noheader   ps -eo pid,ppid,user,unit,args | rg -i '[v]llm|[l]lama-server|[s]glang'   systemctl is-active structured-agents-vllm.service   systemctl is-active structured-agents-llama-cpp.service || true } > "$out/host-topology-after.txt"
+active
+inactive

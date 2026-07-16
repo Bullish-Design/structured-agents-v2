@@ -1,0 +1,6 @@
+2026-07-15T00:22:50Z
+0, NVIDIA GeForce RTX 3060, 4 MiB
+1, NVIDIA GeForce RTX 3060, 10801 MiB
+GPU-86a0d144-cb97-1dda-b961-da021fcb1718, 969639, VLLM::EngineCore, 10784 MiB
+    PID    PPID STAT     ELAPSED COMMAND
+2312034 2311975 Sl         02:05 python3 -m sglang.launch_server --model-path /var/lib/structured-agents-vllm/hf/hub/models--unsloth--gemma-4-12B-it-qat-GGUF/blobs/cc9ff072e0a8203429ed854e6662c17a6c2bc1e5dca5b475dd4736caaacbc165 --tokenizer-path /var/lib/structured-agents-vllm/hf/gemma4-config-0e2b1058541244490925fbacf8972041435691ac --load-format gguf --host 127.0.0.1 --port 8002 --served-model-name base --context-length 16384 --mem-fraction-static 0.80 --max-running-requests 1 --cpu-offload-gb 0 --grammar-backend xgrammar --disable-cuda-graph

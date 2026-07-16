@@ -1,0 +1,37 @@
+{
+  "timestamp_utc": "20260714T155221Z",
+  "prompt": "Write an essay of exactly 1,000 words in exactly five paragraphs about how\nspecialized inference engines shape the practical use of local language models. Compare\nlatency, throughput, memory management, and operational trade-offs. Do not include a\ntitle, headings, bullet lists, notes, or citations. Return only the five essay paragraphs.\nSilently count the visible essay words before responding and make the total exactly 1,000.",
+  "max_tokens": 1800,
+  "engines": {
+    "llama_cpp": {
+      "endpoint": "http://127.0.0.1:8001/v1",
+      "wall_time_s": 20.622,
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 828,
+        "prompt_tokens": 106,
+        "total_tokens": 934,
+        "prompt_tokens_details": {
+          "cached_tokens": 1
+        }
+      },
+      "visible_word_count": 693,
+      "visible_paragraph_count": 5,
+      "thinking_word_count": 0,
+      "visible_output_tokens_per_s": 40.152,
+      "server_timings": {
+        "cache_n": 1,
+        "prompt_n": 105,
+        "prompt_ms": 149.419,
+        "prompt_per_token_ms": 1.4230380952380954,
+        "prompt_per_second": 702.7218760666314,
+        "predicted_n": 828,
+        "predicted_ms": 20193.597,
+        "predicted_per_token_ms": 24.388402173913047,
+        "predicted_per_second": 41.003096179447375,
+        "draft_n": 1376,
+        "draft_n_accepted": 485
+      }
+    }
+  }
+}

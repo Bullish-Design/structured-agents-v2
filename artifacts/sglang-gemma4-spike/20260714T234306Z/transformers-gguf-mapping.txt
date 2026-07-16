@@ -1,0 +1,112 @@
+• Validating lock
+✓ Validating lock in 26.4ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 4.26ms
+• Evaluating shell
+✓ Evaluating shell in 10.1ms (cached)
+✓ Configuring shell in 18.2ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 668µs (cached)
+✓ Loading tasks in 2.51ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 20.6ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 21.6ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 18.0µs (no command)
+✓ Running tasks in 42.8ms
+/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/modeling_gguf_pytorch_utils.py
+mapping {'context_length': 'max_position_embeddings', 'block_count': 'num_hidden_layers', 'feed_forward_length': 'intermediate_size', 'embedding_length': 'hidden_size', 'rope.dimension_count': None, 'rope.freq_base': None, 'attention.key_length': 'global_head_dim', 'attention.head_count': 'num_attention_heads', 'attention.head_count_kv': 'num_key_value_heads', 'attention.layer_norm_rms_epsilon': 'rms_norm_eps', 'attention.sliding_window': 'sliding_window', 'vocab_size': 'vocab_size'}
+supported True
+def get_gguf_hf_weights_map(
+    hf_model,
+    processor: TensorProcessor,
+    model_type: str | None = None,
+    num_layers: int | None = None,
+    qual_name: str = "",
+):
+    """
+    GGUF uses this naming convention for their tensors from HF checkpoint:
+    `blk.N.BB.weight` and `blk.N.BB.bias`
+    where N signifies the block number of a layer, and BB signifies the
+    attention/mlp layer components.
+    See "Standardized tensor names" in
+    https://github.com/ggerganov/ggml/blob/master/docs/gguf.md for details.
+    """
+    if is_gguf_available() and is_torch_available():
+        from gguf import MODEL_ARCH_NAMES, get_tensor_name_map
+    else:
+        logger.error(
+            "Loading a GGUF checkpoint in PyTorch, requires both PyTorch and GGUF>=0.10.0 to be installed. Please see "
+            "https://pytorch.org/ and https://github.com/ggerganov/llama.cpp/tree/master/gguf-py for installation instructions."
+        )
+        raise ImportError("Please install torch and gguf>=0.10.0 to load a GGUF checkpoint in PyTorch.")
+
+    model_type = hf_model.config.model_type if model_type is None else model_type
+    num_layers = hf_model.config.num_hidden_layers if num_layers is None else num_layers
+    # hack: ggufs have a different name for cohere
+    if model_type == "cohere":
+        model_type = "command-r"
+    elif model_type == "qwen2_moe":
+        model_type = "qwen2moe"
+    elif model_type == "qwen3_moe":
+        model_type = "qwen3moe"
+    elif model_type == "gemma3_text":
+        model_type = "gemma3"
+    elif model_type == "gemma4_text":
+        model_type = "gemma4"
+    elif model_type == "umt5":
+        model_type = "t5"
+    elif model_type == "minimax_m2":
+        model_type = "minimax-m2"
+    elif model_type == "gpt_oss":
+        model_type = "gpt-oss"
+    arch = None
+    for key, value in MODEL_ARCH_NAMES.items():
+        if value == model_type:
+            arch = key
+            break
+    if arch is None:
+        raise NotImplementedError(
+            f"Unknown gguf model_type: {model_type} in gguf-py. "
+            "This might because you're using an outdated version of gguf-py package, "
+            "you can install `gguf` package from source refer to "
+            "https://github.com/ggerganov/llama.cpp/tree/master/gguf-py#development"
+        )
+    name_map = get_tensor_name_map(arch, num_layers)
+
+    # Use a dummy conversion to get the mapping, because
+    # hf => gguf and gguf => hf mappings are reversed
+    gguf_to_hf_name_map = {}
+    state_dict = hf_model.state_dict()
+    for hf_name in state_dict:
+        hf_name = processor.preprocess_name(hf_name)
+
+        name, suffix = hf_name, ""
+        if hf_name.endswith(".weight") or hf_name.endswith(".bias"):
+            name, suffix = hf_name.rsplit(".", 1)
+            suffix = "." + suffix
+
+        gguf_name = name_map.get_name(name)
+        if gguf_name is None:
+            processor.perform_fallback_tensor_mapping(gguf_to_hf_name_map, suffix, qual_name, hf_name)
+            continue
+
+        gguf_to_hf_name_map[gguf_name + suffix] = qual_name + hf_name
+
+    # Some model like Bloom converted from BloomModel instead of BloomForCausalLM
+    # Therefore, we need to check submodule as well to get a correct mapping
+    if named_children := hf_model.named_children():
+        for name, child in named_children:
+            sub_map = get_gguf_hf_weights_map(
+                child, processor, model_type, num_layers, qual_name=f"{qual_name}{name}."
+            )
+            # Ignore the keys that are already in the main map to avoid overwriting
+            sub_map = {k: v for k, v in sub_map.items() if k not in gguf_to_hf_name_map}
+            gguf_to_hf_name_map.update(sub_map)
+
+    return gguf_to_hf_name_map
+

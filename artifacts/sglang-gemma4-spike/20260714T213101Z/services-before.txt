@@ -1,0 +1,50 @@
+● structured-agents-vllm.service - Structured Agents native vLLM API
+     Loaded: loaded (/etc/systemd/system/structured-agents-vllm.service; enabled; preset: ignored)
+     Active: active (running) since Tue 2026-07-14 10:41:36 EDT; 6h ago
+ Invocation: 7857c525d6b64153bdf1ae9b542c0fd0
+   Main PID: 967874 (uv)
+         IP: 2.2M in, 2M out
+         IO: 837.6M read, 516K written
+      Tasks: 97 (limit: 76720)
+     Memory: 8.1G (peak: 9.4G)
+        CPU: 9min 27.461s
+     CGroup: /system.slice/structured-agents-vllm.service
+             ├─967874 uv run --locked --no-sync bash /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/serve.sh
+             ├─968005 /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/bin/python3 /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/bin/vllm serve unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL --revision f18012b8f690e563b7f872cb764b4cb3de90b14a --tokenizer google/gemma-4-12B-it --tokenizer-revision 0e2b1058541244490925fbacf8972041435691ac --hf-config-path /var/lib/structured-agents-vllm/hf/gemma4-config-0e2b1058541244490925fbacf8972041435691ac --host 127.0.0.1 --port 8000 --served-model-name base --max-model-len 16384 --gpu-memory-utilization 0.82 --quantization gguf --dtype bfloat16 --enforce-eager --max-num-batched-tokens 768 --limit-mm-per-prompt "{\"video\": 0}" --cpu-offload-gb 0 --structured-outputs-config.backend xgrammar
+             ├─969638 /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/bin/python3 -s -c "from multiprocessing.resource_tracker import main;main(50)"
+             └─969639 VLLM::EngineCore
+
+Jul 14 17:31:01 server bash[969639]: [rank0]:[W714 17:31:01.788352858 TCPStore.cpp:106] [c10d] sendBytes failed on SocketImpl(fd=47, addr=[fdff:ffff::]:10973, remote=[::ffff:192.168.68.116]:42287): Broken pipe
+Jul 14 17:31:01 server bash[969639]: Exception raised from sendBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:653 (most recent call first):
+Jul 14 17:31:01 server bash[969639]: frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x768290f7305d in /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/lib/python3.12/site-packages/torch/lib/libc10.so)
+Jul 14 17:31:01 server bash[969639]: frame #1: <unknown function> + 0x6a90931 (0x7681fa490931 in /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+Jul 14 17:31:01 server bash[969639]: frame #2: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x24d (0x7681fa48f3ed in /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+Jul 14 17:31:01 server bash[969639]: frame #3: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x4a5 (0x7681dcaff8c5 in /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/.venv/lib/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+Jul 14 17:31:01 server bash[969639]: frame #4: <unknown function> + 0xf2fa4 (0x7682616f2fa4 in /nix/store/hngmi01i8wgi25a0byrxcn4ysz5j79mw-gcc-15.2.0-lib/lib/libstdc++.so.6)
+Jul 14 17:31:01 server bash[969639]: frame #5: <unknown function> + 0x9dd53 (0x768291e9dd53 in /nix/store/8kvxvr3pmsypxiypq4g8zy13glnfr7nx-glibc-2.42-67/lib/libc.so.6)
+Jul 14 17:31:01 server bash[969639]: frame #6: <unknown function> + 0x12563c (0x768291f2563c in /nix/store/8kvxvr3pmsypxiypq4g8zy13glnfr7nx-glibc-2.42-67/lib/libc.so.6)
+Jul 14 17:31:01 server bash[969639]: [rank0]:[W714 17:31:01.790025358 ProcessGroupNCCL.cpp:1826] [PG ID 0 PG GUID 0 Rank 0] Failed to check the "should dump" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Broken pipe
+
+● structured-agents-llama-cpp.service - Structured Agents llama.cpp Gemma 4 comparison API
+     Loaded: loaded (/etc/systemd/system/structured-agents-llama-cpp.service; enabled; preset: ignored)
+     Active: active (running) since Tue 2026-07-14 13:38:42 EDT; 3h 52min ago
+ Invocation: 5d4ee26c8e014079ba8b3fbc602a85b7
+   Main PID: 1391616 (llama-server)
+         IP: 34.3K in, 269.4K out
+         IO: 17M read, 2.8M written
+      Tasks: 17 (limit: 76720)
+     Memory: 5.9G (peak: 5.9G, swap: 2.9M, swap peak: 2.9M)
+        CPU: 10min 12.365s
+     CGroup: /system.slice/structured-agents-llama-cpp.service
+             └─1391616 llama-server --model /var/lib/structured-agents-vllm/hf/hub/models--unsloth--gemma-4-12B-it-qat-GGUF/blobs/cc9ff072e0a8203429ed854e6662c17a6c2bc1e5dca5b475dd4736caaacbc165 --host 127.0.0.1 --port 8001 --alias base --ctx-size 16384 --n-gpu-layers 999 --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on --spec-type draft-mtp --spec-draft-model /home/andrew/.cache/structured-agents/models/mtp-gemma-4-12B-it.gguf --spec-draft-n-max 4 --n-gpu-layers-draft 999 --parallel 5 --threads 8 --threads-batch 8
+
+Jul 14 14:30:40 server bash[1391616]: 51.57.214.836 I slot print_timing: id  2 | task 6006 | draft acceptance = 0.53288 (  859 accepted /  1612 generated), mean len =  3.13
+Jul 14 14:30:40 server bash[1391616]: 51.57.214.889 I slot      release: id  2 | task 6006 | stop processing: n_tokens = 1300, truncated = 0
+Jul 14 14:30:40 server bash[1391616]: 51.57.977.999 I slot print_timing: id  0 | task 6009 | n_decoded =   1280, tg =  22.87 t/s, tg_3s =  27.11 t/s
+Jul 14 14:30:43 server bash[1391616]: 52.01.010.529 I slot print_timing: id  0 | task 6009 | n_decoded =   1416, tg =  24.00 t/s, tg_3s =  44.85 t/s
+Jul 14 14:30:46 server bash[1391616]: 52.03.824.638 I slot print_timing: id  0 | task 6009 | prompt eval time =     380.03 ms /    33 tokens (   11.52 ms per token,    86.84 tokens per second)
+Jul 14 14:30:46 server bash[1391616]: 52.03.824.644 I slot print_timing: id  0 | task 6009 |        eval time =   61811.83 ms /  1536 tokens (   40.24 ms per token,    24.85 tokens per second)
+Jul 14 14:30:46 server bash[1391616]: 52.03.824.645 I slot print_timing: id  0 | task 6009 |       total time =   62191.86 ms /  1569 tokens
+Jul 14 14:30:46 server bash[1391616]: 52.03.824.646 I slot print_timing: id  0 | task 6009 |    graphs reused =       5744
+Jul 14 14:30:46 server bash[1391616]: 52.03.824.651 I slot print_timing: id  0 | task 6009 | draft acceptance = 0.50344 ( 1025 accepted /  2036 generated), mean len =  3.01
+Jul 14 14:30:46 server bash[1391616]: 52.03.824.698 I slot      release: id  0 | task 6009 | stop processing: n_tokens = 1575, truncated = 0

@@ -1,0 +1,6 @@
+2026-07-15T00:23:50Z
+0, NVIDIA GeForce RTX 3060, 1 MiB
+1, NVIDIA GeForce RTX 3060, 10801 MiB
+GPU-86a0d144-cb97-1dda-b961-da021fcb1718, 969639, VLLM::EngineCore, 10784 MiB
+2317543 2224551 Ss   /run/current-system/sw/bin/zsh -c sleep 45 out="artifacts/sglang-gemma4-spike/20260714T234306Z"; { date -u +%FT%TZ; nvidia-smi --query-gpu=index,name,memory.used --format=csv,noheader; nvidia-smi --query-compute-apps=gpu_uuid,pid,process_name,used_memory --format=csv,noheader; ps -eo pid,ppid,stat,args | rg '2312034|sglang::' || true; } > "$out/patched-gguf-live-5.txt"; cat "$out/patched-gguf-live-5.txt"; printf '\n--- launch tail ---\n'; tail -n 180 "$out/patched-gguf-launch-supervised.txt"
+2319187 2317543 S    rg 2312034|sglang::

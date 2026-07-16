@@ -1,0 +1,4 @@
+run_utc,endpoint,model,rounds,concurrency,requests,completion_tokens,wall_s,output_tps,mean_latency_s,p50_latency_s,p95_latency_s
+2026-07-14T17:27:32Z,http://127.0.0.1:8001/v1,base,3,1,3,2760,57.974,47.607,19.324,19.398,19.505
+2026-07-14T17:29:16Z,http://127.0.0.1:8001/v1,base,3,2,6,5277,104.200,50.643,26.332,19.217,34.934
+2026-07-14T17:31:58Z,http://127.0.0.1:8001/v1,base,3,3,9,8316,161.571,51.470,35.855,34.712,54.226

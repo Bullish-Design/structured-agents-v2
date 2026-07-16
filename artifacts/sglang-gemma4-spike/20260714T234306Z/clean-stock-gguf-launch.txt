@@ -1,0 +1,93 @@
+• Validating lock
+✓ Validating lock in 40.7ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 3.01ms
+• Evaluating shell
+✓ Evaluating shell in 8.39ms (cached)
+✓ Configuring shell in 14.8ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 704µs (cached)
+✓ Loading tasks in 4.30ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 15.1ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 14.5ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 4.33µs (no command)
+✓ Running tasks in 30.4ms
++ python3 + -m + sglang.launch_server + --model-path + /var/lib/structured-agents-vllm/hf/hub/models--unsloth--gemma-4-12B-it-qat-GGUF/blobs/cc9ff072e0a8203429ed854e6662c17a6c2bc1e5dca5b475dd4736caaacbc165 + --tokenizer-path + /var/lib/structured-agents-vllm/hf/gemma4-config-0e2b1058541244490925fbacf8972041435691ac + --load-format + gguf + --host + 127.0.0.1 + --port + 8002 + --served-model-name + base + --context-length + 16384 + --mem-fraction-static + 0.80 + --max-running-requests + 1 + --cpu-offload-gb + 0 + --grammar-backend + xgrammar + --disable-cuda-graph 
+/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/launch_server.py:55: UserWarning: 'python -m sglang.launch_server' is still supported, but 'sglang serve' is the recommended entrypoint.
+  Example: sglang serve --model-path <model> [options]
+  warnings.warn(
+[1;33m'--disable-cuda-graph' is deprecated and will be removed in a future release. Use '--cuda-graph-backend-{decode,prefill}=disabled' instead.[0m
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/huggingface_hub/dataclasses.py", line 144, in __strict_setattr__
+    validator(value)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/huggingface_hub/dataclasses.py", line 625, in validator
+    type_validator(field.name, value, field.type)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/huggingface_hub/dataclasses.py", line 472, in type_validator
+    _validate_simple_type(name, value, expected_type)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/huggingface_hub/dataclasses.py", line 615, in _validate_simple_type
+    raise TypeError(
+TypeError: Field 'num_key_value_heads' expected int, got list (value: [8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1])
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/launch_server.py", line 67, in <module>
+    server_args = prepare_server_args(sys.argv[1:])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 7232, in prepare_server_args
+    return ServerArgs.from_cli_args(raw_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 6506, in from_cli_args
+    return cls(**{attr: getattr(args, attr) for attr in attrs})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 407, in __init__
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 2524, in __post_init__
+    self._handle_gpu_memory_settings(gpu_mem)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 3243, in _handle_gpu_memory_settings
+    if not self.use_mla_backend():
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 6575, in use_mla_backend
+    model_config = self.get_model_config()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/server_args.py", line 6556, in get_model_config
+    self.model_config = ModelConfig.from_server_args(self)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/configs/model_config.py", line 500, in from_server_args
+    return ModelConfig(
+           ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/configs/model_config.py", line 274, in __init__
+    get_config(
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/utils/common.py", line 3558, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/utils/hf_transformers/config.py", line 249, in get_config
+    config = parser.parse(
+             ^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/sglang/srt/utils/hf_transformers/config.py", line 63, in parse
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/models/auto/configuration_auto.py", line 419, in from_pretrained
+    return config_class.from_dict(config_dict, **unused_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 878, in from_dict
+    config = cls(**config_dict)
+             ^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/huggingface_hub/dataclasses.py", line 275, in init_with_validate
+    initial_init(self, *args, **kwargs)  # type: ignore [call-arg]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/configuration_utils.py", line 116, in __init__
+    setattr(self, f.name, standard_kwargs[f.name])
+  File "/home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/huggingface_hub/dataclasses.py", line 146, in __strict_setattr__
+    raise StrictDataclassFieldValidationError(field=name, cause=e) from e
+huggingface_hub.errors.StrictDataclassFieldValidationError: Validation error for field 'num_key_value_heads':
+    TypeError: Field 'num_key_value_heads' expected int, got list (value: [8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1, 8, 8, 8, 8, 8, 1])
+
+exit_code=1

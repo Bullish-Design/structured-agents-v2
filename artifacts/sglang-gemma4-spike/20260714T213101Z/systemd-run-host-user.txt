@@ -1,0 +1,2 @@
+Failed to connect to system scope bus via machine transport: Permission denied
+Failed to start transient service unit: Transport endpoint is not connected

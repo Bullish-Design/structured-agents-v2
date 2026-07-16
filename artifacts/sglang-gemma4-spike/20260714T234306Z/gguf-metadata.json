@@ -1,0 +1,142 @@
+• Validating lock
+✓ Validating lock in 17.1ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 2.41ms
+• Evaluating shell
+✓ Evaluating shell in 7.91ms (cached)
+✓ Configuring shell in 13.1ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 648µs (cached)
+✓ Loading tasks in 2.03ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 15.4ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 13.2ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 19.3µs (no command)
+✓ Running tasks in 29.0ms
+{
+  "metadata": {
+    "gemma4.attention.head_count": 16,
+    "gemma4.attention.head_count_kv": [
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1,
+      8,
+      8,
+      8,
+      8,
+      8,
+      1
+    ],
+    "gemma4.attention.key_length": 512,
+    "gemma4.attention.sliding_window": 1024,
+    "gemma4.attention.value_length": 512,
+    "gemma4.block_count": 48,
+    "gemma4.context_length": 262144,
+    "gemma4.embedding_length": 3840,
+    "gemma4.feed_forward_length": 15360,
+    "gemma4.rope.freq_base": 1000000.0,
+    "general.architecture": "gemma4",
+    "general.file_type": 2,
+    "general.name": "Gemma-4 12B IT (smart Q4_0, QAT-lossless)",
+    "general.quantization_version": 2,
+    "tokenizer.ggml.model": "gemma4"
+  },
+  "multimodal_tensor_sample": [],
+  "quantization_types": {
+    "0": 338,
+    "2": 329
+  },
+  "tensor_count": 667,
+  "tensor_name_sample": [
+    "output_norm.weight",
+    "rope_freqs.weight",
+    "token_embd.weight",
+    "blk.0.attn_k.weight",
+    "blk.0.attn_k_norm.weight",
+    "blk.0.attn_norm.weight",
+    "blk.0.attn_output.weight",
+    "blk.0.attn_q.weight",
+    "blk.0.attn_q_norm.weight",
+    "blk.0.attn_v.weight",
+    "blk.0.ffn_down.weight",
+    "blk.0.ffn_gate.weight",
+    "blk.0.ffn_norm.weight",
+    "blk.0.ffn_up.weight",
+    "blk.0.layer_output_scale.weight",
+    "blk.0.post_attention_norm.weight",
+    "blk.0.post_ffw_norm.weight",
+    "blk.1.attn_k.weight",
+    "blk.1.attn_k_norm.weight",
+    "blk.1.attn_norm.weight",
+    "blk.1.attn_output.weight",
+    "blk.1.attn_q.weight",
+    "blk.1.attn_q_norm.weight",
+    "blk.1.attn_v.weight",
+    "blk.1.ffn_down.weight",
+    "blk.1.ffn_gate.weight",
+    "blk.1.ffn_norm.weight",
+    "blk.1.ffn_up.weight",
+    "blk.1.layer_output_scale.weight",
+    "blk.1.post_attention_norm.weight",
+    "blk.1.post_ffw_norm.weight",
+    "blk.2.attn_k.weight",
+    "blk.2.attn_k_norm.weight",
+    "blk.2.attn_norm.weight",
+    "blk.2.attn_output.weight",
+    "blk.2.attn_q.weight",
+    "blk.2.attn_q_norm.weight",
+    "blk.2.attn_v.weight",
+    "blk.2.ffn_down.weight",
+    "blk.2.ffn_gate.weight"
+  ],
+  "tensor_prefixes": {
+    "blk": 664,
+    "output_norm": 1,
+    "rope_freqs": 1,
+    "token_embd": 1
+  }
+}

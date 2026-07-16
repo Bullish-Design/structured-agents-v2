@@ -1,0 +1,27 @@
+• Validating lock
+✓ Validating lock in 22.6ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 2.84ms
+• Evaluating shell
+✓ Evaluating shell in 8.17ms (cached)
+✓ Configuring shell in 13.1ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 376µs (cached)
+✓ Loading tasks in 1.08ms
+• Running tasks
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 8.24ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 8.29ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 6.18µs (no command)
+✓ Running tasks in 16.9ms
+python 3.12.13 (main, Mar  3 2026, 12:39:30) [GCC 15.2.0]
+sglang 0.5.14
+transformers 5.14.0.dev0 /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/transformers/__init__.py
+torch 2.11.0+cu130 cuda 13.0 available True
+gguf unknown /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/.venv/lib/python3.12/site-packages/gguf/__init__.py
+sitecustomize /home/andrew/Documents/Projects/structured-agents-v2/deploy/sglang/native/sitecustomize.py
+SGLANG_GGUF_CONFIG_PATH None
