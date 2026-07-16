@@ -34,7 +34,7 @@ dual-path = [
 ]
 
 [tool.uv.sources]
-grail = { git = "https://github.com/Bullish-Design/grail.git", rev = "main" }
+grail = { git = "https://github.com/Bullish-Design/grail.git", rev = "f804a52332f66fbafefa5bdfbde664a17328ee01" }
 
 #[project.urls]
 #homepage = "https://github.com/Bullish-Design/structured-agents-v2"
@@ -106,4 +106,3 @@ ignore = []
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
-
