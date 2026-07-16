@@ -6,11 +6,20 @@ spike used). Attach to any `OpenAIProvider(http_client=...)`; results land in `.
 
 from __future__ import annotations
 
+import collections
+import contextvars
 import json
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
+
+# Per-run sink: `agent.run` sets this to a list around the awaited call, so the httpx hook
+# — which executes in the same task/context — appends that run's records to it. This gives
+# each run its OWN request body even when the same agent runs concurrently (run_batch).
+_run_sink: contextvars.ContextVar[list[RequestRecord] | None] = contextvars.ContextVar(
+    "sav_capture_run_sink", default=None
+)
 
 _KNOWN_KEYS = frozenset(
     {
@@ -54,10 +63,15 @@ class RequestRecord:
 
 
 class RequestCapture:
-    """Collects request bodies via an httpx request event hook."""
+    """Collects request bodies via an httpx request event hook.
 
-    def __init__(self) -> None:
-        self.records: list[RequestRecord] = []
+    `records` is a bounded ring buffer (default 1000) so long-lived `capture=True` fleets
+    don't grow without bound. For correct per-run attribution, read the record via the
+    contextvar sink `agent.run` installs rather than `.last`.
+    """
+
+    def __init__(self, max_records: int = 1000) -> None:
+        self.records: collections.deque[RequestRecord] = collections.deque(maxlen=max_records)
 
     async def _hook(self, request: httpx.Request) -> None:
         raw = request.content
@@ -65,7 +79,11 @@ class RequestCapture:
             body = json.loads(raw.decode()) if raw else {}
         except (ValueError, UnicodeDecodeError):
             body = {}
-        self.records.append(RequestRecord(url=str(request.url), body=body))
+        record = RequestRecord(url=str(request.url), body=body)
+        self.records.append(record)
+        sink = _run_sink.get()
+        if sink is not None:
+            sink.append(record)
 
     def client(self, *, transport: httpx.AsyncBaseTransport | None = None) -> httpx.AsyncClient:
         """An `httpx.AsyncClient` with this capture hook attached."""

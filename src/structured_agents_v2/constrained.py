@@ -46,8 +46,18 @@ class ConstrainedOutput(BaseModel):
     __strict__: ClassVar[bool] = True
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
+        # Field/mode validation reads plain class attributes (__regex__ etc.), which exist
+        # this early. It must stay here.
         super().__init_subclass__(**kwargs)
         _validate_mode_fields(cls)
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        # The eager grammar check needs model_json_schema(), which resolves to the PARENT's
+        # empty schema in __init_subclass__ (fields aren't collected yet). Pydantic fires
+        # this hook only after the subclass's core schema is built, so the check sees the
+        # subclass's real fields.
+        super().__pydantic_init_subclass__(**kwargs)
         if os.environ.get("SAV_GRAMMAR_CHECK") == "1":
             cls.check_compilable()
 

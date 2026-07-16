@@ -56,6 +56,26 @@ def test_regex_run_returns_str(mock_openai: Any, transport: httpx.ASGITransport)
     assert result.request_body["structured_outputs"] == {"regex": r"git (status|diff) [\w./-]*"}
 
 
+def test_user_extra_body_merged_not_clobbered(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    # A4 regression: a profile's own extra_body must survive alongside the decoder's
+    # structured_outputs, not be overwritten by it.
+    mock_openai.responder = lambda _req: "git status ."
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="git",
+        instructions="cmd",
+        decoder=DecoderSpec(mode="regex", regex=r"git (status|diff) [\w./-]*"),
+        model_settings={"extra_body": {"custom": 1}},
+    )
+    agent = backend.build(profile)
+
+    result = asyncio.run(agent.run("show status"))
+
+    assert result.request_body is not None
+    assert result.request_body["custom"] == 1  # user key preserved
+    assert result.request_body["structured_outputs"] == {"regex": r"git (status|diff) [\w./-]*"}  # decoder key present
+
+
 def test_adapter_sets_wire_model_field(mock_openai: Any, transport: httpx.ASGITransport) -> None:
     mock_openai.responder = lambda _req: '{"route": "answer"}'
     backend = _backend(transport)

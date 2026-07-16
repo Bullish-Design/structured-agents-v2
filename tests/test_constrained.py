@@ -142,3 +142,23 @@ def test_grammar_check_env_compiles_at_class_definition(monkeypatch: pytest.Monk
             __decode_mode__ = "regex"
             __regex__ = "x.*"
             value: str
+
+
+def test_grammar_check_env_compiles_subclass_schema(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A2 regression: the eager json_schema check must compile the SUBCLASS's schema (with
+    # its fields), not the parent's empty schema. This is what __init_subclass__ got wrong
+    # (fields aren't collected that early) and __pydantic_init_subclass__ fixes.
+    monkeypatch.setenv("SAV_GRAMMAR_CHECK", "1")
+    rec: dict[str, Any] = {}
+    monkeypatch.setitem(sys.modules, "xgrammar", _fake_xgrammar(rec))
+
+    class Plan(ConstrainedOutput):
+        action: Literal["edit", "refuse"]
+        reason: str
+
+    kind, schema = rec["calls"][-1]
+    assert kind == "json_schema"
+    # The subclass's own fields and title, not the empty parent object schema.
+    assert '"action"' in schema
+    assert '"reason"' in schema
+    assert '"Plan"' in schema

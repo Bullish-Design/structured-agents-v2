@@ -92,7 +92,10 @@ class Backend(BaseModel):
 
         settings: dict[str, Any] = dict(profile.model_settings)
         if app.extra_body:
-            settings["extra_body"] = app.extra_body
+            # Merge, don't clobber: the profile may carry its own extra_body (e.g. vLLM
+            # sampling extensions). Decoder keys win on conflict — the constraint is
+            # non-negotiable.
+            settings["extra_body"] = {**settings.get("extra_body", {}), **app.extra_body}
         model_settings = OpenAIChatModelSettings(**settings)  # type: ignore[typeddict-item]
 
         agent: Agent[None, Any] = Agent(
