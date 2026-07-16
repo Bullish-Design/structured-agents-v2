@@ -1,7 +1,7 @@
 [project]
 name = "structured-agents-v2"
 version = "0.1.0"
-description = "A Python project for structured agents."
+description = "Typed, constrained PydanticAI agents over a local vLLM backend (XGrammar + per-agent LoRA)."
 readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
@@ -13,7 +13,6 @@ authors = [
 dependencies = [
   "pydantic>=2.12.5",
   "pydantic-ai-slim[openai]>=2.11.0,<3",
-  "grail",
 ]
 
 [project.optional-dependencies]
@@ -32,14 +31,12 @@ grammar-check = [
 # Pulls DBOS Transact (durable workflows/steps). Keeps the lean core DBOS/Postgres-free.
 dual-path = [
   "dbos>=0.26",
+  "psycopg[binary]>=3.1",
 ]
 
-[tool.uv.sources]
-grail = { git = "https://github.com/Bullish-Design/grail.git", rev = "f804a52332f66fbafefa5bdfbde664a17328ee01" }
-
-#[project.urls]
-#homepage = "https://github.com/Bullish-Design/structured-agents-v2"
-#repository = "https://github.com/Bullish-Design/structured-agents-v2.git"
+[project.urls]
+homepage = "https://github.com/Bullish-Design/structured-agents-v2"
+repository = "https://github.com/Bullish-Design/structured-agents-v2.git"
 
 [build-system]
 requires = ["hatchling>=1.18"]

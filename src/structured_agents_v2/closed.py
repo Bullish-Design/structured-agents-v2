@@ -18,6 +18,9 @@ _MAX_TIMEOUT_SECONDS = 600.0
 
 def _validated_loopback_url(base_url: str) -> str:
     parsed = urlparse(base_url)
+    # Only literal loopback IPs are accepted; `localhost` is rejected deliberately so a
+    # hostile DNS record cannot rebind the endpoint to an off-box address. Do not "fix"
+    # this by adding "localhost" to the set.
     if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "::1"}:
         raise ValueError("closed backend requires an http loopback endpoint")
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
@@ -95,8 +98,6 @@ class ClosedBackend:
             return self._output_type.model_validate_json(content)
         except (IndexError, KeyError, TypeError, ValueError) as error:
             raise ClosedBackendError() from error
-        finally:
-            del response
 
     async def aclose(self) -> None:
         """Release the owned HTTP client during application teardown."""
