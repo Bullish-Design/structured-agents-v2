@@ -20,7 +20,9 @@ from pydantic import BaseModel
 from ..profile import AgentProfile
 from .comparator import Comparator, ComparisonSignal, ExactFieldComparator
 
-DecodeMode = Literal["json_schema"]  # dual-path only teaches json_schema agents
+# Renamed from DecodeMode to avoid shadowing/narrowing the core decoder.DecodeMode
+# (which is the full json_schema|grammar|regex|choice union).
+DualPathDecodeMode = Literal["json_schema"]  # dual-path only teaches json_schema agents
 
 
 def content_hash(obj: Any) -> str:
@@ -68,7 +70,7 @@ class ComparisonRecord(BaseModel):
     schema_version: str
     primary_model: ModelIdentity
     reference_model: ModelIdentity | None = None
-    decode_mode: DecodeMode = "json_schema"
+    decode_mode: DualPathDecodeMode = "json_schema"
     lib_version: str
     primary_workflow_id: str | None = None
     reference_workflow_id: str | None = None

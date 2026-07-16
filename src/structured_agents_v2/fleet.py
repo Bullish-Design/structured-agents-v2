@@ -20,6 +20,7 @@ table entry or an explicit `default`.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, get_args, get_origin
 
@@ -49,6 +50,43 @@ class RoutingTable(BaseModel):
     default: str | None = None  # specialist used when an emitted value has no `routes` entry
     route_field: str | None = None  # field on the router's model output holding the route value;
     # if None, a str output is used directly and a single-field model uses its one field
+
+
+@dataclass
+class BatchResult:
+    """The outcome of `run_batch`: per-item results in input order, failures surfaced as data.
+
+    One call raising no longer discards its siblings. Each element of `results` is either an
+    `AgentResult` or the `BaseException` that call raised. `BatchResult` is iterable, sized, and
+    indexable over `results`, so happy-path `for r in batch: r.output` still reads naturally; use
+    `.errors`/`.ok` to inspect failures explicitly.
+    """
+
+    results: list[AgentResult[Any] | BaseException]
+
+    @property
+    def ok(self) -> bool:
+        """True when no item raised."""
+        return not self.errors
+
+    @property
+    def errors(self) -> list[BaseException]:
+        """The exceptions raised by failed items (in input order)."""
+        return [r for r in self.results if isinstance(r, BaseException)]
+
+    @property
+    def outputs(self) -> list[AgentResult[Any]]:
+        """Only the successful `AgentResult`s (failures dropped)."""
+        return [r for r in self.results if not isinstance(r, BaseException)]
+
+    def __iter__(self) -> Iterator[AgentResult[Any] | BaseException]:
+        return iter(self.results)
+
+    def __len__(self) -> int:
+        return len(self.results)
+
+    def __getitem__(self, index: int) -> AgentResult[Any] | BaseException:
+        return self.results[index]
 
 
 @dataclass
@@ -94,12 +132,32 @@ class AgentSet:
     def __getitem__(self, name: str) -> StructuredAgent:
         return self.agents[name]
 
-    async def run_batch(self, calls: list[tuple[str, str]]) -> list[AgentResult[Any]]:
-        """Run `(agent_name, prompt)` calls concurrently; results keep the input order."""
+    def set_routing(self, routing: RoutingTable) -> None:
+        """Assign (and validate) a routing table after build. Prefer this over assigning
+        `self.routing` directly — a raw assignment bypasses the router/specialist/Literal-coverage
+        checks that keep routing sound."""
+        self._validate_routing(routing)
+        self.routing = routing
+
+    async def aclose(self) -> None:
+        """Close the backend's shared HTTP client. Convenience for `self.backend.aclose()`."""
+        await self.backend.aclose()
+
+    async def run_batch(self, calls: list[tuple[str, str]]) -> BatchResult:
+        """Run `(agent_name, prompt)` calls concurrently; results keep the input order.
+
+        A single call raising does **not** lose its siblings: failures come back in the
+        `BatchResult` as data (`return_exceptions=True`), so autonomous/batch callers can log
+        refusals or retry per item. Unknown agent names are a configuration error and still
+        raise `FleetError` up front.
+        """
         unknown = sorted({name for name, _ in calls if name not in self.agents})
         if unknown:
             raise FleetError(f"run_batch: unknown agent(s) {unknown}")
-        return await asyncio.gather(*(self.agents[name].run(prompt) for name, prompt in calls))
+        results = await asyncio.gather(
+            *(self.agents[name].run(prompt) for name, prompt in calls), return_exceptions=True
+        )
+        return BatchResult(results=list(results))
 
     async def route(self, msg: str) -> str:
         """Run the router on `msg` and return the specialist agent name it maps to."""

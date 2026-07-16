@@ -32,6 +32,19 @@ _KNOWN_KEYS = frozenset(
         "stream_options",
         "max_completion_tokens",
         "max_tokens",
+        # ordinary sampling params — present in standard bodies, not extra_body
+        "temperature",
+        "top_p",
+        "seed",
+        "stop",
+        "n",
+        "presence_penalty",
+        "frequency_penalty",
+        "logprobs",
+        "top_logprobs",
+        "user",
+        "parallel_tool_calls",
+        "reasoning_effort",
     }
 )
 

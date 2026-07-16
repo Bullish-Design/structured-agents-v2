@@ -14,6 +14,7 @@ from structured_agents_v2 import (
     AgentSet,
     AllowlistExecutor,
     Backend,
+    BatchResult,
     ConstrainedOutput,
     DecoderSpec,
     FleetError,
@@ -68,6 +69,42 @@ def test_run_batch_preserves_order_and_outputs(mock_openai: Any, transport: http
 
     results = asyncio.run(fleet.run_batch([("git_ops", "a"), ("file_edit", "b"), ("git_ops", "c")]))
     assert [r.output.text for r in results] == ["go handled", "fe handled", "go handled"]
+
+
+def test_run_batch_surfaces_failures_as_data(
+    mock_openai: Any, transport: httpx.ASGITransport, recwarn: pytest.WarningsRecorder
+) -> None:
+    # Phase 5 item 1: one failing call no longer discards its siblings; failures come back
+    # as data in the BatchResult, and no "Task exception was never retrieved" warning fires.
+    def responder(req: dict[str, Any]) -> str:
+        # Match "boom" anywhere in the conversation so retries keep failing (the original
+        # prompt stays in history), driving this call to a real exception.
+        convo = " ".join(str(m.get("content", "")) for m in req["messages"])
+        return "not json at all" if "boom" in convo else '{"text": "ok"}'
+
+    mock_openai.responder = responder
+    fleet = AgentSet(_backend(transport))
+    fleet.build([_specialist("s", "s")])
+
+    batch = asyncio.run(fleet.run_batch([("s", "a"), ("s", "boom"), ("s", "c")]))
+
+    assert isinstance(batch, BatchResult)
+    assert len(batch) == 3
+    assert batch.ok is False
+    assert len(batch.errors) == 1
+    assert len(batch.outputs) == 2  # the two good calls survived
+    assert isinstance(batch.results[1], BaseException)  # the failing one, in place
+    assert batch.results[0].output.text == "ok"  # order preserved; iterable/indexable
+    assert not any("never retrieved" in str(w.message) for w in recwarn.list)
+
+
+def test_run_batch_all_ok_is_iterable_and_ok(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = _keyed_responder
+    fleet = AgentSet(_backend(transport))
+    fleet.build([_specialist("file_edit", "fe"), _specialist("git_ops", "go")])
+    batch = asyncio.run(fleet.run_batch([("git_ops", "a"), ("file_edit", "b")]))
+    assert batch.ok
+    assert [r.output.text for r in batch] == ["go handled", "fe handled"]  # __iter__ happy path
 
 
 def test_run_batch_unknown_agent_raises(mock_openai: Any, transport: httpx.ASGITransport) -> None:
@@ -211,6 +248,17 @@ def test_routing_literal_coverage_gap_raises(transport: httpx.ASGITransport) -> 
 def test_routing_coverage_gap_ok_with_default(transport: httpx.ASGITransport) -> None:
     fleet = _built_fleet(transport, RoutingTable(router="router", routes={"git_ops": "git_ops"}, default="file_edit"))
     assert fleet.routing is not None
+
+
+def test_set_routing_validates(transport: httpx.ASGITransport) -> None:
+    # Phase 5 item 7: set_routing runs the same validation build() does, so assigning
+    # routing post-build can't smuggle in an unknown router/specialist.
+    fleet = _built_fleet(transport)  # built with no routing
+    good = RoutingTable(router="router", routes=_full_routes())
+    fleet.set_routing(good)
+    assert fleet.routing is good
+    with pytest.raises(RoutingError, match="router 'ghost'"):
+        fleet.set_routing(RoutingTable(router="ghost", routes=_full_routes()))
 
 
 # --- routing dispatch ------------------------------------------------------------------

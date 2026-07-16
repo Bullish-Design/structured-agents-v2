@@ -85,3 +85,16 @@ def test_no_ref_and_no_decoder_errors() -> None:
     profile = AgentProfile(name="p", instructions="x")
     with pytest.raises(ConfigError, match="no output_type_ref and no decoder"):
         profile.resolve()
+
+
+def test_constrained_output_plus_explicit_decoder_conflicts() -> None:
+    # Phase 5 item 3: a ConstrainedOutput carries its own decoder_spec; also passing an
+    # explicit decoder is two sources of truth and must raise, not silently drop one.
+    profile = AgentProfile(
+        name="p",
+        instructions="x",
+        output_type_ref="test_profile:ConstrainedCmd",
+        decoder=DecoderSpec(mode="regex", regex="x.*"),
+    )
+    with pytest.raises(ConfigError, match="conflict"):
+        profile.resolve()

@@ -27,7 +27,7 @@ from .executor import (
     Executor,
     Policy,
 )
-from .fleet import AgentSet, RoutedExecution, RoutedResult, RoutingTable
+from .fleet import AgentSet, BatchResult, RoutedExecution, RoutedResult, RoutingTable
 from .profile import AgentProfile
 
 __all__ = [
@@ -41,6 +41,7 @@ __all__ = [
     "StructuredAgent",
     "AgentResult",
     "AgentSet",
+    "BatchResult",
     "RoutingTable",
     "RoutedResult",
     "RoutedExecution",
