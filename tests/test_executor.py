@@ -84,7 +84,43 @@ def test_run_returns_execresult_when_allowed() -> None:
     assert sink == ["git diff HEAD"]
 
 
+def test_allowlist_execute_rechecks_authority() -> None:
+    # B1: execute() must fail closed on its own, even if the caller skips authorize().
+    sink: list[str] = []
+    ex = AllowlistExecutor([_git_policy(sink)])
+    with pytest.raises(PolicyError, match="not permitted"):
+        ex.execute("git_safe_v1", GitCommand(value="git push --force"))
+    assert sink == []  # the action never ran
+
+
+def test_allowlist_raising_allow_rule_fails_closed() -> None:
+    # B2: a rule that raises must deny, not crash the pipeline.
+    ex = AllowlistExecutor([Policy(name="p", allow=lambda c: c.value.split()[1] == "status")])
+    decision = ex.authorize("p", GitCommand(value="git"))  # split()[1] -> IndexError inside the rule
+    assert decision.allowed is False
+    assert "fail closed" in decision.reason
+
+
+def test_allowlist_action_exception_is_data_not_raise() -> None:
+    # B5: an action that raises surfaces as ExecResult(ok=False), not an exception.
+    def _boom(_c: BaseModel) -> str:
+        raise RuntimeError("kaboom")
+
+    ex = AllowlistExecutor([Policy(name="p", allow=lambda _c: True, action=_boom)])
+    result = ex.execute("p", GitCommand(value="x"))
+    assert result.ok is False
+    assert "kaboom" in result.detail
+
+
 # --- DryRunExecutor: authorizes but never performs a side effect ------------------------
+
+
+def test_dry_run_raising_allow_rule_fails_closed() -> None:
+    # B2 (DryRunExecutor path): a raising rule denies here too.
+    ex = DryRunExecutor([Policy(name="p", allow=lambda c: c.value.split()[1] == "status")])
+    decision = ex.authorize("p", GitCommand(value="git"))
+    assert decision.allowed is False
+    assert "fail closed" in decision.reason
 
 
 def test_dry_run_authorizes_but_does_not_execute() -> None:

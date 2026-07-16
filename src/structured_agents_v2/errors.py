@@ -33,3 +33,7 @@ class RoutingError(FleetError):
 
 class PolicyError(StructuredAgentsError):
     """An executor refused a command, or a policy/executor is misconfigured."""
+
+
+class ConstraintViolationError(StructuredAgentsError):
+    """A bare-string output did not satisfy its declared regex/choice constraint."""

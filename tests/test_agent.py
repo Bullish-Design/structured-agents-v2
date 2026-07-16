@@ -6,6 +6,7 @@ import asyncio
 from typing import Any, Literal
 
 import httpx
+import pytest
 
 from structured_agents_v2 import AgentProfile, Backend, ConstrainedOutput, DecoderSpec
 
@@ -74,6 +75,56 @@ def test_user_extra_body_merged_not_clobbered(mock_openai: Any, transport: httpx
     assert result.request_body is not None
     assert result.request_body["custom"] == 1  # user key preserved
     assert result.request_body["structured_outputs"] == {"regex": r"git (status|diff) [\w./-]*"}  # decoder key present
+
+
+def test_regex_guard_raises_on_nonmatching_output(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    # B4: if the backend doesn't enforce the constraint (here: mock returns junk), the
+    # client-side guard must catch it rather than leak unconstrained text.
+    from structured_agents_v2 import ConstraintViolationError
+
+    mock_openai.responder = lambda _req: "rm -rf /"  # does NOT match the git regex
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="git", instructions="cmd", decoder=DecoderSpec(mode="regex", regex=r"git (status|diff) [\w./-]*")
+    )
+    agent = backend.build(profile)
+    with pytest.raises(ConstraintViolationError, match="does not match declared regex"):
+        asyncio.run(agent.run("show status"))
+
+
+def test_regex_guard_passes_matching_output(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: "git status ."
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="git", instructions="cmd", decoder=DecoderSpec(mode="regex", regex=r"git (status|diff) [\w./-]*")
+    )
+    agent = backend.build(profile)
+    result = asyncio.run(agent.run("show status"))
+    assert result.output == "git status ."
+
+
+def test_choice_guard_raises_on_out_of_set_output(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    from structured_agents_v2 import ConstraintViolationError
+
+    mock_openai.responder = lambda _req: "delete"  # not in the choice set
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="pick", instructions="pick", decoder=DecoderSpec(mode="choice", choices=["keep", "skip"])
+    )
+    agent = backend.build(profile)
+    with pytest.raises(ConstraintViolationError, match="not in declared choices"):
+        asyncio.run(agent.run("choose"))
+
+
+def test_choice_guard_passes_in_set_output(mock_openai: Any, transport: httpx.ASGITransport) -> None:
+    mock_openai.responder = lambda _req: "keep"
+    backend = _backend(transport)
+    profile = AgentProfile(
+        name="pick", instructions="pick", decoder=DecoderSpec(mode="choice", choices=["keep", "skip"])
+    )
+    agent = backend.build(profile)
+    result = asyncio.run(agent.run("choose"))
+    assert result.output == "keep"
 
 
 def test_adapter_sets_wire_model_field(mock_openai: Any, transport: httpx.ASGITransport) -> None:

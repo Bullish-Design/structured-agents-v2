@@ -16,16 +16,21 @@ an action (`action`); "human-in-the-loop" is one kind of policy, **automatic** i
 - `AllowlistExecutor` — the autonomous one: **default-deny**, but auto-approves and runs any command
   matching its policy's `allow` rule, with **no human in the loop** — the allowlist is the safety net.
 
-Worked example (router → specialist → executor; the same flow `AgentSet.route_and_execute` automates)::
+Worked example (router → specialist → executor; the same flow `AgentSet.route_and_execute` automates).
+The command is a **json_schema-mode** `ConstrainedOutput` so it arrives as a validated model with
+a `.value` field (regex/choice-mode agents return a bare `str` instead — see `ConstrainedOutput`)::
 
     from structured_agents_v2 import AllowlistExecutor, Policy
 
-    def run_git(cmd):  # the real side effect
+    def run_git(cmd):  # the real side effect; cmd.value is a validated string like "git status"
         return subprocess.run(cmd.value.split(), capture_output=True, text=True).stdout
 
+    def is_safe(c) -> bool:                                # length-guarded so bare "git" denies, not raises
+        parts = c.value.split()
+        return len(parts) > 1 and parts[1] in {"status", "diff", "log"}
+
     executor = AllowlistExecutor([
-        Policy("git_safe_v1", allow=lambda c: c.value.split()[1] in {"status", "diff", "log"},
-               action=run_git),
+        Policy("git_safe_v1", allow=is_safe, action=run_git),
     ])
     routed = await fleet.route_and_run(user_msg)          # validated GitCommand — an intention
     decision = executor.authorize("git_safe_v1", routed.output)
@@ -124,7 +129,9 @@ class DryRunExecutor(BaseExecutor):
         p = self._policies.get(policy)
         if p is None or p.allow is None:
             return Decision(self.default_allow, "" if self.default_allow else "no allow-rule (default deny)")
-        ok = bool(p.allow(command))
+        ok = _safe_allow(p, command)
+        if ok is None:
+            return Decision(False, f"allow rule raised for policy {policy!r} (fail closed)")
         return Decision(ok, "" if ok else f"command not permitted by policy {policy!r}")
 
     def execute(self, policy: str, command: BaseModel) -> ExecResult:
@@ -137,18 +144,49 @@ class AllowlistExecutor(BaseExecutor):
 
     The autonomous executor: an unknown policy or a policy with no `allow` rule denies; otherwise the
     rule decides, with no human in the loop. The allowlist is the safety net.
+
+    Unknown-policy handling differs from `DryRunExecutor` by design:
+
+    | executor          | unknown policy        | no allow-rule    | allow-rule raises |
+    |-------------------|-----------------------|------------------|-------------------|
+    | `DryRunExecutor`  | allow (default_allow) | allow (default)  | deny (fail closed)|
+    | `AllowlistExecutor`| `PolicyError`        | deny             | deny (fail closed)|
     """
 
     def authorize(self, policy: str, command: BaseModel) -> Decision:
         p = self.policy(policy)  # unknown policy -> PolicyError (fail closed)
         if p.allow is None:
             return Decision(False, f"policy {policy!r} has no allow-rule (default deny)")
-        ok = bool(p.allow(command))
+        ok = _safe_allow(p, command)
+        if ok is None:
+            return Decision(False, f"allow rule raised for policy {policy!r} (fail closed)")
         return Decision(ok, "" if ok else f"command not permitted by policy {policy!r}")
 
     def execute(self, policy: str, command: BaseModel) -> ExecResult:
+        # B1: execute re-checks authority so a caller who skips authorize() can't bypass the
+        # default-deny safety net. authorize is a local callable; double-evaluating it is cheap.
+        decision = self.authorize(policy, command)
+        if not decision.allowed:
+            raise PolicyError(f"{policy}: {decision.reason or 'denied by policy'}")
         p = self.policy(policy)
         if p.action is None:
             return ExecResult(ok=True, detail=f"policy {policy!r} has no action (no-op)")
-        out = p.action(command)
+        try:
+            out = p.action(command)
+        except Exception as exc:  # noqa: BLE001 - surface action failure as data (ok=False)
+            return ExecResult(ok=False, detail=f"action for {policy!r} raised: {exc!r}")
         return ExecResult(ok=True, output=out, detail=f"executed {policy!r}")
+
+
+def _safe_allow(p: Policy, command: BaseModel) -> bool | None:
+    """Evaluate a policy's allow rule, fail-closed on exception.
+
+    Returns the boolean verdict, or ``None`` if the rule raised — an authority boundary must
+    never let a buggy/throwing rule crash the pipeline; a raise is treated as a denial.
+    """
+    if p.allow is None:  # pragma: no cover - callers guard this
+        return False
+    try:
+        return bool(p.allow(command))
+    except Exception:  # noqa: BLE001 - authority boundary: any rule failure denies
+        return None

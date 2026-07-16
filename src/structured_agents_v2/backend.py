@@ -104,4 +104,4 @@ class Backend(BaseModel):
             model_settings=model_settings,
             instructions=profile.instructions,
         )
-        return StructuredAgent(profile, agent, capture=capture)
+        return StructuredAgent(profile, agent, spec=spec, capture=capture)
