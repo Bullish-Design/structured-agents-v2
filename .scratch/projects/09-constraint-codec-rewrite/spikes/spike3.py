@@ -1,8 +1,9 @@
 # Spike B2: which Outcome encoding lets ty recover T at the call site?
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Never, reveal_type
+from typing import reveal_type
 
 
 @dataclass(frozen=True)

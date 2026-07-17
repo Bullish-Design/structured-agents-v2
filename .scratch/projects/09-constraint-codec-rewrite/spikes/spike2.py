@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, cast, reveal_type
+from typing import Any, cast, reveal_type
 
 
 # ---------- Choice via single bounded TypeVar ----------

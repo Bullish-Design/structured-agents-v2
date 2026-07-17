@@ -1,13 +1,14 @@
 # Spike B3: method-based encodings where T flows FORWARD from the class parameter.
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, reveal_type
+from typing import Any, reveal_type
 
 
 # ===== Encoding A: base generic class + subclasses; methods on the base carry T =====
 class Outcome[T]:
-    def map[U](self, f: Callable[[T], U]) -> "Outcome[U]": ...
+    def map[U](self, f: Callable[[T], U]) -> Outcome[U]: ...
     def unwrap(self) -> T: ...
     def value_or[D](self, default: D) -> T | D: ...
 
@@ -54,7 +55,7 @@ class Result[T]:
             raise RuntimeError(self._reason)
         return self._value
 
-    def map[U](self, f: Callable[[T], U]) -> "Result[U]": ...
+    def map[U](self, f: Callable[[T], U]) -> Result[U]: ...
 
 
 def make2() -> Result[Plan]: ...

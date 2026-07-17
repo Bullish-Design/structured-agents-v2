@@ -1,8 +1,9 @@
 # Spike B: does the Outcome[T] sum type + then/match narrow correctly under ty?
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, reveal_type
+from typing import reveal_type
 
 
 @dataclass(frozen=True)
