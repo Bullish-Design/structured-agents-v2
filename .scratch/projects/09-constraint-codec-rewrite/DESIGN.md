@@ -11,14 +11,14 @@ in every module.
 
 ```
 Layer 4  observe/         pipeline Observers (dual-path, evals)      [observe] extra
-Layer 3  fleet.py         Fleet, Router                             [agent] extra
+Layer 3  fleet.py         Fleet, Router
          authority.py     Authorizer × Effector, Allowlist, effectors, Decision, Effect
-Layer 2  agent.py         AgentSpec[T], Backend, Agent[T]   ── SOLE pydantic_ai importer  [agent]
+Layer 2  agent.py         AgentSpec[T], Backend, Agent[T]   ── SOLE pydantic_ai importer
          context.py       Context, Segment, Reuse, ContextProvider, fidelity
 Layer 1  constraint.py    Constraint[T], Schema/Regex/Choice/Grammar, WireSpec, serde
-         outcome.py       Outcome[T] base class + Ok/Denied/Violated/Failed + combinators
+         outcome.py       Outcome[T] base class + Ok/Failed (+ Denied on execute) + combinators
 Layer 0  wire/            transport, request, client, retention, errors   (httpx+pydantic only)
-         closed.py        preset over wire+constraint (Layer 0+1) — NO pydantic_ai
+         closed.py        preset over wire+constraint (Layer 0+1) — imports NO pydantic_ai (import isolation)
          errors.py        programmer/config error hierarchy (imported everywhere; depends on nothing)
          config.py        serialization edge (depends up to constraint; import-allowlist)
 ```
@@ -43,12 +43,15 @@ class BackendCapabilityError(ConstricError): ...        # agent needs a cap the 
 class FleetError(ConstricError): ...
 class RoutingError(FleetError): ...
 class AuthorityError(ConstricError): ...                 # v2 PolicyError; misconfigured authority
+class ConstraintViolation(ConstricError): ...           # parse() rejected raw output; carried in Failed.error
 ```
 
-**Note — `ConstraintViolationError` is GONE.** v2's `ConstraintViolationError` (bare-string guard
-failed) becomes the **`Violated` outcome variant** (DECISION B/M), not an exception — that is the
-whole point of the spine. `parse()` raises a private `_ParseRejected` internally that `Agent.run`
-converts to `Violated`; it is never public.
+**Note — `ConstraintViolation` (DECISION B, revised).** v2's `ConstraintViolationError` (bare-string
+guard failed = backend didn't enforce) becomes **`ConstraintViolation`, carried inside the `Failed`
+outcome's `.error`** (not a separate `Violated` top-level variant — the user chose the lighter
+`Ok`/`Failed` spine). `Constraint.parse()` raises it; `Agent.run` wraps it as `Failed(v)`. It stays a
+*diagnosable* exception type (callers can `match Failed(error=ConstraintViolation() as v)`), so
+"backend not enforcing" is distinguishable from a model/transport error without a fourth variant.
 
 **Invariants.** (i) Nothing in `errors.py` imports any other constric module. (ii) Every message
 names the offending agent/spec and states the remedy (v2 strength, kept). (iii) `closed.py` does
@@ -183,14 +186,14 @@ def Grammar(ebnf: str) -> Constraint[str]: ...
 | constructor | `wire().output_type` | `wire().extra_body` | `parse(raw)` | tier (DECISION M) |
 |---|---|---|---|---|
 | `Schema(M)` | `NativeOutput(M, strict=strict)` | `{}` | identity (pydantic-ai already returned a validated `M`) | server-enforced |
-| `Regex(p)` | `str` | `{"structured_outputs": {"regex": p}}` | `re.fullmatch(p, raw)` or `_ParseRejected` → `str` | server-enforced + client-checked |
-| `Choice(*o)` | `str` | `{"structured_outputs": {"choice": [*o]}}` | membership or `_ParseRejected` → the `Literal` | server-enforced + client-checked |
+| `Regex(p)` | `str` | `{"structured_outputs": {"regex": p}}` | `re.fullmatch(p, raw)` or raise `ConstraintViolation` → `str` | server-enforced + client-checked |
+| `Choice(*o)` | `str` | `{"structured_outputs": {"choice": [*o]}}` | membership or raise `ConstraintViolation` → the `Literal` | server-enforced + client-checked |
 | `Grammar(e)` | `str` | `{"structured_outputs": {"grammar": e}}` | passthrough (server-trusted) → `str` | server-enforced (no client check possible) |
 
 **Why `parse` is uniform *and* honest (concept §4.2, confirmed S3).** In `Schema` mode pydantic-ai's
 `NativeOutput` enforces `response_format` and validates+retries; `parse` receives an already-valid
 `M` and returns it (identity). Its "backend didn't enforce" failure is pydantic-ai's own validation
-error → `Failed` (not `Violated`). In string modes `output_type=str` returns raw text; `parse`
+error → `Failed`. In string modes `output_type=str` returns raw text; `parse`
 performs the `fullmatch`/membership guard — v2's missing `_guard` (B4), now co-located with the
 constraint and *always run* (DECISION M). `Choice.parse` returns the literal (S1) — v2's deferred
 coercion, closed.
@@ -239,8 +242,11 @@ Outcome, NO agent.**
 
 ## Layer 1 — `outcome.py` (the result spine; pure)
 
-**Responsibility.** The one result type every pipeline stage produces. **Generic base class +
-subclasses + method combinators** (DECISION B / S2 — *not* a bare union alias).
+**Responsibility.** The result spine. **USER DECISION B (2026-07-17): the lighter `Ok`/`Failed`
+variant** — `Agent.run` is binary; `Denied` appears **only** on the executed pipeline; `Violated`
+folds into `Failed` as a distinct error type. Still a **generic base class + method combinators**
+(DECISION B / S2 — the encoding finding is independent of variant count; a bare union alias breaks
+typed consumption under ty regardless).
 
 ```python
 class Outcome[T]:
@@ -258,26 +264,37 @@ class Ok[T](Outcome[T]):
     wire: RequestRecord | None = None          # present iff capture requested (DECISION N)
 
 @dataclass(frozen=True)
-class Denied(Outcome[Any]):                    # authority declined
-    reason: str
-    command: Any
+class Failed(Outcome[Any]):                    # the run did not produce a valid typed T
+    error: Exception                           # model/transport error, OR a ConstraintViolation (see below)
 
-@dataclass(frozen=True)
-class Violated(Outcome[Any]):                  # parse() rejected the raw output (server didn't enforce)
-    reason: str
+# --- generation spine: Agent.run / run_batch return  Ok[T] | Failed  ---
+
+class ConstraintViolation(Exception):
+    """parse() rejected the raw output — the backend did not enforce the constraint.
+    Carried inside Failed.error so 'backend not enforcing' stays diagnosable without a top-level
+    variant. (was v2 ConstraintViolationError / the concept's Violated)"""
     raw: str
 
+# --- executed pipeline ONLY (fleet.execute): adds authority denial as data ---
 @dataclass(frozen=True)
-class Failed(Outcome[Any]):                    # model/transport error (already retried by pydantic-ai)
-    error: Exception
+class Denied(Outcome[Any]):                    # authority declined — NOT a failure; the boundary working
+    reason: str
+    command: Any
+# fleet.execute(...) -> Ok[Effect] | Denied | Failed
 ```
 
+**Why this partition (DECISION B).** A *generation* run has exactly one way to not-succeed —
+`Failed` (a model/transport error, or a `ConstraintViolation` when the server didn't enforce). An
+*executed* run adds one orthogonal axis — authority — whose one honest representation is `Denied`
+(a policy denial is not an error). No domain event is declined two different ways (the v2 wart);
+each event has one canonical shape.
+
 **Combinator semantics.**
-- `then`: `f(self.value)` if `isinstance(self, Ok)` else `self` (Denied/Violated/Failed pass through,
+- `then`: `f(self.value)` if `isinstance(self, Ok)` else `self` (`Failed`/`Denied` pass through,
   re-typed to `Outcome[U]` since they carry no `T`). Verified typed via S2 (method form).
 - `map`: `Ok(f(self.value), usage=…, wire=…)` if Ok else self.
-- `unwrap`: `Ok`→`value`; `Denied`/`Violated`→`AuthorityError`/`ConstraintConfigError`-free
-  `RuntimeError(reason)`; `Failed`→`raise self.error`. (Escape hatch for imperative callers.)
+- `unwrap`: `Ok`→`value`; `Failed`→`raise self.error` (which may be a `ConstraintViolation`);
+  `Denied`→`raise AuthorityError(reason)`. (Escape hatch for imperative callers.)
 - `value_or`: `Ok`→`value` else `default`. Returns `T | D` (S2 ✓).
 
 **Ergonomics.** Two supported styles:
@@ -285,16 +302,20 @@ class Failed(Outcome[Any]):                    # model/transport error (already 
 # 1. Typed method chain (the ty-verified path):
 plan = (await agent.run(msg)).map(lambda p: normalize(p)).value_or(FALLBACK)
 # 2. Runtime match (human-readable; runtime-correct, static narrowing pends ty — RISKS.md R1):
-match await agent.run(msg):
+match await agent.run(msg):                       # generation: Ok | Failed
     case Ok(value=plan): apply(plan)
+    case Failed(error=ConstraintViolation() as v): alert("backend not enforcing: %s", v)
+    case Failed(error=e): raise e
+match await fleet.execute(msg, executor):         # executed: Ok | Denied | Failed
+    case Ok(value=eff): promote(eff)
     case Denied(reason=r): log.info("refused: %s", r)
-    case Violated(reason=r): alert("backend not enforcing: %s", r)
     case Failed(error=e): raise e
 ```
 
-**Invariants.** (i) `run` returns `list[Outcome[T]]`/`Outcome[T]` — failure is *always* data
-(DECISION R). (ii) No stage ever raises for a domain outcome; exceptions only for bugs (DECISION O).
-(iii) `Ok.wire` is the *only* capture delivery channel (DECISION N).
+**Invariants.** (i) `run`/`run_batch` return `Outcome[T]`/`list[Outcome[T]]` = `Ok|Failed` — failure
+is *always* data (DECISION R). (ii) `fleet.execute` returns `Ok|Denied|Failed` — denial is data, not
+an exception. (iii) No stage raises for a domain outcome; exceptions only for bugs (DECISION O).
+(iv) `Ok.wire` is the *only* capture delivery channel (DECISION N).
 
 **Dependencies:** `errors.py`, and `RequestRecord` from `wire/` (a Layer-0 dataclass — allowed;
 outcome is Layer 1 ≥ 0). No pydantic-ai.
@@ -442,19 +463,21 @@ def build[T](self, spec: AgentSpec[T]) -> Agent[T]:
     return Agent(spec, pa, capture=self.capture)      # Agent[T] — T from spec.constraint
 ```
 
-**`Agent.run` (parse meets Outcome — DECISION N capture in the return):**
+**`Agent.run` (parse meets Outcome — `Ok|Failed`, DECISION B; capture in the return, DECISION N):**
 ```python
-async def run(self, prompt: str) -> Outcome[T]:
+async def run(self, prompt: str) -> Outcome[T]:      # Ok[T] | Failed
     try:
         raw = await self._pa.run(prompt)              # pydantic-ai: model loop + retries
     except PydanticModelError as e:                   # UnexpectedModelBehavior / validation
         return Failed(e)
     try:
         value: T = self._spec.constraint.parse(raw.output)
-    except _ParseRejected as v:
-        return Violated(str(v), raw=str(raw.output))
+    except ConstraintViolation as v:                  # server didn't enforce → Failed (diagnosable subtype)
+        return Failed(v)
     return Ok(value, usage=raw.usage, wire=self._captured_record())   # raw.usage is a PROPERTY (S3)
 ```
+(`Constraint.parse` raises `ConstraintViolation(raw=…)` on a bare-string guard miss; `Agent.run`
+wraps it as `Failed`. `fleet.execute` adds the `Denied` branch — see `authority.py`/`fleet.py`.)
 
 **Gating (DECISION O; carried from v2 `_check_caps`).** `_gate` raises `BackendCapabilityError` when
 a `Regex/Choice/Grammar` constraint hits `caps.xgrammar == False`, an adapter hits
@@ -661,9 +684,11 @@ def closed_backend(...):
 matches v2's keyword signature exactly, so Lodestar migrates with a near-zero diff.
 
 **Invariants.** (i) Imports only `wire/` + `constraint` + `pydantic` + `httpx` — **never pydantic-ai**
-(test-enforced; with DECISION I.2, closed installs without pydantic-ai at all). (ii) Surface has no
-escape hatches (test asserts absence of `agent`/`run_sync`/`build`/`attach_transport`). (iii) Errors
-never leak detail.
+(test-enforced, T8; this *import isolation* is the load-bearing guarantee. Per DECISION I, pydantic-ai
+is a core dependency, so it is installed-but-unused for a closed-only consumer — the guarantee is that
+none of it is on the closed code path, not that it is absent from disk). (ii) Surface has no escape
+hatches (test asserts absence of `agent`/`run_sync`/`build`/`attach_transport`). (iii) Errors never
+leak detail.
 
 ---
 

@@ -25,17 +25,18 @@ stack**:
 
 ```
 Layer 4  observe/     pipeline Observers (dual-path, evals)            [observe]
-Layer 3  fleet · authority   Fleet/Router · Authorizer × Effector      [agent]
+Layer 3  fleet · authority   Fleet/Router · Authorizer × Effector
 Layer 2  agent · context     AgentSpec[T]/Backend/Agent[T] (sole pydantic_ai) · Context
 Layer 1  constraint · outcome   Constraint[T] codec · Outcome[T] spine
-Layer 0  wire/ · closed        pydantic-ai-free transport · the closed preset
+Layer 0  wire/ · closed        pydantic-ai-free transport · the closed preset (imports no pydantic_ai)
 ```
 
 Three things become one each:
 - **The constraint** — v2 smeared it across four places (`ConstrainedOutput` dunders, `DecoderSpec`,
   `apply()`, `_guard`). v3: one `Constraint[T]` value (`wire()` + `parse()`).
 - **The result** — v2 had four result types and declined two ways (raise *and* data). v3: one
-  `Outcome[T]` spine (`Ok/Denied/Violated/Failed`), decisions-as-data uniformly.
+  `Outcome[T]` spine — `Ok`/`Failed` for `run` (`+Denied` on the executed pipeline), decisions-as-data
+  uniformly.
 - **Authority** — v2 fused decide+do into one `Executor`. v3: `Authorizer × Effector`, an executor is
   the composition `authorize(a) >> effector`; DryRun and Fornix are compositions, not subclasses.
 
@@ -46,13 +47,13 @@ Three things become one each:
 | | Decision | Verdict |
 |---|---|---|
 | A | pydantic-ai coupling | **keep** as the Layer-2 loop, sole importer; swappable by the layer boundary |
-| B | `Outcome[T]` spine | **full 4-variant, encoded as a generic base class + method combinators** (not a bare union) |
+| B | `Outcome[T]` spine | **USER: lighter `Ok`/`Failed` for `run`** (`+Denied` on execute; `Violated`→`Failed` subtype); generic base class + method combinators (S2) |
 | C | fleet typing | `Agent[Any]` by nature + `fleet.typed(name, T)` re-narrow; no typed-router machinery |
 | D/E | streaming / tools | **out of scope**; seams reserved (`Constraint` ≠ tool schema) |
 | F | `Choice` generics | **`Choice[S: str](*o: S) -> Constraint[S]`** — ty infers the literal; concept's `Literal[*Opts]` is broken |
 | G | context / session | ship the neutral per-segment `Context`; **defer `Session`** |
-| H | repo & name | **new repo**, proposed name **`constric`** (fallback: keep `structured-agents`) — *needs user confirm* |
-| I | extras | lean core `pydantic+httpx`; **pydantic-ai behind `[agent]`** so `closed` installs pydantic-ai-free |
+| H | repo & name | new repo; **name HELD — user is choosing** (Phase 0 blocked until settled) |
+| I | extras | **USER: pydantic-ai in core by default** (no `[agent]` extra); `closed` still imports none of it (import isolation) |
 | J | naming | lock the vocabulary; `Agent` vs `pydantic_ai.Agent` resolved by import discipline |
 | K | config/plugins | per-seam registry + entry points; the import vector localized behind one `allow_modules` allowlist |
 | L–R | (surfaced) | Backend/Closed separate but share `wire/`; `parse()` always runs; capture via `Ok.wire`; cap-errors are exceptions; `check()` at build; adapter provisioning on `Backend`; shared client + results-as-data |
@@ -79,10 +80,13 @@ real `ty 0.0.46` / `pydantic-ai 2.11.0`):
    Outcome` with `.then` *and* a `type Outcome = …` alias). Only the class-with-methods form typechecks
    under ty (S2). *Correction:* the typed, no-cast promise holds **only** via method combinators;
    `match` stays a runtime-correct convenience (RISKS R1).
-3. **pydantic-ai moves to an `[agent]` extra (I.2).** The concept keeps it a core dep; making it an
-   extra lets the privacy-critical `closed` path install with **no pydantic-ai at all**, sharpening the
-   very attack-surface goal the concept prizes (§8). *Improvement:* the layering becomes physical in the
-   dependency graph, not just the imports.
+3. **Lighter `Outcome` spine (user DECISION B).** The concept (and this session's first pass)
+   committed to a full four-variant spine. The user chose `Ok`/`Failed` for `run`, with `Denied` added
+   only on the executed pipeline and `Violated` folded into `Failed` as a diagnosable
+   `ConstraintViolation` subtype — the concept's own §18-B option (b). *More idiomatic; no
+   same-event-two-ways split.* (An `[agent]`-extra split for pydantic-ai was considered to make the
+   `closed` path install pydantic-ai-free, but the user kept **pydantic-ai in core** — the real
+   guarantee is `closed`'s import isolation, which holds regardless.)
 4. **`NativeOutput` layering concession made explicit (R2).** The concept doesn't address that
    `Schema.wire()` must return a pydantic-ai type from Layer 1. v3 bounds it (marker-only import,
    test-enforced) rather than leaving it implicit.
@@ -127,9 +131,12 @@ real `ty 0.0.46` / `pydantic-ai 2.11.0`):
 - **Every v2 finding shown structurally impossible** (table above) with a one-line mechanism.
 - **Departures from CONCEPT.md stated explicitly** (six, above), each with why.
 
-**Two things need a human before building:**
-1. **DECISION H — the name/repo.** `constric` is a recommendation, not a derivation; new-repo-vs-branch
-   is a strategy call. *Do not create the repo (Phase 0) until confirmed.* (RISKS R8.)
-2. **The elegance-over-everything mandate** was honored literally in two places a pragmatist might
-   veto: committing to the **full four-variant `Outcome`** (B) and moving **pydantic-ai to an extra**
-   (I.2). Both are recommended and defended; both are reversible; flagged here for a conscious sign-off.
+**User decisions folded in (2026-07-17):** the two elegance-mandate calls were **resolved by the
+user** — the lighter **`Ok`/`Failed` `Outcome`** spine (B) and **pydantic-ai in core** by default (I,
+no `[agent]` extra). Both are recorded in DECISIONS/DESIGN.
+
+**One thing still needs a human before building:**
+1. **DECISION H — the name/repo.** The user is choosing the name themselves (`constric` was only a
+   suggestion); new-repo (not a v2 branch) stands as the recommendation. **Phase 0 (repo genesis) is
+   blocked until the name is settled.** (RISKS R8.) Everything else is name-agnostic — the import
+   package is `structured_agents` regardless.

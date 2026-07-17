@@ -125,14 +125,16 @@ No further spike needed (covered by `spike2.py`).
 
 ---
 
-## R8 — Repo/name decision is taste, not architecture (certainty · LOW impact) — **user confirmation gate**
+## R8 — Repo/name decision is taste, not architecture (certainty · LOW impact) — **open; user is choosing**
 
-**Risk.** The only decision in the plan that isn't derivable is the **name** (`constric` vs keeping
-`structured-agents`) and the new-repo-vs-branch call (DECISION H). Proceeding on a guess would create a
-repo the user has to rename.
+**Risk.** The only unresolved decision is the **name** (DECISION H) — the user is picking it
+themselves (`constric` was only a suggestion). Proceeding on a guess would create a repo the user has
+to rename. *(The two elegance-mandate calls that were also flagged here — the `Outcome` variant count
+and pydantic-ai packaging — are now **resolved by the user**: lighter `Ok`/`Failed` spine, pydantic-ai
+in core. See DECISIONS B & I.)*
 
-**Mitigation.** Flagged loudly in DECISIONS H as a user-veto point. **Do not create the repo (Phase 0)
-until the user confirms the name and the new-repo strategy.** Everything else in the plan is
+**Mitigation.** **Do not create the repo (Phase 0) until the user settles the name.** Everything else
+in the plan is
 name-agnostic (import package is `structured_agents` regardless).
 
 ---

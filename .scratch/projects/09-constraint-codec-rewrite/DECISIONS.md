@@ -38,32 +38,45 @@ the layer boundary keeps that option open (Layer 2 is replaceable without touchi
 
 ---
 
-## B. The `Outcome[T]` spine → **Commit to the sum type, but encode it as a generic base class with method combinators — not a bare union alias.** (spike S2)
+## B. The `Outcome[T]` spine → **USER DECISION (2026-07-17): the lighter `Ok`/`Failed` variant for `run`; `Denied` added only on the executed pipeline. Encode as a generic base class with method combinators (spike S2 — orthogonal to variant count).**
 
-**Recommendation.** One result spine, `Outcome[T]`, with four variants `Ok[T] | Denied | Violated |
-Failed`. **But the encoding matters and the concept's code sketch is wrong:** model `Outcome[T]` as
-a **generic base class** with `Ok[T]`/`Denied`/`Violated`/`Failed` as subclasses, and put the
-combinators (`then`, `map`, `unwrap`, `value_or`, `is_ok`) as **methods**. The typed path is the
-method API; runtime `match` on the subclasses stays available for humans.
+> **Resolved by the user**, overriding this session's original "commit to the full four-variant
+> spine" recommendation. The user chose the pragmatic, more idiomatic-Python variant (the concept's
+> own §18-B option (b)). Rationale below reflects the *decided* design.
 
-**Rationale (empirical — S2).** Under the repo's checker (`ty` 0.0.46), the CONCEPT's literal code
-`type Outcome[T] = Ok[T] | Denied | …` **fails to deliver the headline promise**: `match oc: case
-Ok(value=cmd)` gives `cmd: @Todo`, `isinstance`+`.value` gives `object`, `TypeGuard` gives
-`Ok[Unknown]`, and a free `unwrap`/`fold` gives `Unknown`. Every *backward* extraction of `T` out
-of the union degrades. The **class-with-methods** encoding types perfectly — `oc.unwrap() → Plan`,
-`oc.map(lambda p: p.argv) → Outcome[list[str]]` with `p` correctly `Plan` — because `T` flows
-*forward* from the class parameter into method signatures, needing no union-narrowing. This is the
-only encoding that makes the "typed, no-cast, honest across all modes" promise true *today*.
+**Decided design.**
+- **Generation spine:** `Outcome[T] = Ok[T] | Failed` — `Agent.run`/`run_batch` return this. A run
+  either produced a valid typed `T` (`Ok`) or it didn't (`Failed`).
+- **`Violated` folds into `Failed`.** When `parse()` rejects the raw output (the backend didn't
+  enforce the constraint), that is a `Failed` carrying a distinct error type
+  `ConstraintViolation(Exception)` — so "backend not enforcing" stays *diagnosable* (catch/inspect
+  the error type) without being its own top-level variant. One binary result at the common call site.
+- **`Denied` lives only on the executed pipeline.** `fleet.execute(...)` returns
+  `Ok[Effect] | Denied | Failed` — because an authority **denial is not a failure** (the safety
+  boundary working as intended); collapsing it into `Failed` would be a lie. Denial stays *data*
+  exactly where it occurs (concept invariant #4 preserved *where it matters*), and `run` stays binary.
+- **Encoding (unchanged from the spike finding):** `Outcome[T]` is a **generic base class** with `Ok`/
+  `Failed` (and `Denied` on the execute path) as subclasses; combinators (`then`/`map`/`unwrap`/
+  `value_or`/`is_ok`) are **methods**. This is required regardless of variant count — see S2.
 
-**Full spine over a lighter Ok/Failed variant (concept's §18-B alternative).** Commit fully. The
-lighter variant (Ok/Failed for `run`, richer union only for the executed pipeline) re-introduces the
-exact v2 wart the rewrite exists to kill — *two* ways to decline, split by entrypoint. `Violated`
-(parse rejected the raw output — the backend didn't enforce) and `Denied` (authority) are
-first-class domain outcomes on the *generate* path too, not just execution; folding them into
-`Failed`/exceptions loses the "decisions are data, uniformly" invariant (kickoff invariant #4).
+**Rationale (empirical — S2, still load-bearing).** Under the repo's checker (`ty` 0.0.46), a bare
+`type Outcome[T] = Ok[T] | Failed` alias **still fails** to deliver typed consumption via `match`/
+`isinstance`/`TypeGuard` (all degrade `T` to `@Todo`/`object`/`Unknown`). The **class-with-methods**
+encoding types perfectly — `oc.unwrap() → Plan`, `oc.map(lambda p: p.argv) → Outcome[list[str]]`
+with `p` correctly `Plan` — because `T` flows *forward* from the class parameter. The spike finding
+is **independent of how many variants there are**; it governs the *encoding*, which the user's
+lighter variant keeps.
 
-**Departure recorded.** DESIGN.md §outcome specifies the base-class encoding. This is the single
-biggest correction to the concept and the reason the spike existed.
+**Why the lighter variant is coherent (not the v2 wart).** v2's wart was declining *the same
+domain event* two different ways (raise in `BaseExecutor.run`, data in `route_and_execute`). This is
+different: `run` has exactly one way to not-succeed (`Failed`), and `execute` adds *one more axis*
+(authority) with exactly one representation for it (`Denied`, as data). There is no
+same-event-two-ways split — each event has one canonical shape. `Violated`-as-a-`Failed`-subtype
+keeps the "backend didn't enforce" signal without a fourth top-level variant.
+
+**Rejected (now).** *(a) Full four-variant spine* — the session's original recommendation; the user
+chose fewer variants for idiom/ergonomics. *(b) Fold `Denied` into `Failed`* — would misrepresent a
+policy denial as an error. *(c) Bare union alias* — breaks typed consumption under ty (S2).
 
 **Rejected.** *(a) Bare union `type` alias* — breaks typed consumption under ty (S2a). *(b) Lighter
 Ok/Failed only* — resurrects the raise-vs-data split. *(c) Exceptions throughout* — the v2 status
@@ -198,10 +211,11 @@ accidental API drift into the pinned line; a clean repo makes the "v2 is frozen"
 *(b) Reuse the `_v2` package name.* The rewrite is a new major identity; the `_v2` suffix was always
 a placeholder.
 
-> **User veto point (flagged loudly per kickoff method):** the *name* is the one decision here that
-> is taste, not architecture. `constric` is a recommendation, not a derivation. If you prefer to keep
-> `structured-agents`, nothing downstream changes. **This is worth a human confirmation before the
-> repo is created.**
+> **User decision (2026-07-17): HELD — the user is choosing the name themselves.** Phase 0 (repo
+> genesis) is **blocked** until the name is settled. `constric` remains the session's suggestion, not
+> a derivation. Everything else in the plan is name-agnostic: the import package is `structured_agents`
+> regardless, and no design decision depends on the distribution name. New-repo (not a v2 branch)
+> stands as the recommendation unless the user says otherwise.
 
 ---
 
@@ -222,23 +236,32 @@ a placeholder.
 - `grammar-check` stays optional (VERIFICATION.md §2: xgrammar pulls ~2 GB torch/CUDA).
 - Pin `pydantic-ai` to `>=2.11,<3` (S3 + v2 finding A1/D3: unbounded range is what bit Lodestar).
 
-**Rationale.** The privacy-critical `closed` path (Layer 0+1) imports **none** of these beyond
-`httpx`+`pydantic`; a consumer that only wants `closed` should be able to `pip install constric` and
-not pull pydantic-ai's full surface. Consider a `closed`-only install story: `closed.py` importing
-only `wire/`+`constraint` means even the core pydantic-ai dep is only needed for the agent path. If
-we want `pip install constric[closed-only]` to skip pydantic-ai, pydantic-ai must itself move to an
-extra (`agent`) — **decision I.2 below.**
+**Rationale.** Most consumers want the agent path; making them opt into an `[agent]` extra is
+friction for a benefit (below) that is mostly theoretical. The load-bearing privacy guarantee is
+**import isolation** — `closed.py` never imports pydantic-ai — which holds regardless of packaging
+(test-enforced, T8). So pydantic-ai in core does **not** weaken any closed guarantee; it only means a
+closed-only consumer has pydantic-ai *installed but unused*.
 
-### I.2 — Should pydantic-ai be an extra so `closed` installs without it? → **Yes: `agent` extra.**
-Make the lean core `pydantic + httpx + wire/ + constraint/ + closed`, and put `pydantic-ai-slim`
-behind an `[agent]` extra that Layer 2/3 need. Then Lodestar's `closed` consumer installs a
-genuinely minimal dependency set (no pydantic-ai at all), which *sharpens* the closed
-attack-surface/dependency-minimization goal the concept prizes (§8). `constric[agent]` pulls the
-full stack. **Recommended**, because it makes the layering physical in the dependency graph, not
-just the import graph.
+### I.2 — Should pydantic-ai be an `[agent]` extra so `closed` installs without it? → **USER DECISION (2026-07-17): No. pydantic-ai in core by default.**
 
-**Rejected.** *One flat dependency set.* Forces `closed`-only consumers (the privacy case) to install
-pydantic-ai + its transitive surface, contradicting the closed thesis.
+> **Resolved by the user**, overriding this session's original "yes, `[agent]` extra" recommendation.
+
+**Decided design.** pydantic-ai-slim[openai] is a **core dependency**. There is no `[agent]` extra.
+The lean core is `pydantic + httpx + pydantic-ai-slim[openai]`. `closed` still imports **no**
+pydantic-ai (import isolation, T8) — that is the real guarantee and it is unchanged. What we give up
+is only the marginal *installed-footprint* win for a closed-only consumer (Lodestar), which does not
+justify taxing every agent-path consumer with an opt-in extra.
+
+**Reconciling with the closed thesis.** The concept's "attack-surface/dependency-minimization" goal
+(§8) is satisfied at the level that matters — closed's *code path* pulls in none of pydantic-ai, so
+none of it can execute for a closed request. Whether pydantic-ai is *present on disk* for a
+closed-only install is a packaging nicety, not a security property. If a truly minimal closed-only
+distribution is ever needed, the import isolation means it remains *possible* later (a `[minimal]`
+packaging could exclude it) without changing any code — but it is **not** the default and not a v3.0
+requirement.
+
+**Rejected (now).** *`[agent]` extra as default* — the session's original recommendation; the user
+chose ergonomics (pydantic-ai available out of the box) over a marginal minimal-install win.
 
 ---
 
@@ -246,7 +269,7 @@ pydantic-ai + its transitive surface, contradicting the closed thesis.
 
 **Recommendation — public vocabulary (locked):**
 `Constraint[T]`, `Schema/Regex/Choice/Grammar`, `WireSpec`; `AgentSpec[T]`, `Backend`, `Agent[T]`;
-`Outcome[T]` (`Ok/Denied/Violated/Failed`, `.then/.map/.unwrap/.value_or/.is_ok`); `Fleet`,
+`Outcome[T]` (`Ok`/`Failed`; `+Denied` on the executed pipeline; `ConstraintViolation` error subtype; `.then/.map/.unwrap/.value_or/.is_ok`); `Fleet`,
 `Router`; `Authorizer`/`Effector`, `Decision`/`Effect`, `Allowlist`, `authorize`, effectors
 (`Null`, `Subprocess`, `Fornix`, `DbosStep`); `Context`/`Segment`/`Reuse`/`Role`, fidelity
 `EXACT/BLENDED`, `Adapter`, `AdapterProvider`, `ContextProvider`; `Retention`; `Observer`.
@@ -356,7 +379,7 @@ implementation detail behind the `Ok.wire` result. See RISKS.md R4.
 **Recommendation.** Keep the invariant "decisions are data; exceptions are for bugs" sharp by
 partitioning: a mis-capped backend asked for `Grammar`, an adapter the server doesn't serve, a
 config that names an un-importable module → **exceptions at `build`/config time** (programmer/config
-error). `Denied`/`Violated`/`Failed` are **runtime** outcomes of a *correctly built* pipeline.
+error). `Denied`/`Failed` (incl. a `ConstraintViolation` inside `Failed`) are **runtime** outcomes of a *correctly built* pipeline.
 
 **Rationale.** This is the concept's §9 stance, made explicit as a rule. It prevents the opposite
 error (turning genuine programmer mistakes into silently-handled data), which would erode the "fail
@@ -425,14 +448,14 @@ to re-litigate — recorded so the plan doesn't regress them.
 | # | Decision | Verdict |
 |---|---|---|
 | A | pydantic-ai coupling | keep as Layer-2 loop, sole importer |
-| B | Outcome spine | full 4-variant, **class-with-methods** encoding (S2) |
+| B | Outcome spine | **USER: `Ok`/`Failed` for `run`** (+ `Denied` on execute; `Violated`→`Failed` subtype); class-with-methods encoding (S2) |
 | C | fleet typing | `Agent[Any]` + `fleet[name]` re-narrow |
 | D | streaming | out of scope; seam reserved |
 | E | tools | out of scope; `Constraint` ≠ tool schema |
 | F | Choice generics | `Choice[S: str](*o: S) -> Constraint[S]` (S1) |
 | G | context/session | ship `Context`; defer `Session` |
-| H | repo & name | **new repo**, name `constric` (fallback: keep `structured-agents`) — *user confirm* |
-| I | extras | lean core; pydantic-ai behind `[agent]` extra so `closed` is pydantic-ai-free |
+| H | repo & name | new repo; **name HELD (user picking)** — Phase 0 blocked until settled |
+| I | extras | **USER: pydantic-ai in core by default** (no `[agent]` extra); closed still imports none of it |
 | J | naming | lock vocab; `Agent` collision → import discipline |
 | K | config/plugins | per-seam registry + entry points; `allow_modules` allowlist at one function |
 | L | Backend vs Closed | separate types, shared `wire/` primitives, no subclass |

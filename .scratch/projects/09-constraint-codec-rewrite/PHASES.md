@@ -14,17 +14,18 @@ Legend per phase: **Scope · Modules landed · Acceptance (tests + ty + demo).**
 
 ## Phase 0 — Repo genesis (DECISION H)
 
-**Scope.** New repository `constric` (or keep `structured-agents` — *pending user confirm*, DECISION
-H). `copyroom new` from `template-py`; wire `repoman`; devenv (Python 3.13, hatchling+uv); plain git;
-re-index the fleet. Package `structured_agents/`. Extras skeleton per DECISION I/I.2 (`[agent]`,
-`[grammar-check]`, `[observe]`, `[fornix]`); lean core = `pydantic + httpx` only.
+**Scope.** New repository — **name HELD pending user choice** (DECISION H; `constric` is the
+suggestion). **Phase 0 is blocked until the name is settled.** `copyroom new` from `template-py`; wire
+`repoman`; devenv (Python 3.13, hatchling+uv); plain git; re-index the fleet. Package
+`structured_agents/`. Core deps = `pydantic + httpx + pydantic-ai-slim[openai]` pinned `>=2.11,<3`
+(DECISION I — pydantic-ai in core by default). Extras: `[grammar-check]`, `[observe]`, `[fornix]`. No
+`[agent]` extra.
 
 **Modules landed.** Empty package + `errors.py` (the layer-less tree).
 
 **Acceptance.**
 - `devenv shell -- pytest` (0 tests) green; `ty check src` + `ruff` clean.
-- `pip install .` pulls **only** `pydantic + httpx` (no pydantic-ai) — proves the `[agent]`-extra
-  split (DECISION I.2). `pip install .[agent]` pulls pydantic-ai-slim[openai] pinned `>=2.11,<3`.
+- `pip install .` resolves `pydantic + httpx + pydantic-ai-slim[openai]>=2.11,<3`.
 - Demo: `python -c "import structured_agents; from structured_agents.errors import ConstricError"`.
 
 ---
@@ -33,14 +34,16 @@ re-index the fleet. Package `structured_agents/`. Extras skeleton per DECISION I
 
 **Scope.** The linchpin. Land the pydantic-ai-free `wire/` primitives and the `Constraint[T]` codec
 with all four constructors and the verified wire/parse table. Land `Outcome` *enough* to be the parse
-result (`Ok`/`Violated` + the base-class combinators), but not the full pipeline yet. **This is the
+result (`Ok`/`Failed` + the `ConstraintViolation` error type + the base-class combinators), but not the
+full pipeline yet. **This is the
 phase that pays for the rewrite.**
 
 **Modules landed.** `wire/{transport,request,client,errors}.py`, `constraint.py`, `outcome.py`.
 
 **Acceptance.**
 - **Codec round-trip property tests** (TESTS.md T1) — for each constraint, `parse(model_output(x)) ==
-  x` for valid `x`; out-of-constraint text raises → `Violated`. The single most valuable surface.
+  x` for valid `x`; out-of-constraint text raises `ConstraintViolation` (→ `Failed` at `Agent.run`).
+  The single most valuable surface.
 - **Wire-shape assertions** (T2) — `Schema/Regex/Choice/Grammar .wire()` produce **exactly** the
   captured `response_format`/`extra_body structured_outputs` bodies from VERIFICATION.md.
 - **ty regressions** (T7) — `assert_type(Choice("a","b"), Constraint[Literal["a","b"]])` (S1);
@@ -95,7 +98,8 @@ serde (`to_config`/`from_config`).
 
 **Scope.** `closed_backend()` + `ClosedBackend` as a thin preset over `wire/`+`constraint` (DECISION
 L), preserving every guarantee **byte-for-byte** (invariant #8), plus the v2-signature compatibility
-shim (DECISION H). **No pydantic-ai** (DECISION I.2 — closed installs without `[agent]`).
+shim (DECISION H). **`closed.py` imports no pydantic-ai** — import isolation (DECISION I/L), even
+though pydantic-ai is a core dependency.
 
 **Modules landed.** `closed.py`.
 
@@ -107,8 +111,9 @@ shim (DECISION H). **No pydantic-ai** (DECISION I.2 — closed installs without 
   no-retention (`WireResult.usage/raw is None`); no escape hatches (`ClosedBackend` lacks
   `agent`/`run_sync`/`build`/`attach_transport`).
 - **Import-layering** (T8): `closed.py` imports neither pydantic-ai nor `agent`/`fleet`.
-- `pip install .` (no `[agent]`) then `import structured_agents.closed` **works** — proves the
-  pydantic-ai-free install.
+- **Import-isolation proof (T8):** an AST/import test asserts `structured_agents.closed` (and the
+  whole `test_closed.py` module) imports **no** `pydantic_ai` — so none of it is on the closed code
+  path, regardless of it being installed.
 - **Demo:** `closed_backend(...)` against the in-process ASGI mock → one request, validated model,
   detail-free error on a forced 500. **Lodestar-migration demo:** the v2-signature shim constructs and
   runs identically.
@@ -143,7 +148,8 @@ provider is prefix-only (so the invariant is enforced from day one).
 **Scope.** `AgentSpec[T]`, `Backend` (sole pydantic-ai importer, one shared client, capability gating,
 `AdapterProvider`), `Agent[T]` (`run -> Outcome[T]`, capture in `Ok.wire`), then `Fleet`/`Router` with
 `execute` as an `Outcome.then` chain. This is where pydantic-ai enters and the full `Outcome` spine
-(all four variants) is exercised end to end.
+(`Ok`/`Failed` for generation; `Denied` added on the executed pipeline — DECISION B) is exercised end
+to end.
 
 **Modules landed.** `agent.py`, `fleet.py`.
 

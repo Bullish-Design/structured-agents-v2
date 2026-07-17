@@ -40,7 +40,7 @@ Legend: **VERBATIM** (copy the exact bytes/logic) · **REWRITTEN** (same intent,
 | `AgentProfile.adapter: str` | `AgentSpec.adapter: Adapter \| str` | Gains `source`/`base_model` for provisioning + cache-namespacing (DECISION Q). |
 | `Backend.model_settings: dict` + `_warn_unknown_settings` | typed `Settings` dataclass | Setting typos become a **type error**, not a runtime warning on a silently-dropping TypedDict (kills the v2 finding). |
 | `Executor`/`DryRunExecutor`/`AllowlistExecutor`/`Policy` | `Authorizer × Effector` + `Allowlist` + effectors + `authorize(a) >> e` | Decision × effect decomposed; `DryRun = a >> Null`, `Fornix = a >> FornixEffector` — compositions, not subclasses (kills B1/B2/B5, answers "where does fornix go"). |
-| `AgentResult` / `BatchResult` / `RoutedResult` / `RoutedExecution` (four result types) | `Outcome[T]` (one spine, class + subclasses + methods) | Decisions-as-data, uniformly; one `then`-composable result (concept §5, encoding per S2). |
+| `AgentResult` / `BatchResult` / `RoutedResult` / `RoutedExecution` (four result types) | `Outcome[T]` (one spine, class + subclasses + methods): `Ok`/`Failed` for `run`, `+Denied` on `execute` | Decisions-as-data; one `then`-composable result (concept §5, encoding per S2; lighter variant per user DECISION B). |
 | `RequestCapture` + module `ContextVar` sink (public data-flow) | `Ok.wire: RequestRecord \| None` | Capture delivered as data on the result; ambient global state removed (kills A5 misattribution/unbounded — DECISION N). The event-hook technique stays; only delivery changes. |
 | `closed.py` (bespoke: re-implements loopback/bounded/response_format/one-shot/detail-free) | `closed_backend()` preset over shared `wire/`+`constraint` | Same guarantees byte-for-byte, zero duplicated validation (DECISION L). Adds a v2-signature shim for Lodestar (DECISION H). |
 | `dual_path/` (parallel DBOS runner) | `observe/` (pipeline `Observer`s) | Reuses the `Agent[T]`/`Outcome[T]` spine; the persisted artifact is an `Outcome`, idempotent in a DBOS step keyed on `run_id` (fixes v2 §C durability gap). |
@@ -54,7 +54,7 @@ Legend: **VERBATIM** (copy the exact bytes/logic) · **REWRITTEN** (same intent,
 | Dropped | Why |
 |---|---|
 | **`grail` dependency** | Zero imports in v2 `src/`/`tests/`; a leftover from the archived 01/02 direction; drags a git dep + a pre-release native Rust interpreter (review §F). Never enters v3's `pyproject`. |
-| `ConstraintViolationError` (as an **exception**) | Becomes the `Violated` **outcome** variant (DECISION B/M) — the whole point of the spine. |
+| `ConstraintViolationError` | Renamed `ConstraintViolation`, **carried inside `Failed.error`** (DECISION B, user's lighter `Ok`/`Failed` spine) — a diagnosable subtype, not a top-level `Violated` variant. |
 | `DecodeMode = Literal[...]` central union + the `if mode ==` ladder | Replaced by the `Constraint` Protocol seam — open-to-extension-by-addition, no central enum (concept §23; kills the "closed to new modes" defect). |
 | `server_default_backend` cap | Declared, documented, never read (v2 §C). Removed; if per-request `guided_decoding_backend` is ever needed it rides `Settings.extra_body`. |
 | `DualPathDecodeMode = Literal["json_schema"]` narrowing | Observers record whatever `Outcome` they see; no mode-narrowing needed. |
@@ -83,7 +83,8 @@ Legend: **VERBATIM** (copy the exact bytes/logic) · **REWRITTEN** (same intent,
 
 - **Out:** `grail` (+ its git-dep + native Rust interpreter transitive pin).
 - **In:** nothing new to the *core* (fornix never enters; it's a subprocess boundary).
-- **Moved to extras:** `pydantic-ai-slim[openai]` → `[agent]` (so `closed` installs pydantic-ai-free,
-  DECISION I.2); `xgrammar` → `[grammar-check]`; `dbos`+**`psycopg`** (now declared) → `[observe]`.
-- **Pinned:** `pydantic-ai-slim >=2.11,<3` (S3; kills the unbounded-range A1/D3 bite).
-- **Lean core:** `pydantic + httpx` only.
+- **Moved to extras:** `xgrammar` → `[grammar-check]`; `dbos`+**`psycopg`** (now declared) →
+  `[observe]`. (Per **user DECISION I**, pydantic-ai stays in **core**, not an `[agent]` extra —
+  `closed` still imports none of it, which is the real guarantee.)
+- **Pinned:** `pydantic-ai-slim[openai] >=2.11,<3` (S3; kills the unbounded-range A1/D3 bite).
+- **Core:** `pydantic + httpx + pydantic-ai-slim[openai]`.

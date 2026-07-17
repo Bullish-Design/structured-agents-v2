@@ -22,8 +22,9 @@ For each `Constraint`, the codec's two halves are pinned in one place:
   - `Regex(p)`: `parse(s) == s` for `s` matching `p`.
   - `Choice(*o)`: `parse(o_i) == o_i` and the **static** type is the literal (see T7).
   - `Grammar(e)`: `parse(s) == s` (passthrough).
-- **Out-of-constraint rejection:** text violating the constraint → `parse` raises `_ParseRejected`,
-  which `Agent.run` maps to `Violated`. (`Regex`: non-matching string; `Choice`: a non-member.)
+- **Out-of-constraint rejection:** text violating the constraint → `parse` raises
+  `ConstraintViolation`, which `Agent.run` maps to `Failed(error=ConstraintViolation())` (DECISION B).
+  (`Regex`: non-matching string; `Choice`: a non-member.)
 - **Property form:** Hypothesis strategies over sample schemas / patterns / option-sets; assert the
   round-trip and the rejection law. This is where the "parse, don't validate" thesis is proven.
 
@@ -50,11 +51,14 @@ the "extra_body lands verbatim at top level" fact). Files: `tests/test_wire_shap
 
 ## T3 — `Outcome` algebra
 
-- `then` short-circuits: `Denied/Violated/Failed .then(f)` returns self unchanged; `Ok(v).then(f) ==
-  f(v)`. (Monad left-identity / short-circuit laws.)
+- `then` short-circuits: `Failed/Denied .then(f)` returns self unchanged; `Ok(v).then(f) == f(v)`.
+  (Monad left-identity / short-circuit laws.)
 - `map`: `Ok(v).map(f) == Ok(f(v))`; non-Ok passes through.
-- `unwrap`: `Ok(v).unwrap() == v`; each non-Ok maps to the right raised error (`Failed.error`
-  re-raised; `Denied`/`Violated` → `RuntimeError` carrying the reason).
+- `unwrap`: `Ok(v).unwrap() == v`; `Failed.error` re-raised (incl. a `ConstraintViolation`);
+  `Denied` → `AuthorityError` carrying the reason.
+- **Variant partition (DECISION B):** `Agent.run`/`run_batch` yield only `Ok`/`Failed`; a
+  constraint-guard miss surfaces as `Failed(error=ConstraintViolation())`. `fleet.execute` additionally
+  yields `Denied` (authority) as data — asserted distinct from `Failed`.
 - `value_or`: `Ok(v).value_or(d) == v`; non-Ok → `d`.
 - **`run_batch` surfaces per-item failures as `Failed` with no lost siblings** (v2 BatchResult fix,
   generalized): a batch with one failing call returns a `list[Outcome]` where that slot is `Failed`
@@ -161,8 +165,8 @@ A test that parses each module's imports (AST) and asserts the layering:
   deliberate marker-only concession, DESIGN §constraint / RISKS R2) — and nothing from `models`.
 - `wire/`, `constraint.py`, `outcome.py`, `authority.py`, `context.py`, `closed.py` import **no**
   `pydantic_ai.models` at all.
-- `closed.py` imports **no** `pydantic_ai` and **no** `agent`/`fleet` (pydantic-ai-free path,
-  DECISION I.2).
+- `closed.py` imports **no** `pydantic_ai` and **no** `agent`/`fleet` (import isolation — the closed
+  guarantee holds even though pydantic-ai is a core dep, DECISION I/L).
 - No module imports a strictly-higher layer (Layer N never imports Layer >N).
 - `config.py` is the **only** module doing `importlib`/`import_module` on data (grep/AST test — the
   localized import vector, DECISION K).

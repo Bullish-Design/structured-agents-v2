@@ -90,13 +90,19 @@ class Denied(Outcome[Any]): reason: str
 (`spike4.py` Encoding B) works identically.
 
 **Consequence for the design (a real departure from CONCEPT):** `Outcome[T]` is modeled as a
-**generic base class with `Ok[T]`/`Denied`/`Violated`/`Failed` subclasses**, and the combinators
-(`then`/`map`/`unwrap`/`value_or`) are **methods**, not free functions and not a bare `type` alias.
-Runtime `match` on the subclasses stays available for humans (it works at runtime); the *typed*
-path is the method API. This resolves the concept's internal contradiction (§5.1 writes `Outcome`
-as a `class` with `.then`, but the code block above it writes `type Outcome[T] = …` — only the
-class form typechecks). The "no-cast, typed end-to-end" promise **holds**, but *only* via this
-encoding.
+**generic base class with method combinators** (`then`/`map`/`unwrap`/`value_or`), **not** free
+functions and **not** a bare `type` alias. Runtime `match` on the subclasses stays available for
+humans (it works at runtime); the *typed* path is the method API. This resolves the concept's
+internal contradiction (§5.1 writes `Outcome` as a `class` with `.then`, but the code block above it
+writes `type Outcome[T] = …` — only the class form typechecks). The "no-cast, typed end-to-end"
+promise **holds**, but *only* via this encoding.
+
+> **Note on variant count (user DECISION B, 2026-07-17).** The spike tested the concept's 4-variant
+> union to characterize ty; the *encoding finding above is independent of how many variants exist* (a
+> bare `Ok[T] | Failed` alias breaks typed consumption just the same). The user chose the **lighter
+> `Ok`/`Failed`** spine for `run` (with `Denied` added only on `fleet.execute`, and `Violated` folded
+> into `Failed` as a `ConstraintViolation` error subtype). The class-with-methods encoding is what
+> both variant-counts require; only the subclass *set* differs. See DECISIONS §B.
 
 ---
 
