@@ -1,0 +1,138 @@
+{
+  "schema": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello"
+      }
+    ],
+    "model": "test-model",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "Person",
+        "schema": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "age": {
+              "type": "integer"
+            },
+            "tags": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "name",
+            "age",
+            "tags"
+          ],
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "stream": false
+  },
+  "plain_model": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello"
+      }
+    ],
+    "model": "test-model",
+    "stream": false,
+    "tool_choice": "required",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "final_result",
+          "description": "The final response which ends this conversation",
+          "parameters": {
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "integer"
+              },
+              "tags": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "age",
+              "tags"
+            ],
+            "type": "object",
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ]
+  },
+  "regex": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello"
+      }
+    ],
+    "model": "test-model",
+    "stream": false,
+    "structured_outputs": {
+      "regex": "\\d{4}-\\d{2}-\\d{2}"
+    }
+  },
+  "choice": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello"
+      }
+    ],
+    "model": "test-model",
+    "stream": false,
+    "structured_outputs": {
+      "choice": [
+        "keep",
+        "skip"
+      ]
+    }
+  },
+  "grammar": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello"
+      }
+    ],
+    "model": "test-model",
+    "stream": false,
+    "structured_outputs": {
+      "grammar": "root ::= \"a\" | \"b\""
+    }
+  },
+  "bare_str": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello"
+      }
+    ],
+    "model": "test-model",
+    "stream": false
+  }
+}
