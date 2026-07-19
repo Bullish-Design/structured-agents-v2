@@ -1,6 +1,7 @@
 """Durable primitives for constrained-agent workflows."""
 
 from .agent import Agent, AgentSpec, Backend, BackendCaps, Settings
+from .approval import Approval, ApprovalClient, PendingApproval
 from .authority import (
     Allowlist,
     Authorizer,
@@ -29,6 +30,8 @@ __all__ = [
     "AuthorityError",
     "Agent",
     "AgentSpec",
+    "Approval",
+    "ApprovalClient",
     "Backend",
     "BackendCapabilityError",
     "BackendCaps",
@@ -45,6 +48,7 @@ __all__ = [
     "Effector",
     "Grammar",
     "Null",
+    "PendingApproval",
     "ProcessResult",
     "Regex",
     "Schema",
