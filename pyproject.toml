@@ -60,9 +60,10 @@ include = [
 # Keep the default behavior; this section is here so you can extend it later if needed.
 
 [tool.pytest.ini_options]
-addopts = "-q --cov=structured_agents_v2 --cov-report=term-missing"
+addopts = "-q --strict-markers --cov=structured_agents_v2 --cov-report=term-missing"
 testpaths = ["tests"]
 markers = [
+  "dual_path: requires DBOS and the PostgreSQL service supplied by devenv.",
   "live: hits the real $LLM_BASE_URL server (skipped unless SAV_LIVE=1).",
 ]
 

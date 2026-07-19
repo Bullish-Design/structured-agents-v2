@@ -3,9 +3,8 @@
 Architecture C, GPU-free: two `DBOSAgent` legs against an in-process OpenAI-compatible ASGI mock
 (keyed by the wire `model`), joined by a top-level `asyncio.gather`, persisted as `ComparisonRecord`s.
 
-Gates: `dbos`/`psycopg` absent → skipped; Postgres not on 127.0.0.1:5433 → skipped. DBOS is a
-process-global singleton, so the whole module shares **one** lifecycle (a module-scoped fixture:
-init → register → launch; teardown: destroy) driven on a single dedicated event loop.
+DBOS is process-global, so every test owns one lifecycle and a UUID-suffixed
+registration name. PostgreSQL is supplied only through DUAL_PATH_TEST_PG_URL.
 
 Run: `devenv shell -- uv run --extra dev --extra dual-path pytest tests/test_dual_path_runtime.py -q`
 """
@@ -14,20 +13,18 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import socket
 import sys
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import httpx
 import pytest
 
 pytest.importorskip("dbos")
 pytest.importorskip("psycopg")
-import psycopg  # noqa: E402
 
 SPIKE_DIR = Path(__file__).resolve().parents[1] / ".scratch" / "projects" / "03-dual-path" / "spike"
 sys.path.insert(0, str(SPIKE_DIR))  # so output_type_ref="schemas:Command" resolves (as in the spike)
@@ -43,22 +40,13 @@ from structured_agents_v2.dual_path import (  # noqa: E402
 from structured_agents_v2.dual_path.runtime import DualPathRuntime as _RT  # noqa: E402  (static guard)
 from structured_agents_v2.profile import AgentProfile  # noqa: E402
 
-PG_URL = os.environ.get("DUAL_PATH_TEST_PG_URL", "postgresql://andrew@127.0.0.1:5433/dual_path")
 PROMPT = "Create a file notes.txt"
 
 _VALID = '{"action":"create","target":"notes.txt","reason":"create it"}'
 _RESPONSES = {"cmd-adapter": _VALID, "frontier-sim": _VALID}
 
 
-def _pg_up() -> bool:
-    try:
-        with socket.create_connection(("127.0.0.1", 5433), timeout=0.5):
-            return True
-    except OSError:
-        return False
-
-
-pytestmark = pytest.mark.skipif(not _pg_up(), reason="dual-path Postgres not running on 127.0.0.1:5433")
+pytestmark = pytest.mark.dual_path
 
 
 class MockOpenAI:
@@ -111,8 +99,8 @@ class Env:
     run: Callable[[Coroutine[Any, Any, Any]], Any]
 
 
-@pytest.fixture(scope="module")
-def env() -> Any:
+@pytest.fixture
+def env(dual_path_isolated_pg_url: str) -> Any:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     transport = httpx.ASGITransport(app=MockOpenAI())
@@ -125,19 +113,24 @@ def env() -> Any:
             base_url="http://mock/v1", default_model=model, caps=BackendCaps(xgrammar=False, lora=False)
         ).attach_transport(transport)
 
-    runtime = DualPathRuntime(DualPathConfig(app_name="dual-path-test", pg_url=PG_URL, default_sample_rate=1.0))
+    suffix = uuid4().hex
+    runtime = DualPathRuntime(
+        DualPathConfig(app_name=f"dual-path-{suffix[:12]}", pg_url=dual_path_isolated_pg_url, default_sample_rate=1.0)
+    )
 
     # NB: DBOS function registration is process-global and survives destroy(); these names must not
     # collide with any other DBOS-using test in the session (e.g. the spike's "cmd@primary").
     cmd_primary = primary_be().build(_profile("cmd-adapter"))
-    cmd = runtime.register("rt_cmd", primary=cmd_primary, reference=reference_be("frontier-sim").build(_profile(None)))
+    cmd = runtime.register(
+        f"rt_cmd_{suffix}", primary=cmd_primary, reference=reference_be("frontier-sim").build(_profile(None))
+    )
     errcmd = runtime.register(
-        "rt_err",
+        f"rt_err_{suffix}",
         primary=primary_be().build(_profile("cmd-adapter")),
         reference=reference_be("bad-frontier").build(_profile(None)),
     )
     skip = runtime.register(
-        "rt_skip",
+        f"rt_skip_{suffix}",
         primary=primary_be().build(_profile("cmd-adapter")),
         reference=reference_be("frontier-sim").build(_profile(None)),
         sample_rate=0.0,
@@ -170,10 +163,7 @@ def env() -> Any:
 
 @pytest.fixture
 def clean(env: Env) -> Env:
-    """Truncate the data table before each test for row-count isolation (DBOS tables untouched)."""
-    with psycopg.connect(PG_URL) as conn:
-        conn.execute("truncate comparison_records")
-        conn.commit()
+    """Compatibility fixture; `env` already owns an isolated database schema."""
     return env
 
 

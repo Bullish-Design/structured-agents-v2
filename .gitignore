@@ -232,3 +232,7 @@ deploy/vllm/docker-compose.override.yml
 !/deploy/vllm/native/vendor/
 !/deploy/vllm/native/vendor/vllm-gguf-plugin/
 !/deploy/vllm/native/vendor/vllm-gguf-plugin/**
+
+# Nix build output
+/result
+/result-*

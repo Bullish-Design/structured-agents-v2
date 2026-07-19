@@ -17,6 +17,7 @@
   packages = [
     pkgs.git
     pkgs.uv
+    pkgs.postgresql
     pkgs.curl       # probing the inference server
     pkgs.jq         # inspecting JSON responses
     ];
@@ -35,8 +36,22 @@
   # https://devenv.sh/processes/
   # processes.cargo-watch.exec = "cargo-watch";
 
-  # https://devenv.sh/services/
-  # services.postgres.enable = true;
+  # PostgreSQL is owned by devenv, rather than by a developer's global service.
+  # PGHOST/PGPORT below are supplied by this service module.
+  services.postgres = {
+    enable = true;
+    # Reserve a project service port; PGPORT remains the sole source used by clients.
+    port = 5433;
+    initialDatabases = [{
+      name = "structured_agents";
+    }];
+    initialScript = ''
+      create role structured_agents login;
+      grant all privileges on database structured_agents to structured_agents;
+      \connect structured_agents
+      grant all privileges on schema public to structured_agents;
+    '';
+  };
 
   # https://devenv.sh/scripts/
   scripts.hello.exec = ''
@@ -60,7 +75,21 @@
     uv run python .scratch/projects/01-xgrammar-concept/spike/run_spike.py "$@"
   '';
 
+  scripts.db-check.exec = ''
+    psql "$DUAL_PATH_PG_URL" -v ON_ERROR_STOP=1 -c 'select current_database(), current_user'
+  '';
+
+  scripts.test-core.exec = ''
+    uv run --extra dev pytest -m 'not live and not dual_path'
+  '';
+
+  scripts.test-dual-path.exec = ''
+    uv run --extra dev --extra dual-path pytest -m dual_path
+  '';
+
   enterShell = ''
+    export DUAL_PATH_PG_URL="postgresql://structured_agents@/structured_agents?host=$PGHOST&port=$PGPORT"
+    export DUAL_PATH_TEST_PG_URL="$DUAL_PATH_PG_URL"
     hello
     git --version
     echo "LLM backend: $LLM_BASE_URL  (model: $LLM_MODEL)"

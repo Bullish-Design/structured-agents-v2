@@ -1,14 +1,8 @@
-"""Postgres-gated tests for the dual-path jsonb store + export.
-
-Skipped unless Postgres is reachable on 127.0.0.1:5433 (the spike cluster). Each test starts from a
-truncated table for isolation. Override the target via DUAL_PATH_TEST_PG_URL.
-"""
+"""Postgres tests for the dual-path jsonb store + export, using devenv's service."""
 
 from __future__ import annotations
 
 import json
-import os
-import socket
 from pathlib import Path
 from typing import Literal
 
@@ -26,18 +20,7 @@ from structured_agents_v2.dual_path import (  # noqa: E402
     build_comparison_record,
 )
 
-PG_URL = os.environ.get("DUAL_PATH_TEST_PG_URL", "postgresql://andrew@127.0.0.1:5433/dual_path")
-
-
-def _pg_up() -> bool:
-    try:
-        with socket.create_connection(("127.0.0.1", 5433), timeout=0.5):
-            return True
-    except OSError:
-        return False
-
-
-pytestmark = pytest.mark.skipif(not _pg_up(), reason="spike Postgres not running on 127.0.0.1:5433")
+pytestmark = pytest.mark.dual_path
 
 
 class Widget(BaseModel):
@@ -46,12 +29,9 @@ class Widget(BaseModel):
 
 
 @pytest.fixture
-def store() -> ComparisonStore:
-    s = ComparisonStore(PG_URL)
+def store(dual_path_isolated_pg_url: str) -> ComparisonStore:
+    s = ComparisonStore(dual_path_isolated_pg_url)
     s.init_schema()
-    with psycopg.connect(PG_URL) as conn:
-        conn.execute("truncate comparison_records")
-        conn.commit()
     return s
 
 
@@ -99,7 +79,7 @@ def test_query_filter_by_agreement(store: ComparisonStore) -> None:
 
 def test_jsonb_nested_query_is_available(store: ComparisonStore) -> None:
     store.save(_record("r1", ref=Widget(action="a", name="y")))
-    with psycopg.connect(PG_URL) as conn:
+    with psycopg.connect(store.url) as conn:
         row = conn.execute(
             "select record->'primary_model'->>'wire_model', record->'signal'->>'agreement_exact' "
             "from comparison_records order by id desc limit 1"

@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+import os
+from collections.abc import Callable, Iterator
 from typing import Any
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -56,3 +59,41 @@ def mock_openai() -> MockOpenAI:
 @pytest.fixture
 def transport(mock_openai: MockOpenAI) -> httpx.ASGITransport:
     return httpx.ASGITransport(app=mock_openai)
+
+
+@pytest.fixture(scope="session")
+def dual_path_pg_url() -> str:
+    """Return the PostgreSQL URL supplied by devenv/CI for dual-path tests.
+
+    Database tests deliberately fail when this contract is absent: the supported
+    commands provision PostgreSQL rather than silently testing against a local
+    developer service or skipping persistence coverage.
+    """
+    url = os.environ.get("DUAL_PATH_TEST_PG_URL")
+    if not url:
+        pytest.fail(
+            "DUAL_PATH_TEST_PG_URL is required for dual-path tests; run "
+            "`devenv shell -- test-dual-path` or configure the CI PostgreSQL service."
+        )
+    return url
+
+
+def _with_search_path(url: str, schema: str) -> str:
+    parts = urlsplit(url)
+    params = dict(parse_qsl(parts.query, keep_blank_values=True))
+    params["options"] = f"-c search_path={schema}"
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(params, quote_via=quote), parts.fragment))
+
+
+@pytest.fixture
+def dual_path_isolated_pg_url(dual_path_pg_url: str) -> Iterator[str]:
+    """Provide a per-test schema, safe for parallel tests and local applications."""
+    psycopg = pytest.importorskip("psycopg")
+    schema = f"dual_path_test_{uuid4().hex}"
+    with psycopg.connect(dual_path_pg_url, autocommit=True) as conn:
+        conn.execute(f'create schema "{schema}"')
+    try:
+        yield _with_search_path(dual_path_pg_url, schema)
+    finally:
+        with psycopg.connect(dual_path_pg_url, autocommit=True) as conn:
+            conn.execute(f'drop schema if exists "{schema}" cascade')
