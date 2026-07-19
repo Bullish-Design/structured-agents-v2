@@ -121,3 +121,45 @@ This proves the Phase 5 SQLite operational surface in-process: queue limits and
 failure isolation, cron dispatch, workflow-store observability, fork/cancel,
 and keyed dual-agent idempotency. It does not independently prove recovery
 across a separate process, which remains Phase 7 scope.
+
+---
+
+# Phase 6 config-edge evidence — 2026-07-18
+
+## Implementation and safety boundary
+
+- `config.py` is the sole module that imports `importlib`. It resolves a
+  `schema` reference only after its module name exactly matches, or is a child
+  of, an explicit `allow_modules` entry. A disallowed reference raises
+  `ConfigError` before any import is attempted.
+- Built-in factories cover the canonical `schema`, `regex`, `choice`, and
+  `grammar` forms. `spec_from_config` reconstructs only the existing
+  `AgentSpec` fields (`name`, `constraint`, `instructions`, `adapter`, and
+  `Settings`), preserving the code-first toolkit rather than adding a config
+  framework.
+- Entry points are discovered on the first `constraint_from_config` call via
+  the `structured_agents.constraints` group. An entry point's name is its
+  constraint kind and its loaded callable is the factory; explicitly
+  registered factories take precedence.
+
+## Focused evidence
+
+- `devenv shell -- pytest tests/test_config.py` → `6 passed in 2.21s`.
+  The tests prove built-in constraint serde round-trips, complete `AgentSpec`
+  reconstruction, pre-import allowlist rejection, custom factory registration,
+  lazy entry-point discovery, and the source-level importlib boundary.
+- Initial `devenv shell -- pytest` baseline before edits → `20 passed in
+  10.22s` on the session SQLite DBOS harness.
+
+## Final verification
+
+- `devenv shell -- pytest` → `26 passed in 10.22s`.
+- `devenv shell -- ty check src tests` → `All checks passed!`.
+- `devenv shell -- ruff check src tests` → `All checks passed!`.
+
+## Scope
+
+This proves the Phase 6 serialized-data boundary and its in-process plugin
+discovery behavior. It does not validate third-party packaged entry points in
+a separately installed distribution; the mocked entry-point test verifies the
+standard-library discovery and load contract without adding a package fixture.

@@ -15,6 +15,7 @@ from .authority import (
     any_of,
     execute,
 )
+from .config import constraint_from_config, register_constraint, spec_from_config
 from .constraint import Choice, Constraint, Grammar, Regex, Schema, WireSpec
 from .errors import (
     AuthorityError,
@@ -64,11 +65,14 @@ __all__ = [
     "cancel",
     "compare",
     "configure",
+    "constraint_from_config",
     "execute",
     "fork",
     "launch",
+    "register_constraint",
     "schedule",
     "shutdown",
     "status",
+    "spec_from_config",
     "workflows",
 ]
