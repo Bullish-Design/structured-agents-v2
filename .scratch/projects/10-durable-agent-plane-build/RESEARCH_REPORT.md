@@ -69,3 +69,55 @@ This proves the in-process SQLite durable-message transition from PENDING to
 SUCCESS and the data-denial composition boundary. It does not independently
 prove recovery after a separate-process crash/restart; that remains the DBOS
 durability contract and Phase 7's recovery verification scope.
+
+---
+
+# Phase 5 plane-service evidence — 2026-07-18
+
+## Installed DBOS 2.23 contract
+
+- `Queue(name, concurrency=None, limiter=None, ...)` takes its rate limit as
+  a `QueueRateLimit` mapping with `{"limit": int, "period": float}`; durable
+  submission is `await queue.enqueue_async(workflow, *args)`. The public
+  `Queue` wrapper translates its `(limit, period_seconds)` API to that mapping.
+- `@DBOS.scheduled(cron)` is the 2.23 scheduling decorator. Its scheduler
+  invokes the workflow with two UTC `datetime` arguments: the scheduled time
+  and the actual dispatch time. The installed implementation parses cron with
+  `second_at_beginning=True`, so the SQLite test uses `*/2 * * * * *` and
+  `scheduler_polling_interval_sec=0.05` rather than sleeping through a minute.
+- Async observability APIs are `list_workflows_async`,
+  `get_workflow_status_async`, `fork_workflow_async(workflow_id, start_step)`,
+  and `cancel_workflow_async`. There is no `get_workflow_handle_async` in this
+  release.
+
+## Focused runtime evidence
+
+- `devenv shell -- pytest tests/test_plane.py::test_queue_caps_concurrency_and_isolates_batch_failures tests/test_plane.py::test_compare_is_keyed_and_durable -q`
+  passed. A DBOS queue with concurrency 2 kept peak concurrent runs at or below
+  2; a failed item surfaced only through its own handle while its three siblings
+  completed. A pair of real `Agent` legs used two keyed durable runs; repeating
+  the same comparison key made exactly two model requests total, not four.
+- `devenv shell -- pytest tests/test_plane.py::test_scheduled_workflow_fires -vv`
+  passed in 4.15s. The scheduled workflow fired and appeared as SUCCESS in the
+  SQLite workflow store.
+- The observability focused test passed: a blocked `Approval` was listed as
+  PENDING, status lookup returned PENDING, a workflow fork from step 0 replayed
+  its meaningful step, and a blocked receive transitioned to CANCELLED.
+
+## First failures and minimal corrections
+
+- The first collection attempt assumed a private `dbos._workflow` module for
+  handle types. DBOS 2.23 exports `WorkflowHandleAsync` and `WorkflowStatus`
+  from `dbos`; the wrapper now imports those public names.
+- The first scheduler run failed with
+  `TypeError: scheduled_workflow() takes 0 positional arguments but 2 were given`.
+  Installed source confirms the two-datetime callback contract, so the test
+  now accepts those arguments. No DBOS lifecycle, model, or durable semantics
+  were changed to hide the failure.
+
+## Scope
+
+This proves the Phase 5 SQLite operational surface in-process: queue limits and
+failure isolation, cron dispatch, workflow-store observability, fork/cancel,
+and keyed dual-agent idempotency. It does not independently prove recovery
+across a separate process, which remains Phase 7 scope.

@@ -25,6 +25,7 @@ from .errors import (
     ConstraintViolation,
     StructuredAgentsError,
 )
+from .plane import Comparison, Queue, cancel, compare, configure, fork, launch, schedule, shutdown, status, workflows
 
 __all__ = [
     "AuthorityError",
@@ -38,6 +39,7 @@ __all__ = [
     "Allowlist",
     "Authorizer",
     "Choice",
+    "Comparison",
     "ConfigError",
     "Constraint",
     "ConstraintCompileError",
@@ -51,6 +53,7 @@ __all__ = [
     "PendingApproval",
     "ProcessResult",
     "Regex",
+    "Queue",
     "Schema",
     "Settings",
     "Subprocess",
@@ -58,5 +61,14 @@ __all__ = [
     "WireSpec",
     "all_of",
     "any_of",
+    "cancel",
+    "compare",
+    "configure",
     "execute",
+    "fork",
+    "launch",
+    "schedule",
+    "shutdown",
+    "status",
+    "workflows",
 ]

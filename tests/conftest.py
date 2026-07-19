@@ -13,6 +13,7 @@ DBOS(
         name="structured-agents-tests",
         system_database_url=f"sqlite:///{_directory / 'system.sqlite'}",
         use_listen_notify=False,
+        scheduler_polling_interval_sec=0.05,
     )
 )
 
