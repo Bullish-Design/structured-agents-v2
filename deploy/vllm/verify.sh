@@ -5,9 +5,8 @@
 #   1. reachable     — GET /health
 #   2. models        — GET /v1/models lists the served model (and any LoRA adapters)
 #   3. json_schema   — a response_format=json_schema completion returns schema-valid JSON
-#   4. xgrammar      — a structured_outputs.regex completion returns text matching the regex
-#                      (this is the part the llama.cpp box CAN'T do — proves real XGrammar)
-#   5. lora          — (optional) a request with model=<adapter> returns 200
+#   4. xgrammar      — regex, choice, and grammar outputs satisfy their constraints
+#   5. lora          — (optional) an adapter constrained completion is exact
 #
 # Config comes from the environment (defaults mirror deploy/vllm/.env):
 #   LLM_BASE_URL   default http://localhost:8000/v1   (e.g. http://tower:8000/v1 over Tailscale)
@@ -111,8 +110,8 @@ else
   bad "json_schema (code $CODE): ${content:-<no content>}"
 fi
 
-# 4. xgrammar (regex) ------------------------------------------------------------------
-hdr "4. XGrammar bare-string (regex) — vLLM-only"
+# 4. xgrammar (regex, choice, grammar) -------------------------------------------------
+hdr "4. XGrammar bare-string constraints — vLLM-only"
 REGEX='git (status|diff|add|commit) [a-zA-Z0-9._/ -]*'
 # max_tokens is REQUIRED here: the regex ends in an unbounded `*`, so without a cap the
 # model generates to max_model_len and the request exceeds curl's timeout (code 000) on
@@ -132,14 +131,35 @@ else
   bad "output did not match regex: '$content'"
 fi
 
+read -r -d '' CHOICE_REQ <<EOF
+{"model":"$MODEL","messages":[{"role":"user","content":"Return phase7-choice."}],"structured_outputs":{"choice":["phase7-choice"]},"max_tokens":16}
+EOF
+curl_json POST "$BASE_URL/chat/completions" "$CHOICE_REQ"
+content="$(extract_content)"
+if [[ "$CODE" == "200" ]] && [[ "$content" == "phase7-choice" ]]; then
+  ok "choice-constrained output is exact: '$content'"
+else
+  bad "choice-constrained output (code $CODE): '${content:-<no content>}'"
+fi
+
+read -r -d '' GRAMMAR_REQ <<EOF
+{"model":"$MODEL","messages":[{"role":"user","content":"Return phase7-grammar."}],"structured_outputs":{"grammar":"root ::= \"phase7-grammar\""},"max_tokens":16}
+EOF
+curl_json POST "$BASE_URL/chat/completions" "$GRAMMAR_REQ"
+content="$(extract_content)"
+if [[ "$CODE" == "200" ]] && [[ "$content" == "phase7-grammar" ]]; then
+  ok "grammar-constrained output is exact: '$content'"
+else
+  bad "grammar-constrained output (code $CODE): '${content:-<no content>}'"
+fi
+
 # 5. lora (optional) -------------------------------------------------------------------
 if [[ -n "$LORA_NAME" ]]; then
   hdr "5. LoRA adapter round-trip (model=$LORA_NAME)"
-  read -r -d '' LR_REQ <<EOF
-{"model":"$LORA_NAME","messages":[{"role":"user","content":"hello"}]}
-EOF
+  LR_REQ='{"model":"'"$LORA_NAME"'","messages":[{"role":"user","content":"Return phase7-lora."}],"structured_outputs":{"choice":["phase7-lora"]},"max_tokens":16}'
   curl_json POST "$BASE_URL/chat/completions" "$LR_REQ"
-  [[ "$CODE" == "200" ]] && ok "adapter '$LORA_NAME' served a completion" || bad "adapter '$LORA_NAME' request -> $CODE"
+  content="$(extract_content)"
+  [[ "$CODE" == "200" && "$content" == "phase7-lora" ]] && ok "adapter '$LORA_NAME' constrained completion is exact" || bad "adapter '$LORA_NAME' output (code $CODE): '${content:-<no content>}'"
 fi
 
 # optional: the library's own live assertions ------------------------------------------
