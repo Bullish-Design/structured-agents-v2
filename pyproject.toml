@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "hypothesis>=6.120",
   "pytest>=8",
   "pytest-asyncio>=0.24",
   "ty>=0.0.46",
@@ -45,6 +46,12 @@ markers = ["live: hits the configured vLLM server (skipped unless SAV_LIVE=1)."]
 
 [tool.ty.environment]
 python-version = "3.13"
+
+[[tool.ty.overrides]]
+include = ["src/structured_agents/constraint.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
 
 [tool.ruff]
 line-length = 120
