@@ -40,6 +40,7 @@ include = ["src", "README.md", "tests", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "session"
 addopts = "-q --strict-markers"
 testpaths = ["tests"]
 markers = ["live: hits the configured vLLM server (skipped unless SAV_LIVE=1)."]
