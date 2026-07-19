@@ -1,0 +1,13 @@
+curl --connect-timeout 10 --max-time 30 http://server:8000/health
+curl --connect-timeout 10 --max-time 30 http://server:8000/v1/models
+2026-07-19T02:42:57Z
+aa2250966e532bb6a6f6970f33573aac55001c4f
+ M .scratch/projects/10-durable-agent-plane-build/RESEARCH_REPORT.md
+ M deploy/vllm/verify.sh
+?? .scratch/projects/10-durable-agent-plane-build/artifacts/
+?? tests/test_live.py
+server
+127.0.0.2       STREAM server
+127.0.0.2       DGRAM  
+127.0.0.2       RAW    
+LLM_API_KEY=

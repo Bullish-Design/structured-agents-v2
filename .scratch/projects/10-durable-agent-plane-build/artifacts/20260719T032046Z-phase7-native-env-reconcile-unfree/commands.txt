@@ -1,0 +1,2 @@
+cd deploy/vllm/native && NIXPKGS_ALLOW_UNFREE=1 devenv shell --impure -- uv sync --locked
+systemctl restart structured-agents-vllm.service (only after successful sync)

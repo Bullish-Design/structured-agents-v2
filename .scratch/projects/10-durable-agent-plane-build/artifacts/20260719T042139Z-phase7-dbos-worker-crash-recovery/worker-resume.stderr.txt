@@ -1,0 +1,12 @@
+00:21:44 [    INFO] (dbos:_dbos.py:464) Initializing DBOS (v2.23.0)
+00:21:44 [    INFO] (dbos:_dbos.py:535) Executor ID: local
+00:21:44 [    INFO] (dbos:_dbos.py:536) Application version: dbf1c892cd04e1cbadce50894bcc7cfa
+00:21:44 [    INFO] (dbos:_sys_db.py:535) Initializing DBOS system database with URL: sqlite:///.scratch/projects/10-durable-agent-plane-build/artifacts/20260719T042139Z-phase7-dbos-worker-crash-recovery/dbos.sqlite (schema: dbos)
+00:21:44 [    INFO] (dbos:_sys_db.py:539) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+00:21:44 [ WARNING] (dbos:_dbos.py:604) Failed to start admin server: [Errno 98] Address already in use
+00:21:44 [    INFO] (dbos:_dbos.py:613) Recovering 1 workflows from application version dbf1c892cd04e1cbadce50894bcc7cfa
+00:21:44 [    INFO] (dbos:_dbos.py:711) DBOS launched!
+00:21:44 [    INFO] (dbos:_dbos.py:719) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=phase7-worker-crash
+00:21:44 [    INFO] (dbos:_queue.py:666) Listening to 0 queues:
+00:21:45 [    INFO] (dbos:_queue.py:614) Stopping queue manager, joining all worker threads...
+00:21:46 [    INFO] (dbos:_dbos.py:381) DBOS successfully shut down

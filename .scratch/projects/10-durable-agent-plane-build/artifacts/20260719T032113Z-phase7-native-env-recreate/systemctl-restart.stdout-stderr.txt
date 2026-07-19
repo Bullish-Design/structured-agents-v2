@@ -1,0 +1,2 @@
+Failed to restart structured-agents-vllm.service: Access denied as the requested operation requires interactive authentication. However, interactive authentication has not been enabled by the calling program.
+See system logs and 'systemctl status structured-agents-vllm.service' for details.

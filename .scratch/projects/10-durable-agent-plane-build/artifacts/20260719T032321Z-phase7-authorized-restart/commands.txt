@@ -1,0 +1,1 @@
+sudo -n systemctl restart structured-agents-vllm.service

@@ -1,0 +1,31 @@
+SAV_LIVE=1 LLM_BASE_URL=http://127.0.0.1:8000/v1 LLM_MODEL=base devenv shell -- pytest -x tests/test_live.py
+2026-07-19T02:47:08Z
+aa2250966e532bb6a6f6970f33573aac55001c4f
+ M .scratch/projects/10-durable-agent-plane-build/RESEARCH_REPORT.md
+ M deploy/vllm/verify.sh
+?? .scratch/projects/10-durable-agent-plane-build/artifacts/
+?? tests/test_live.py
+State  Recv-Q Send-Q               Local Address:Port  Peer Address:PortProcess
+LISTEN 0      128                        0.0.0.0:22         0.0.0.0:*   
+LISTEN 0      4096                     127.0.0.2:41829      0.0.0.0:*    users:(("VLLM::EngineCor",pid=247519,fd=60))
+LISTEN 0      4096                     127.0.0.2:44593      0.0.0.0:*    users:(("VLLM::EngineCor",pid=247519,fd=64))
+LISTEN 0      4096                     127.0.0.2:44677      0.0.0.0:*    users:(("VLLM::EngineCor",pid=247519,fd=72))
+LISTEN 0      4096                     127.0.0.2:37627      0.0.0.0:*    users:(("VLLM::EngineCor",pid=247519,fd=68))
+LISTEN 0      4096                     127.0.0.2:37101      0.0.0.0:*    users:(("VLLM::EngineCor",pid=247519,fd=76))
+LISTEN 0      4096                     127.0.0.2:36161      0.0.0.0:*    users:(("VLLM::EngineCor",pid=247519,fd=56))
+LISTEN 0      4096                 100.124.67.32:62504      0.0.0.0:*   
+LISTEN 0      511                      127.0.0.1:6767       0.0.0.0:*    users:(("Paseo Daemon",pid=460701,fd=36))
+LISTEN 0      512                      127.0.0.1:8001       0.0.0.0:*    users:(("llama-server",pid=244396,fd=37))
+LISTEN 0      2048                     127.0.0.1:8000       0.0.0.0:*    users:(("vllm",pid=244551,fd=30))
+LISTEN 0      4096                 100.124.67.32:443        0.0.0.0:*   
+LISTEN 0      4096                     127.0.0.1:5432       0.0.0.0:*   
+LISTEN 0      4096                 100.124.67.32:8122       0.0.0.0:*   
+LISTEN 0      4096                 100.124.67.32:8123       0.0.0.0:*   
+LISTEN 0      4096                 100.124.67.32:8443       0.0.0.0:*   
+LISTEN 0      4096                             *:39239            *:*    users:(("VLLM::EngineCor",pid=247519,fd=46))
+LISTEN 0      128                           [::]:22            [::]:*   
+LISTEN 0      4096   [fd7a:115c:a1e0::ad3a:4321]:8123          [::]:*   
+LISTEN 0      4096   [fd7a:115c:a1e0::ad3a:4321]:8122          [::]:*   
+LISTEN 0      4096   [fd7a:115c:a1e0::ad3a:4321]:443           [::]:*   
+LISTEN 0      4096   [fd7a:115c:a1e0::ad3a:4321]:46540         [::]:*   
+LISTEN 0      4096   [fd7a:115c:a1e0::ad3a:4321]:8443          [::]:*   

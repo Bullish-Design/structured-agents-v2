@@ -1,0 +1,9 @@
+LLM_BASE_URL=http://127.0.0.1:8000/v1 LLM_MODEL=base deploy/vllm/verify.sh
+2026-07-19T02:44:05Z
+aa2250966e532bb6a6f6970f33573aac55001c4f
+ M .scratch/projects/10-durable-agent-plane-build/RESEARCH_REPORT.md
+ M deploy/vllm/verify.sh
+?? .scratch/projects/10-durable-agent-plane-build/artifacts/
+?? tests/test_live.py
+server
+LLM_API_KEY=

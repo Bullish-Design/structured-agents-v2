@@ -1,0 +1,1 @@
+{"model":"base","messages":[{"role":"user","content":"Write a detailed 1,000-word technical explanation of durable workflows."}],"response_format":{"type":"json_schema","json_schema":{"name":"LongResponse","strict":true,"schema":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"],"additionalProperties":false}}},"max_tokens":1024}

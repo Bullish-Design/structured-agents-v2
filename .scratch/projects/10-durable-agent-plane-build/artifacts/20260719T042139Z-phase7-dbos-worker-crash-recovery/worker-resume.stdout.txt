@@ -1,0 +1,1 @@
+{"event": "success", "status": "SUCCESS", "result": {"argv": ["echo", "phase7-live"]}, "effect_lines": 1}

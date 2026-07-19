@@ -1,0 +1,20 @@
+git version 2.53.0
+Target: http://127.0.0.1:8000/v1   model: base   auth: no
+
+[1m== 1. reachable (/health) ==[0m
+[32mPASS  /health -> 200[0m
+
+[1m== 2. served models (/v1/models) ==[0m
+[32mPASS  model 'base' is served[0m
+
+[1m== 3. json_schema structured output ==[0m
+[31mFAIL  json_schema (code 500): <no content>[0m
+
+[1m== 4. XGrammar bare-string constraints — vLLM-only ==[0m
+[31mFAIL  xgrammar request failed (code 500) — is STRUCTURED_OUTPUTS_BACKEND=xgrammar on a vLLM 0.10+ tag?[0m
+[31mFAIL  choice-constrained output (code 500): '<no content>'[0m
+[31mFAIL  grammar-constrained output (code 500): '<no content>'[0m
+
+[1m== summary ==[0m
+2 passed, 4 failed
+[31mverification incomplete[0m

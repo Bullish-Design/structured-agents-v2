@@ -1,0 +1,1 @@
+{"model":"base","messages":[{"role":"user","content":"Return phase7-choice."}],"structured_outputs":{"choice":["phase7-choice"]},"max_tokens":16}

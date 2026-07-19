@@ -1,0 +1,375 @@
+git version 2.53.0
+.F
+=================================== FAILURES ===================================
+_________________________ test_live_schema_constraint __________________________
+
+model_name = 'base'
+
+    @contextmanager
+    def _map_api_errors(model_name: str) -> Generator[None]:
+        try:
+>           yield
+
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/models/openai.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/models/openai.py:992: in _completions_create
+    return await self.client.chat.completions.create(
+.devenv/state/venv/lib/python3.13/site-packages/openai/resources/chat/completions/completions.py:2877: in create
+    return await self._post(
+.devenv/state/venv/lib/python3.13/site-packages/openai/_base_client.py:1931: in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <openai.AsyncOpenAI object at 0x77ae2ea37cb0>
+cast_to = <class 'openai.types.chat.chat_completion.ChatCompletion'>
+options = FinalRequestOptions(method='post', url='/chat/completions', params={}, headers={'User-Agent': 'pydantic-ai/2.11.0'}, m...bject', 'additionalProperties': False}, 'strict': True}}, 'seed': 7, 'stream': False, 'temperature': 0}, extra_json={})
+
+    async def request(
+        self,
+        cast_to: Type[ResponseT],
+        options: FinalRequestOptions,
+        *,
+        stream: bool = False,
+        stream_cls: type[_AsyncStreamT] | None = None,
+    ) -> ResponseT | _AsyncStreamT:
+        if self._platform is None:
+            # `get_platform` can make blocking IO calls so we
+            # execute it earlier while we are in an async context
+            self._platform = await asyncify(get_platform)()
+    
+        cast_to = self._maybe_override_cast_to(cast_to, options)
+    
+        # create a copy of the options we were given so that if the
+        # options are mutated later & we then retry, the retries are
+        # given the original options
+        input_options = model_copy(options)
+        if input_options.idempotency_key is None and input_options.method.lower() != "get":
+            # ensure the idempotency key is reused between requests
+            input_options.idempotency_key = self._idempotency_key()
+    
+        response: httpx.Response | None = None
+        max_retries = input_options.get_max_retries(self.max_retries)
+    
+        retries_taken = 0
+        for retries_taken in range(max_retries + 1):
+            options = model_copy(input_options)
+            options = await self._prepare_options(options)
+    
+            remaining_retries = max_retries - retries_taken
+            request = self._build_request(options, retries_taken=retries_taken)
+            await self._prepare_request(request)
+    
+            kwargs: HttpxSendArgs = {}
+            if self.custom_auth is not None:
+                kwargs["auth"] = self.custom_auth
+    
+            if options.follow_redirects is not None:
+                kwargs["follow_redirects"] = options.follow_redirects
+    
+            log.debug("Sending HTTP Request: %s %s", request.method, request.url)
+    
+            response = None
+            try:
+                response = await self._send_request(
+                    request,
+                    stream=stream or self._should_stream_response_body(request=request),
+                    **kwargs,
+                )
+            except httpx.TimeoutException as err:
+                log.debug("Encountered httpx.TimeoutException", exc_info=True)
+    
+                if remaining_retries > 0:
+                    await self._sleep_for_retry(
+                        retries_taken=retries_taken,
+                        max_retries=max_retries,
+                        options=input_options,
+                        response=None,
+                    )
+                    continue
+    
+                log.debug("Raising timeout error")
+                raise APITimeoutError(request=request) from err
+            except OpenAIError as err:
+                # Propagate OpenAIErrors as-is, without retrying or wrapping in APIConnectionError
+                raise err
+            except Exception as err:
+                log.debug("Encountered Exception", exc_info=True)
+    
+                if remaining_retries > 0:
+                    await self._sleep_for_retry(
+                        retries_taken=retries_taken,
+                        max_retries=max_retries,
+                        options=input_options,
+                        response=None,
+                    )
+                    continue
+    
+                log.debug("Raising connection error")
+                raise APIConnectionError(request=request) from err
+    
+            log.debug(
+                'HTTP Response: %s %s "%i %s" %s',
+                request.method,
+                request.url,
+                response.status_code,
+                response.reason_phrase,
+                response.headers,
+            )
+            log.debug("request_id: %s", response.headers.get("x-request-id"))
+    
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as err:  # thrown on 4xx and 5xx status code
+                log.debug("Encountered httpx.HTTPStatusError", exc_info=True)
+    
+                if remaining_retries > 0 and self._should_retry(err.response):
+                    await err.response.aclose()
+                    await self._sleep_for_retry(
+                        retries_taken=retries_taken,
+                        max_retries=max_retries,
+                        options=input_options,
+                        response=response,
+                    )
+                    continue
+    
+                # If the response is streamed then we need to explicitly read the response
+                # to completion before attempting to access the response text.
+                if not err.response.is_closed:
+                    await err.response.aread()
+    
+                log.debug("Re-raising status error")
+>               raise self._make_status_error_from_response(err.response) from None
+E               openai.InternalServerError: Error code: 500 - {'error': {'message': '', 'type': 'InternalServerError', 'param': None, 'code': 500}}
+
+.devenv/state/venv/lib/python3.13/site-packages/openai/_base_client.py:1716: InternalServerError
+
+The above exception was the direct cause of the following exception:
+
+    async def test_live_schema_constraint() -> None:
+>       command = await schema_agent.run("Return argv [\"echo\", \"phase7-live\"] exactly.")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_live.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/structured_agents/agent.py:80: in run
+    return self.spec.constraint.parse((await self._raw.run(prompt)).output)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/durable_exec/dbos/_agent.py:439: in run
+    return await self.dbos_wrapped_run_workflow(
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py:1083: in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:307: in __call__
+    return await self._func()
+           ^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:211: in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py:25: in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py:1218: in record_get_result
+    r = func()
+        ^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:211: in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:185: in _raise
+    raise ex
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:198: in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:232: in _also
+    return await func()
+           ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:232: in _also
+    return await func()
+           ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:211: in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py:25: in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py:529: in persist
+    output = func()
+             ^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:211: in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:185: in _raise
+    raise ex
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:198: in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/durable_exec/dbos/_agent.py:164: in wrapped_run_workflow
+    return await super(WrapperAgent, self).run(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/agent/abstract.py:550: in run
+    node = await agent_run.next(node)  # pyright: ignore[reportArgumentType]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/run.py:402: in next
+    return await self._run_node_with_hooks(node, self._advance_graph)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/run.py:326: in _run_node_with_hooks
+    return await self._wrap_and_advance(run_context, node, step_fn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/run.py:296: in _wrap_and_advance
+    result = await cap.on_node_run_error(run_context, node=node, error=e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:331: in on_node_run_error
+    raise error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:328: in on_node_run_error
+    return await capability.on_node_run_error(cap_ctx, node=node, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:492: in on_node_run_error
+    raise error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:328: in on_node_run_error
+    return await capability.on_node_run_error(cap_ctx, node=node, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:492: in on_node_run_error
+    raise error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/run.py:294: in _wrap_and_advance
+    result = await cap.wrap_node_run(run_context, node=node, handler=step_fn)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:314: in wrap_node_run
+    return await chain(node)
+           ^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:745: in wrapped
+    return await cap.wrap_node_run(_ctx_for_cap(cap, ctx), node=node, handler=inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:471: in wrap_node_run
+    return await handler(node)
+           ^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:745: in wrapped
+    return await cap.wrap_node_run(_ctx_for_cap(cap, ctx), node=node, handler=inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:471: in wrap_node_run
+    return await handler(node)
+           ^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/run.py:272: in _advance_graph
+    task = await self._graph_run.next(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_graph/graph_builder.py:584: in next
+    return await anext(self)
+           ^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_graph/graph_builder.py:561: in __anext__
+    raise self._next.error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_graph/graph_builder.py:860: in _run_tracked_task
+    result = await self._run_task(t_)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_graph/graph_builder.py:911: in _run_task
+    output = await node.call(step_context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_graph/step.py:253: in _call_node
+    return await node.run(GraphRunContext(state=ctx.state, deps=ctx.deps))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py:777: in run
+    return await self._make_request(ctx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py:1155: in _make_request
+    model_response = await ctx.deps.root_capability.on_model_request_error(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:401: in on_model_request_error
+    raise error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:398: in on_model_request_error
+    return await capability.on_model_request_error(cap_ctx, request_context=request_context, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:573: in on_model_request_error
+    raise error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:398: in on_model_request_error
+    return await capability.on_model_request_error(cap_ctx, request_context=request_context, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:573: in on_model_request_error
+    raise error
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py:1145: in _make_request
+    model_response = await ctx.deps.root_capability.wrap_model_request(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:384: in wrap_model_request
+    return await chain(request_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:707: in wrapped
+    return await cap.wrap_model_request(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:550: in wrap_model_request
+    return await handler(request_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py:707: in wrapped
+    return await cap.wrap_model_request(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py:550: in wrap_model_request
+    return await handler(request_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py:1105: in model_handler
+    new_response = await req_ctx.model.request(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/durable_exec/dbos/_model.py:100: in request
+    return await self._dbos_wrapped_request_step(messages, model_settings, model_request_parameters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py:1083: in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:307: in __call__
+    return await self._func()
+           ^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:232: in _also
+    return await func()
+           ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:248: in _intercept
+    return intercepted if not isinstance(intercepted, NoResult) else await func()
+                                                                     ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:211: in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py:25: in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py:1674: in record_step_result
+    output = func()
+             ^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:211: in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:185: in _raise
+    raise ex
+.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py:198: in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/durable_exec/dbos/_model.py:51: in wrapped_request_step
+    return await super(DBOSModel, self).request(messages, model_settings, model_request_parameters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/models/wrapper.py:111: in request
+    return await self.wrapped.request(messages, model_settings, model_request_parameters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/models/openai.py:892: in request
+    response = await self._completions_create(
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/models/openai.py:981: in _completions_create
+    with _map_api_errors(self.model_name):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/contextlib.py:162: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+model_name = 'base'
+
+    @contextmanager
+    def _map_api_errors(model_name: str) -> Generator[None]:
+        try:
+            yield
+        except APIStatusError as e:
+            if (status_code := e.status_code) >= 400:
+>               raise ModelHTTPError(status_code=status_code, model_name=model_name, body=e.body) from e
+E               pydantic_ai.exceptions.ModelHTTPError: status_code: 500, model_name: base, body: {'message': '', 'type': 'InternalServerError', 'param': None, 'code': 500}
+
+.devenv/state/venv/lib/python3.13/site-packages/pydantic_ai/models/openai.py:198: ModelHTTPError
+--------------------------- Captured stderr teardown ---------------------------
+22:47:13 [    INFO] (dbos:_queue.py:614) Stopping queue manager, joining all worker threads...
+22:47:14 [    INFO] (dbos:_dbos.py:381) DBOS successfully shut down
+=========================== short test summary info ============================
+FAILED tests/test_live.py::test_live_schema_constraint - pydantic_ai.exceptio...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed in 5.23s

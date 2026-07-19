@@ -1,0 +1,4 @@
+ActiveState=active
+SubState=running
+MainPID=847908
+ExecStart={ path=/nix/store/0641h8qfqaxnwrsw2nzrz6i1wbzyx92l-bash-interactive-5.3p9/bin/bash ; argv[]=/nix/store/0641h8qfqaxnwrsw2nzrz6i1wbzyx92l-bash-interactive-5.3p9/bin/bash /home/andrew/Documents/Projects/structured-agents-v2/deploy/vllm/native/run.sh ; ignore_errors=no ; start_time=[Sat 2026-07-18 23:50:27 EDT] ; stop_time=[n/a] ; pid=847908 ; code=(null) ; status=0/0 }

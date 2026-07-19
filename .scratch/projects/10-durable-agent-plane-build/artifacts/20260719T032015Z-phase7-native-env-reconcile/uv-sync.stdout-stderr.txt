@@ -1,0 +1,190 @@
+• Validating lock
+✓ Validating lock in 25.7ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 4.76ms
+• Evaluating shell
+✖ Evaluating shell in 6.97s (failed)
+✓ Configuring shell in 6.97s
+  [31m×[0m Failed to get drvPath from shell derivation: 
+  [31m [0m … while calling the '[35;1mderivationStrict[0m' builtin
+  [31m [0m   [34;1mat [35;1m«nix-internal»/derivation-internal.nix:37:12[0m:
+  [31m [0m     36|
+  [31m [0m     37|   strict = derivationStrict drvAttrs;
+  [31m [0m       |            [31;1m^[0m
+  [31m [0m     38|
+  [31m [0m
+  [31m [0m
+  [31m [0m … while evaluating derivation '[35;1mdevenv-shell[0m'
+  [31m [0m   whose name attribute is located at [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/make-derivation.nix:651:11[0m
+  [31m [0m
+  [31m [0m … while evaluating attribute '[35;1mDEVENV_PROFILE[0m' of derivation '[35;1mdevenv-shell[0m'
+  [31m [0m
+  [31m [0m … while calling the '[35;1mgetAttr[0m' builtin
+  [31m [0m   [34;1mat [35;1m«nix-internal»/derivation-internal.nix:50:17[0m:
+  [31m [0m     49|     value = commonAttrs // {
+  [31m [0m     50|       outPath = builtins.getAttr outputName strict;
+  [31m [0m       |                 [31;1m^[0m
+  [31m [0m     51|       drvPath = strict.drvPath;
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling the '[35;1mderivationStrict[0m' builtin
+  [31m [0m   [34;1mat [35;1m«nix-internal»/derivation-internal.nix:37:12[0m:
+  [31m [0m     36|
+  [31m [0m     37|   strict = derivationStrict drvAttrs;
+  [31m [0m       |            [31;1m^[0m
+  [31m [0m     38|
+  [31m [0m
+  [31m [0m
+  [31m [0m … while evaluating derivation '[35;1mdevenv-profile[0m'
+  [31m [0m   whose name attribute is located at [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/make-derivation.nix:651:11[0m
+  [31m [0m
+  [31m [0m … while evaluating attribute '[35;1mchosenOutputs[0m' of derivation '[35;1mdevenv-profile[0m'
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/buildenv/default.nix:113:9[0m:
+  [31m [0m    112|
+  [31m [0m    113|         chosenOutputs = map (drv: {
+  [31m [0m       |         [31;1m^[0m
+  [31m [0m    114|           paths =
+  [31m [0m
+  [31m [0m
+  [31m [0m … while evaluating list element at index [35;1m12[0m
+  [31m [0m
+  [31m [0m … while evaluating attribute '[35;1mpaths[0m'
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/buildenv/default.nix:114:11[0m:
+  [31m [0m    113|         chosenOutputs = map (drv: {
+  [31m [0m    114|           paths =
+  [31m [0m       |           [31;1m^[0m
+  [31m [0m    115|             # First add the usual output(s): respect if user has chosen explicitly,
+  [31m [0m
+  [31m [0m
+  [31m [0m … while evaluating list element at index [35;1m0[0m
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/buildenv/default.nix:114:11[0m:
+  [31m [0m    113|         chosenOutputs = map (drv: {
+  [31m [0m    114|           paths =
+  [31m [0m       |           [31;1m^[0m
+  [31m [0m    115|             # First add the usual output(s): respect if user has chosen explicitly,
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling the '[35;1mgetAttr[0m' builtin
+  [31m [0m   [34;1mat [35;1m«nix-internal»/derivation-internal.nix:50:17[0m:
+  [31m [0m     49|     value = commonAttrs // {
+  [31m [0m     50|       outPath = builtins.getAttr outputName strict;
+  [31m [0m       |                 [31;1m^[0m
+  [31m [0m     51|       drvPath = strict.drvPath;
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling the '[35;1mderivationStrict[0m' builtin
+  [31m [0m   [34;1mat [35;1m«nix-internal»/derivation-internal.nix:37:12[0m:
+  [31m [0m     36|
+  [31m [0m     37|   strict = derivationStrict drvAttrs;
+  [31m [0m       |            [31;1m^[0m
+  [31m [0m     38|
+  [31m [0m
+  [31m [0m
+  [31m [0m … while evaluating derivation '[35;1mstructured-agents-cuda-13.0[0m'
+  [31m [0m   whose name attribute is located at [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/make-derivation.nix:651:11[0m
+  [31m [0m
+  [31m [0m … while evaluating attribute '[35;1mpaths[0m' of derivation '[35;1mstructured-agents-cuda-13.0[0m'
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/trivial-builders/default.nix:579:9[0m:
+  [31m [0m    578|         ];
+  [31m [0m    579|         paths = mapPaths (path: "${path}${stripPrefix}") paths;
+  [31m [0m       |         [31;1m^[0m
+  [31m [0m    580|         buildCommand = ''
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling [35;1manonymous lambda[0m
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/trivial-builders/default.nix:563:13[0m:
+  [31m [0m    562|           map (
+  [31m [0m    563|             path:
+  [31m [0m       |             [31;1m^[0m
+  [31m [0m    564|             if path == null then
+  [31m [0m
+  [31m [0m
+  [31m [0m … from call site
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/trivial-builders/default.nix:569:15[0m:
+  [31m [0m    568|             else
+  [31m [0m    569|               f path
+  [31m [0m       |               [31;1m^[0m
+  [31m [0m    570|           );
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling [35;1manonymous lambda[0m
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/build-support/trivial-builders/default.nix:579:27[0m:
+  [31m [0m    578|         ];
+  [31m [0m    579|         paths = mapPaths (path: "${path}${stripPrefix}") paths;
+  [31m [0m       |                           [31;1m^[0m
+  [31m [0m    580|         buildCommand = ''
+  [31m [0m
+  [31m [0m
+  [31m [0m … in the condition of the assert statement
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/lib/customisation.nix:419:13[0m:
+  [31m [0m    418|           outPath =
+  [31m [0m    419|             assert condition;
+  [31m [0m       |             [31;1m^[0m
+  [31m [0m    420|             drv.outPath;
+  [31m [0m
+  [31m [0m
+  [31m [0m … while evaluating the attribute '[35;1mhandled[0m'
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/check-meta.nix:745:9[0m:
+  [31m [0m    744|         valid = "no";
+  [31m [0m    745|         handled = handle {
+  [31m [0m       |         [31;1m^[0m
+  [31m [0m    746|           inherit attrs meta;
+  [31m [0m
+  [31m [0m
+  [31m [0m … from call site
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/check-meta.nix:745:19[0m:
+  [31m [0m    744|         valid = "no";
+  [31m [0m    745|         handled = handle {
+  [31m [0m       |                   [31;1m^[0m
+  [31m [0m    746|           inherit attrs meta;
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling [35;1m'handle'[0m
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/check-meta.nix:682:5[0m:
+  [31m [0m    681|   handle =
+  [31m [0m    682|     {
+  [31m [0m       |     [31;1m^[0m
+  [31m [0m    683|       attrs,
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling the '[35;1mseq[0m' builtin
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/check-meta.nix:716:5[0m:
+  [31m [0m    715|     # Give all warnings first, then error if any
+  [31m [0m    716|     builtins.seq (foldl' giveWarning null warnings) withError;
+  [31m [0m       |     [31;1m^[0m
+  [31m [0m    717|
+  [31m [0m
+  [31m [0m
+  [31m [0m … while calling the '[35;1mthrow[0m' builtin
+  [31m [0m   [34;1mat [35;1m/nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/stdenv/generic/check-meta.nix:704:13[0m:
+  [31m [0m    703|           else
+  [31m [0m    704|             throw msg;
+  [31m [0m       |             [31;1m^[0m
+  [31m [0m    705|
+  [31m [0m
+  [31m [0m
+  [31m [0m
+  [31m [0m [31;1merror:[0m Refusing to evaluate package 'cuda13.0-cuda_cudart-13.0.96' in /nix/store/swsq9fz5xzbzqd2864z9k0xkq009cpg6-source/pkgs/development/cuda-modules/packages/cuda_cudart.nix:98 because it has an unfree license (‘CUDA EULA’)
+  [31m [0m a) To temporarily allow unfree packages, you can use an environment variable
+  [31m [0m    for a single invocation of the nix tools.
+  [31m [0m
+  [31m [0m      $ export NIXPKGS_ALLOW_UNFREE=1
+  [31m [0m
+  [31m [0m    Note: When using `nix shell`, `nix build`, `nix develop`, etc with a flake,
+  [31m [0m          then pass `--impure` in order to allow use of environment variables.
+  [31m [0m
+  [31m [0m b) For `nixos-rebuild` you can set
+  [31m [0m   { nixpkgs.config.allowUnfree = true; }
+  [31m [0m in configuration.nix to override this.
+  [31m [0m
+  [31m [0m Alternatively you can configure a predicate to allow specific packages:
+  [31m [0m   { nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+  [31m [0m       "cuda_cudart"
+  [31m [0m     ];
+  [31m [0m   }
+  [31m [0m
+  [31m [0m c) For `nix-env`, `nix-build`, `nix-shell` or any other Nix command you can add
+  [31m [0m   { allowUnfree = true; }
+  [31m [0m to ~/.config/nixpkgs/config.nix.
+

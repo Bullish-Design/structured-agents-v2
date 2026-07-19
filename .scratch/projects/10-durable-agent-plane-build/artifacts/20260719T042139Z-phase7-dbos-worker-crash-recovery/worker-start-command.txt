@@ -1,0 +1,1 @@
+/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/bin/python3 tests/live_crash_worker.py start .scratch/projects/10-durable-agent-plane-build/artifacts/20260719T042139Z-phase7-dbos-worker-crash-recovery/dbos.sqlite .scratch/projects/10-durable-agent-plane-build/artifacts/20260719T042139Z-phase7-dbos-worker-crash-recovery/effects.log phase7-worker-crash

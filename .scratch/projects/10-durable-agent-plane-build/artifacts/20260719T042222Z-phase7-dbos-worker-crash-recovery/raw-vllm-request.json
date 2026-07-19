@@ -1,0 +1,32 @@
+{
+  "model": "base",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Return argv [\"echo\", \"phase7-live\"] exactly."
+    }
+  ],
+  "temperature": 0,
+  "max_tokens": 32,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "phase7_worker_capture",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "argv"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+• Validating lock
+✓ Validating lock in 29.5ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 2.96ms
+• Evaluating shell
+✓ Evaluating shell in 12.3ms (cached)
+✓ Configuring shell in 19.4ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 745µs (cached)
+✓ Loading tasks in 2.25ms
+• Running tasks
+• Running devenv:files:cleanup
+• Running devenv:python:virtualenv
+✓ Running devenv:files:cleanup in 18.1ms
+✓ Running devenv:python:virtualenv in 38.1ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 19.1ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 12.5µs (no command)
+✓ Running tasks in 58.3ms
+✨ devenv 2.1.2 is newer than devenv input (2.0.6) in devenv.lock. Run 'devenv update' to sync.
+git version 2.53.0
+.....s.s                                                                 [100%]
+6 passed, 2 skipped in 10.26s

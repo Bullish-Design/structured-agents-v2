@@ -1,0 +1,8 @@
+git version 2.53.0
+Target: http://tower:8000/v1   model: qwen3-4b   auth: no
+
+[1m== 1. reachable (/health) ==[0m
+[31mFAIL  /health -> 000 (is the container up? model still loading? wrong URL?)[0m
+[31mEndpoint unreachable — skipping remaining checks.[0m
+
+Summary: 0 passed, 1 failed

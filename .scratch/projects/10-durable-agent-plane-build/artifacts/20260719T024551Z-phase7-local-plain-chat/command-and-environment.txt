@@ -1,0 +1,15 @@
+POST /v1/chat/completions without output constraint
+2026-07-19T02:45:51Z
+aa2250966e532bb6a6f6970f33573aac55001c4f
+ M .scratch/projects/10-durable-agent-plane-build/RESEARCH_REPORT.md
+ M deploy/vllm/verify.sh
+?? .scratch/projects/10-durable-agent-plane-build/artifacts/
+?? tests/test_live.py
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p3  444G   79G  349G  19% /
+-               444G   79G  349G  19% /tmp
+/dev/nvme0n1p3  444G   79G  349G  19% /var
+Filesystem     Inodes IUsed IFree IUse% Mounted on
+/dev/nvme0n1p3      0     0     0     - /
+-                   0     0     0     - /tmp
+/dev/nvme0n1p3      0     0     0     - /var

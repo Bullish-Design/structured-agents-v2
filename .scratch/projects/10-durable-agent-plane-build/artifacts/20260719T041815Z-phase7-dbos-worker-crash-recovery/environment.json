@@ -1,0 +1,6 @@
+{
+  "LLM_API_KEY": "sk-none",
+  "LLM_BASE_URL": "http://127.0.0.1:8000/v1",
+  "LLM_MODEL": "base",
+  "SAV_PHASE7_ARTIFACT": "/home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/10-durable-agent-plane-build/artifacts/20260719T041815Z-phase7-dbos-worker-crash-recovery"
+}

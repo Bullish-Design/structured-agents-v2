@@ -1,0 +1,1 @@
+{"model":"base","messages":[{"role":"user","content":"Return phase7-grammar."}],"structured_outputs":{"grammar":"root ::= \"phase7-grammar\""},"max_tokens":16}

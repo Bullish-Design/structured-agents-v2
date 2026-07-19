@@ -1,0 +1,7 @@
+LLM_BASE_URL=http://tower:8000/v1 LLM_MODEL=qwen3-4b deploy/vllm/verify.sh
+2026-07-19T02:33:45Z
+aa2250966e532bb6a6f6970f33573aac55001c4f
+ M deploy/vllm/verify.sh
+?? .scratch/projects/10-durable-agent-plane-build/artifacts/
+?? tests/test_live.py
+LLM_API_KEY=

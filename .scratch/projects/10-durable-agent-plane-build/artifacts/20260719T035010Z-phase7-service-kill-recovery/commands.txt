@@ -1,0 +1,1 @@
+start long JSON-Schema request; after 3 seconds SIGKILL only the active vLLM API child; wait for systemd automatic recovery

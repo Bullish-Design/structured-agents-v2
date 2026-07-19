@@ -1,0 +1,1 @@
+GET /health and /v1/models after automatic vLLM recovery warmup

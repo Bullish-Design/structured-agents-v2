@@ -1,0 +1,31 @@
+• Validating lock
+✓ Validating lock in 19.6ms
+• Configuring shell
+• Configuring cachix
+✓ Configuring cachix in 2.12ms
+• Evaluating shell
+✓ Evaluating shell in 10.0ms (cached)
+✓ Configuring shell in 15.2ms
+• Loading tasks
+• Evaluating devenv.config.task.config
+✓ Evaluating devenv.config.task.config in 545µs (cached)
+✓ Loading tasks in 1.89ms
+• Running tasks
+• Running devenv:python:virtualenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 14.4ms
+✓ Running devenv:python:virtualenv in 29.6ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 14.0ms
+• Running devenv:enterTest
+✓ Running devenv:enterTest in 24.7µs (no command)
+✓ Running tasks in 44.5ms
+✨ devenv 2.1.2 is newer than devenv input (2.0.6) in devenv.lock. Run 'devenv update' to sync.
+git version 2.53.0
+Python 3.13.13
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import dbos, httpx, pydantic, pydantic_ai; print("dbos", dbos.__version__); print("httpx", httpx.__version__); print("pydantic", pydantic.__version__); print("pydantic-ai", pydantic_ai.__version__)
+                                                             ^^^^^^^^^^^^^^^^
+AttributeError: module 'dbos' has no attribute '__version__'
+curl 8.20.0 (x86_64-pc-linux-gnu) libcurl/8.20.0 OpenSSL/3.6.2 zlib/1.3.2 brotli/1.2.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.69.0 ngtcp2/1.22.1 nghttp3/1.15.0 mit-krb5/1.22.2

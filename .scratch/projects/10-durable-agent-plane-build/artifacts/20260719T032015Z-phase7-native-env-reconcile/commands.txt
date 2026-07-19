@@ -1,0 +1,2 @@
+cd deploy/vllm/native && devenv shell --impure -- uv sync --locked
+systemctl restart structured-agents-vllm.service

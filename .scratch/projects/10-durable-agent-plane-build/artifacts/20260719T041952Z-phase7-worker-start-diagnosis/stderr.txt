@@ -1,0 +1,256 @@
+00:19:54 [    INFO] (dbos:_dbos.py:464) Initializing DBOS (v2.23.0)
+00:19:54 [    INFO] (dbos:_dbos.py:535) Executor ID: local
+00:19:54 [    INFO] (dbos:_dbos.py:536) Application version: d87c7200752400738795c342a9250572
+00:19:54 [    INFO] (dbos:_sys_db.py:535) Initializing DBOS system database with URL: sqlite:///.scratch/projects/10-durable-agent-plane-build/artifacts/20260719T041952Z-phase7-worker-start-diagnosis/dbos.sqlite (schema: dbos)
+00:19:54 [    INFO] (dbos:_sys_db.py:539) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 1
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 2
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 3
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 4
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 5
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 6
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 7
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 8
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 9
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 10
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 11
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 12
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 13
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 14
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 15
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 16
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 17
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 18
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 19
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 20
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 21
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 22
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 23
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 24
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 25
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 26
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 27
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 28
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 29
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 30
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 31
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 32
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 33
+00:19:54 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 34
+00:19:54 [    INFO] (dbos:_dbos.py:617) No workflows to recover from application version d87c7200752400738795c342a9250572
+00:19:54 [    INFO] (dbos:_dbos.py:711) DBOS launched!
+00:19:54 [    INFO] (dbos:_dbos.py:719) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=phase7-worker-crash
+00:19:54 [    INFO] (dbos:_queue.py:666) Listening to 0 queues:
+00:19:56 [   ERROR] (dbos:_serialization.py:101) Error serializing object: {'args': (<__main__.main.<locals>.CountingEffector object at 0x704a523b9e80>, LiveCommand(argv=('echo', 'phase7-live'))), 'kwargs': {}}
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_serialization.py", line 97, in serialize
+    pickled_data: bytes = pickle.dumps(data)
+                          ~~~~~~~~~~~~^^^^^^
+AttributeError: Can't get local object 'main.<locals>.CountingEffector'
+00:19:56 [   ERROR] (dbos:_core.py:692) Exception encountered in asynchronous workflow:
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 681, in _execute_workflow_async
+    return await result()
+           ^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 307, in __call__
+    return await self._func()
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 529, in persist
+    output = func()
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 185, in _raise
+    raise ex
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 198, in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/tests/live_crash_worker.py", line 67, in workflow
+    result = await execute(Authorizer(), CountingEffector(), command, key="phase7-worker-crash-effect")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/src/structured_agents/authority.py", line 155, in execute
+    return await _run_effect(effector, command)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 1083, in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 307, in __call__
+    return await self._func()
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 1218, in record_get_result
+    r = func()
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 185, in _raise
+    raise ex
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 198, in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 232, in _also
+    return await func()
+           ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 232, in _also
+    return await func()
+           ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 196, in _wrap
+    after = await asyncio.to_thread(before)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 1165, in init_wf
+    status, should_execute = _init_workflow(
+                             ~~~~~~~~~~~~~~^
+        dbos,
+        ^^^^^
+    ...<12 lines>...
+        serialization_type=fi.serialization_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 377, in _init_workflow
+    serargs, serialization = serialize_args(
+                             ~~~~~~~~~~~~~~^
+        inputs["args"], inputs["kwargs"], sertype, dbos._serializer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_serialization.py", line 261, in serialize_args
+    return DBOSDefaultSerializer.serialize(i), DBOSDefaultSerializer.name()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_serialization.py", line 97, in serialize
+    pickled_data: bytes = pickle.dumps(data)
+                          ~~~~~~~~~~~~^^^^^^
+AttributeError: Can't get local object 'main.<locals>.CountingEffector'
+Future exception was never retrieved
+future: <Future finished exception=AttributeError("Can't get local object 'main.<locals>.CountingEffector'")>
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 681, in _execute_workflow_async
+    return await result()
+           ^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 307, in __call__
+    return await self._func()
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 529, in persist
+    output = func()
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 185, in _raise
+    raise ex
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 198, in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/tests/live_crash_worker.py", line 67, in workflow
+    result = await execute(Authorizer(), CountingEffector(), command, key="phase7-worker-crash-effect")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/src/structured_agents/authority.py", line 155, in execute
+    return await _run_effect(effector, command)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 1083, in async_wrapper
+    return await func(*args, **kwargs)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 307, in __call__
+    return await self._func()
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in _wrap
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 1218, in record_get_result
+    r = func()
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 211, in <lambda>
+    return await asyncio.to_thread(after, lambda: Pending._raise(saved_exp))
+                                                  ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 185, in _raise
+    raise ex
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 198, in _wrap
+    value = await func()
+            ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 232, in _also
+    return await func()
+           ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 232, in _also
+    return await func()
+           ^^^^^^^^^^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_outcome.py", line 196, in _wrap
+    after = await asyncio.to_thread(before)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 1165, in init_wf
+    status, should_execute = _init_workflow(
+                             ~~~~~~~~~~~~~~^
+        dbos,
+        ^^^^^
+    ...<12 lines>...
+        serialization_type=fi.serialization_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_core.py", line 377, in _init_workflow
+    serargs, serialization = serialize_args(
+                             ~~~~~~~~~~~~~~^
+        inputs["args"], inputs["kwargs"], sertype, dbos._serializer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_serialization.py", line 261, in serialize_args
+    return DBOSDefaultSerializer.serialize(i), DBOSDefaultSerializer.name()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/.devenv/state/venv/lib/python3.13/site-packages/dbos/_serialization.py", line 97, in serialize
+    pickled_data: bytes = pickle.dumps(data)
+                          ~~~~~~~~~~~~^^^^^^
+AttributeError: Can't get local object 'main.<locals>.CountingEffector'
+00:20:55 [    INFO] (dbos:_queue.py:614) Stopping queue manager, joining all worker threads...
+00:20:56 [    INFO] (dbos:_dbos.py:381) DBOS successfully shut down
+Traceback (most recent call last):
+  File "/home/andrew/Documents/Projects/structured-agents-v2/tests/live_crash_worker.py", line 112, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/nix/store/bfl1ml696lhhkm64d4zi4mi6bkvfz54k-python3-3.13.13-env/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/andrew/Documents/Projects/structured-agents-v2/tests/live_crash_worker.py", line 86, in main
+    raise RuntimeError("workflow did not reach its post-effect durable pause")
+RuntimeError: workflow did not reach its post-effect durable pause

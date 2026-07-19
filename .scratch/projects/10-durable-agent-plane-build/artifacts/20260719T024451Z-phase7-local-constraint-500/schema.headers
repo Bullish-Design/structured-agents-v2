@@ -1,0 +1,6 @@
+HTTP/1.1 500 Internal Server Error
+date: Sun, 19 Jul 2026 02:44:51 GMT
+server: uvicorn
+content-length: 77
+content-type: application/json
+

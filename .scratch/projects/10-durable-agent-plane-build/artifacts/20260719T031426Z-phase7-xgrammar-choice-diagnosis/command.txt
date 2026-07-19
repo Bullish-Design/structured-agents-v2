@@ -1,0 +1,1 @@
+curl -sS -D response.headers -o response.json -w %{http_code} --connect-timeout 5 --max-time 90 -H Content-Type:application/json --data {"model":"base","messages":[{"role":"user","content":"Return phase7-choice."}],"structured_outputs":{"choice":["phase7-choice"]},"max_tokens":16} http://127.0.0.1:8000/v1/chat/completions

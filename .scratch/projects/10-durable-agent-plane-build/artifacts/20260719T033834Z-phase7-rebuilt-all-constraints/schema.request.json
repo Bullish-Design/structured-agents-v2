@@ -1,0 +1,1 @@
+{"model":"base","messages":[{"role":"user","content":"Return the exact command object."}],"response_format":{"type":"json_schema","json_schema":{"name":"Command","strict":true,"schema":{"type":"object","properties":{"command":{"type":"string"},"arg":{"type":"string"}},"required":["command","arg"],"additionalProperties":false}}},"max_tokens":32}

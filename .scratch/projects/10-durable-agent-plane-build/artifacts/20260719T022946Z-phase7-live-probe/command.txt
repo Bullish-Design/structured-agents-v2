@@ -1,0 +1,1 @@
+curl --connect-timeout 10 --max-time 30 -sS -D health.headers -o health.body -w %{http_code} http://tower:8000/health

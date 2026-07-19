@@ -1,0 +1,1 @@
+SAV_LIVE=1 LLM_BASE_URL=http://127.0.0.1:8000/v1 LLM_MODEL=base devenv shell -- pytest -x tests/test_live.py
