@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 
 import httpx
-from pydantic import BaseModel
 from pydantic_ai import Agent as PydanticAgent
 from pydantic_ai.durable_exec.dbos import DBOSAgent
 from pydantic_ai.models import Model
@@ -14,6 +13,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from .constraint import Constraint
+from .engine import Engine, select
 from .errors import BackendCapabilityError
 
 
@@ -35,28 +35,29 @@ class AgentSpec[T]:
     settings: Settings = field(default_factory=Settings)
 
 
-class BackendCaps(BaseModel):
-    xgrammar: bool = True
-    lora: bool = True
-
-
 class Backend:
-    """The sole importer of pydantic_ai.models.openai."""
+    """The sole importer of pydantic_ai.models.openai. Builds durable agents against a selected engine."""
 
-    def __init__(self, *, base_url: str = "http://localhost:8000/v1", api_key: str = "sk-none",
-                 default_model: str = "test", caps: BackendCaps | None = None,
+    def __init__(self, *, engine: str | Engine = "vllm", base_url: str = "http://localhost:8000/v1",
+                 api_key: str = "sk-none", default_model: str = "test",
                  http_client: httpx.AsyncClient | None = None, model: Any | None = None) -> None:
+        self.engine = engine if not isinstance(engine, str) else select(engine)
         self.base_url, self.api_key, self.default_model = base_url, api_key, default_model
-        self.caps = caps or BackendCaps()
         self.client, self.model = http_client, model
 
     def build[T](self, spec: AgentSpec[T]) -> Agent[T]:
-        wire = spec.constraint.wire()
-        if wire.extra_body.get("structured_outputs") and not self.caps.xgrammar:
-            raise BackendCapabilityError(f"Agent {spec.name!r} requires XGrammar.")
-        if spec.adapter and not self.caps.lora:
-            raise BackendCapabilityError(f"Agent {spec.name!r} requires LoRA.")
-        spec.constraint.check()
+        constraint = spec.constraint
+        if constraint.kind not in self.engine.supports:
+            raise BackendCapabilityError(
+                f"Agent {spec.name!r} requires {constraint.kind} constraints, "
+                f"unsupported by engine {self.engine.name!r}."
+            )
+        if spec.adapter and "lora" not in self.engine.supports:
+            raise BackendCapabilityError(
+                f"Agent {spec.name!r} requires LoRA, unsupported by engine {self.engine.name!r}."
+            )
+        constraint.check()
+        wire = self.engine.render(constraint)
         settings = {k: v for k, v in spec.settings.__dict__.items() if v is not None and k != "extra_body"}
         settings["extra_body"] = {**spec.settings.extra_body, **wire.extra_body}
         model = cast(Model[Any], self.model) if self.model is not None else OpenAIChatModel(

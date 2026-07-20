@@ -1,7 +1,8 @@
 # structured-agents
 
 Durable primitives for building crash-recoverable, exactly-once, observable
-constrained-agent workflows on DBOS and vLLM/XGrammar.
+constrained-agent workflows on DBOS and OpenAI-compatible engines (vLLM, SGLang, llama.cpp) with XGrammar-family
+constrained decoding.
 
 The library provides typed constrained generation, authorization, durable
 effects, and human approval primitives. Applications compose them in their own

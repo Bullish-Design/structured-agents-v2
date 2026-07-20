@@ -43,10 +43,16 @@ asyncio_mode = "auto"
 asyncio_default_test_loop_scope = "session"
 addopts = "-q --strict-markers"
 testpaths = ["tests"]
-markers = ["live: hits the configured vLLM server (skipped unless SAV_LIVE=1)."]
+markers = ["live: hits the configured inference server (skipped unless SAV_LIVE=1)."]
 
 [tool.ty.environment]
 python-version = "3.13"
+
+[[tool.ty.overrides]]
+include = ["src/structured_agents/engine/**"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
 
 [[tool.ty.overrides]]
 include = ["src/structured_agents/constraint.py"]

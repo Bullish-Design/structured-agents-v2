@@ -1,10 +1,10 @@
-"""Pure codecs connecting constrained output wire shapes to typed values."""
+"""Pure codecs connecting neutral constrained output descriptions to typed values."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Protocol, cast, runtime_checkable
+from typing import Any, ClassVar, Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -21,9 +21,9 @@ class WireSpec:
 
 @runtime_checkable
 class Constraint[T](Protocol):
-    """A constrained-output codec."""
+    """A constrained-output codec. Describes what is constrained, not how it goes on the wire."""
 
-    def wire(self) -> WireSpec: ...
+    kind: str
 
     def parse(self, raw: Any) -> T: ...
 
@@ -34,13 +34,9 @@ class Constraint[T](Protocol):
 
 @dataclass(frozen=True)
 class _Schema[M: BaseModel]:
+    kind: ClassVar[str] = "schema"
     model: type[M]
     strict: bool
-
-    def wire(self) -> WireSpec:
-        from pydantic_ai.output import NativeOutput
-
-        return WireSpec(output_type=NativeOutput(self.model, strict=self.strict))
 
     def parse(self, raw: Any) -> M:
         return cast(M, raw)
@@ -56,11 +52,12 @@ class _Schema[M: BaseModel]:
             raise ConstraintCompileError(f"Schema constraint for {self.model.__name__} did not compile: {exc}") from exc
 
     def to_config(self) -> dict[str, Any]:
-        return {"kind": "schema", "ref": f"{self.model.__module__}:{self.model.__qualname__}", "strict": self.strict}
+        return {"kind": self.kind, "ref": f"{self.model.__module__}:{self.model.__qualname__}", "strict": self.strict}
 
 
 @dataclass(frozen=True)
 class _Regex:
+    kind: ClassVar[str] = "regex"
     pattern: str
 
     def __post_init__(self) -> None:
@@ -68,9 +65,6 @@ class _Regex:
             re.compile(self.pattern)
         except re.error as exc:
             raise ConstraintConfigError(f"Invalid regex constraint {self.pattern!r}: {exc}") from exc
-
-    def wire(self) -> WireSpec:
-        return WireSpec(output_type=str, extra_body={"structured_outputs": {"regex": self.pattern}})
 
     def parse(self, raw: Any) -> str:
         if not isinstance(raw, str) or re.fullmatch(self.pattern, raw) is None:
@@ -81,19 +75,17 @@ class _Regex:
         return None
 
     def to_config(self) -> dict[str, Any]:
-        return {"kind": "regex", "pattern": self.pattern}
+        return {"kind": self.kind, "pattern": self.pattern}
 
 
 @dataclass(frozen=True)
 class _Choice[T: str]:
+    kind: ClassVar[str] = "choice"
     options: tuple[T, ...]
 
     def __post_init__(self) -> None:
         if not self.options:
             raise ConstraintConfigError("Choice constraint requires at least one option.")
-
-    def wire(self) -> WireSpec:
-        return WireSpec(output_type=str, extra_body={"structured_outputs": {"choice": list(self.options)}})
 
     def parse(self, raw: Any) -> T:
         if raw not in self.options:
@@ -104,19 +96,17 @@ class _Choice[T: str]:
         return None
 
     def to_config(self) -> dict[str, Any]:
-        return {"kind": "choice", "options": list(self.options)}
+        return {"kind": self.kind, "options": list(self.options)}
 
 
 @dataclass(frozen=True)
 class _Grammar:
+    kind: ClassVar[str] = "grammar"
     ebnf: str
 
     def __post_init__(self) -> None:
         if not self.ebnf.strip():
             raise ConstraintConfigError("Grammar constraint requires non-empty EBNF.")
-
-    def wire(self) -> WireSpec:
-        return WireSpec(output_type=str, extra_body={"structured_outputs": {"grammar": self.ebnf}})
 
     def parse(self, raw: Any) -> str:
         if not isinstance(raw, str):
@@ -134,7 +124,7 @@ class _Grammar:
             raise ConstraintCompileError(f"Grammar constraint did not compile: {exc}") from exc
 
     def to_config(self) -> dict[str, Any]:
-        return {"kind": "grammar", "ebnf": self.ebnf}
+        return {"kind": self.kind, "ebnf": self.ebnf}
 
 
 def Schema[M: BaseModel](model: type[M], *, strict: bool = True) -> Constraint[M]:

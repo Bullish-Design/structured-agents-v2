@@ -1,4 +1,4 @@
-"""Live vLLM cutover checks; skipped unless the operator explicitly opts in."""
+"""Live configured inference endpoint checks; skipped unless the operator explicitly opts in."""
 
 from __future__ import annotations
 
@@ -32,12 +32,13 @@ from structured_agents import (
 pytestmark = pytest.mark.live
 
 if os.environ.get("SAV_LIVE") != "1":
-    pytest.skip("set SAV_LIVE=1 to contact the configured vLLM endpoint", allow_module_level=True)
+    pytest.skip("set SAV_LIVE=1 to contact the configured inference endpoint", allow_module_level=True)
 
 
 BASE_URL = os.environ.get("LLM_BASE_URL", "http://127.0.0.1:8000/v1")
 API_KEY = os.environ.get("LLM_API_KEY", "sk-none")
 MODEL = os.environ.get("LLM_MODEL", "base")
+ENGINE = os.environ.get("LLM_ENGINE", "vllm")
 LORA_NAME = os.environ.get("LORA_NAME")
 SETTINGS = Settings(temperature=0, seed=7, max_tokens=32)
 
@@ -46,7 +47,7 @@ class LiveCommand(BaseModel):
     argv: tuple[Literal["echo"], Literal["phase7-live"]]
 
 
-backend = Backend(base_url=BASE_URL, api_key=API_KEY, default_model=MODEL)
+backend = Backend(engine=ENGINE, base_url=BASE_URL, api_key=API_KEY, default_model=MODEL)
 schema_agent = backend.build(AgentSpec(
     "live-schema", Schema(LiveCommand), "Return exactly the argv requested by the user.", settings=SETTINGS,
 ))
