@@ -151,5 +151,10 @@ def spec_from_config(d: dict[str, Any], *, allow_modules: frozenset[str]) -> Age
         settings = Settings(**settings_config)
     except TypeError as exc:
         raise ConfigError(f"Invalid agent settings: {exc}") from exc
-    return AgentSpec(name, constraint_from_config(constraint_config, allow_modules=allow_modules), instructions,
-                     adapter=adapter, settings=settings)
+    return AgentSpec(
+        name,
+        constraint_from_config(constraint_config, allow_modules=allow_modules),
+        instructions,
+        adapter=adapter,
+        settings=settings,
+    )

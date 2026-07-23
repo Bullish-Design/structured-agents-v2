@@ -20,6 +20,13 @@ def test_schema_round_trips_validated_models(name: str, age: int) -> None:
     assert Schema(Person).parse(value) is value
 
 
+def test_schema_parse_validates_raw_mappings_into_the_model() -> None:
+    parsed = Schema(Person).parse({"name": "Ada", "age": 37})
+
+    assert parsed == Person(name="Ada", age=37)
+    assert isinstance(parsed, Person)
+
+
 @given(value=st.from_regex(r"[A-Z]{2}-[0-9]{4}", fullmatch=True))
 def test_regex_round_trips_matching_text(value: str) -> None:
     assert Regex(r"[A-Z]{2}-[0-9]{4}").parse(value) == value

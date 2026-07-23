@@ -38,10 +38,18 @@ assert "gemma4_text" in gguf.MODEL_ARCH_NAMES.values()
 config._attn_implementation = "sdpa"
 assert prepare_sglang_gemma4_construction(config)._attn_implementation == "eager"
 
+# Transformers' PreTrainedModel.__init__ also validates `experts_implementation`,
+# defaulting to "grouped_mm" and raising for dense (non-MoE) classes like
+# Gemma4ForCausalLM that don't support it. Pin "eager" alongside attention.
+assert prepare_sglang_gemma4_construction(config)._experts_implementation == "eager"
+
 class NonGemmaConfig:
     model_type = "llama"
     _attn_implementation = "sdpa"
+    _experts_implementation = "grouped_mm"
 
 
 non_gemma = NonGemmaConfig()
-assert prepare_sglang_gemma4_construction(non_gemma)._attn_implementation == "sdpa"
+result = prepare_sglang_gemma4_construction(non_gemma)
+assert result._attn_implementation == "sdpa"
+assert result._experts_implementation == "grouped_mm"

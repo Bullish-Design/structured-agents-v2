@@ -1,0 +1,23 @@
+{
+  "model": "base",
+  "temperature": 0.2,
+  "max_tokens": 512,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a precise technical writing assistant."
+    },
+    {
+      "role": "user",
+      "content": "Explain the difference between TCP and UDP in three bullet points."
+    },
+    {
+      "role": "assistant",
+      "content": "- TCP is connection-oriented and guarantees ordered, reliable delivery via acknowledgements and retransmission; UDP is connectionless with no delivery guarantees.\n- TCP has higher overhead (handshake, flow control, congestion control); UDP is lightweight and low-latency.\n- TCP suits use cases needing reliability (web, file transfer); UDP suits real-time use cases tolerant of loss (video calls, gaming, DNS)."
+    },
+    {
+      "role": "user",
+      "content": "Given that, which one would you pick for a live multiplayer FPS game's position updates, and which for its in-game chat and leaderboard sync? Justify each choice in one sentence, then propose a hybrid transport strategy for the whole game in under 80 words."
+    }
+  ]
+}

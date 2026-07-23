@@ -23,11 +23,13 @@ class LiveCommand(BaseModel):
 MODE, DATABASE_ARG, EFFECTS_ARG, WORKFLOW_ID = sys.argv[1:]
 DATABASE = Path(DATABASE_ARG)
 EFFECTS = Path(EFFECTS_ARG)
-DBOS(config=DBOSConfig(
-    name="phase7-worker-crash",
-    system_database_url=f"sqlite:///{DATABASE}",
-    use_listen_notify=False,
-))
+DBOS(
+    config=DBOSConfig(
+        name="phase7-worker-crash",
+        system_database_url=f"sqlite:///{DATABASE}",
+        use_listen_notify=False,
+    )
+)
 
 
 def line_count(path: Path) -> int:
@@ -45,9 +47,11 @@ class CountingEffector:
 
 class Authorizer:
     def decide(self, command: LiveCommand) -> Decision:
-        policy = Allowlist[LiveCommand]({
-            "phase7": lambda value: value.argv == ("echo", "phase7-live"),
-        })
+        policy = Allowlist[LiveCommand](
+            {
+                "phase7": lambda value: value.argv == ("echo", "phase7-live"),
+            }
+        )
         return policy.decide(command)
 
 
@@ -55,7 +59,7 @@ async def main() -> None:
     artifact = Path(os.environ["SAV_PHASE7_ARTIFACT"])
     raw_request = {
         "model": os.environ["LLM_MODEL"],
-        "messages": [{"role": "user", "content": "Return argv [\"echo\", \"phase7-live\"] exactly."}],
+        "messages": [{"role": "user", "content": 'Return argv ["echo", "phase7-live"] exactly.'}],
         "temperature": 0,
         "max_tokens": 32,
         "response_format": {
@@ -83,16 +87,18 @@ async def main() -> None:
         api_key=os.environ["LLM_API_KEY"],
         default_model=os.environ["LLM_MODEL"],
     )
-    agent = backend.build(AgentSpec(
-        "phase7-worker-crash-schema",
-        Schema(LiveCommand),
-        "Return exactly the argv requested by the user.",
-        settings=settings,
-    ))
+    agent = backend.build(
+        AgentSpec(
+            "phase7-worker-crash-schema",
+            Schema(LiveCommand),
+            "Return exactly the argv requested by the user.",
+            settings=settings,
+        )
+    )
 
     @DBOS.workflow(name="phase7.worker_crash")
     async def workflow() -> LiveCommand:
-        command = await agent.run("Return argv [\"echo\", \"phase7-live\"] exactly.")
+        command = await agent.run('Return argv ["echo", "phase7-live"] exactly.')
         assert command == LiveCommand(argv=("echo", "phase7-live"))
         result = await execute(Authorizer(), CountingEffector(), command, key="phase7-worker-crash-effect")
         assert result == 1
@@ -125,12 +131,17 @@ async def main() -> None:
             after = await handle.get_status()
             raw = await DBOS.get_event_async(WORKFLOW_ID, "constrained_output", timeout_seconds=5)
             (artifact / "recovered-constrained-output.json").write_text(json.dumps(raw, indent=2) + "\n")
-            print(json.dumps({
-                "event": "success",
-                "status": after.status,
-                "result": result.model_dump(mode="json"),
-                "effect_lines": line_count(EFFECTS),
-            }), flush=True)
+            print(
+                json.dumps(
+                    {
+                        "event": "success",
+                        "status": after.status,
+                        "result": result.model_dump(mode="json"),
+                        "effect_lines": line_count(EFFECTS),
+                    }
+                ),
+                flush=True,
+            )
             return
         raise ValueError(f"unknown mode {MODE!r}")
     finally:

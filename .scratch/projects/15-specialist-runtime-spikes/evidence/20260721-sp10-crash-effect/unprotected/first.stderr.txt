@@ -1,0 +1,43 @@
+15:58:24 [    INFO] (dbos:_dbos.py:464) Initializing DBOS (v2.23.0)
+15:58:24 [    INFO] (dbos:_dbos.py:535) Executor ID: local
+15:58:24 [    INFO] (dbos:_dbos.py:536) Application version: 85bfb86794e95b3dbb72019f315748ba
+15:58:24 [    INFO] (dbos:_sys_db.py:535) Initializing DBOS system database with URL: sqlite:///.scratch/projects/15-specialist-runtime-spikes/evidence/20260721-sp10-crash-effect/unprotected/dbos.sqlite (schema: dbos)
+15:58:24 [    INFO] (dbos:_sys_db.py:539) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+15:58:24 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 1
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 2
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 3
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 4
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 5
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 6
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 7
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 8
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 9
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 10
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 11
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 12
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 13
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 14
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 15
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 16
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 17
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 18
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 19
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 20
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 21
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 22
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 23
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 24
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 25
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 26
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 27
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 28
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 29
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 30
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 31
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 32
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 33
+15:58:25 [    INFO] (dbos:_sys_db_sqlite.py:82) Applying DBOS SQLite system database schema migration 34
+15:58:25 [    INFO] (dbos:_dbos.py:617) No workflows to recover from application version 85bfb86794e95b3dbb72019f315748ba
+15:58:25 [    INFO] (dbos:_dbos.py:711) DBOS launched!
+15:58:25 [    INFO] (dbos:_dbos.py:719) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=project15-crash-effect-probe
+15:58:25 [    INFO] (dbos:_queue.py:666) Listening to 0 queues:

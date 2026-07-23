@@ -25,25 +25,29 @@ def test_builtin_constraint_configs_round_trip() -> None:
 
 
 def test_spec_config_round_trips_the_supported_agent_fields() -> None:
-    spec = spec_from_config({
-        "name": "planner",
-        "constraint": Schema(Plan, strict=False).to_config(),
-        "instructions": "Make a plan.",
-        "adapter": "planner-lora",
-        "settings": {"temperature": 0.2, "max_tokens": 100, "extra_body": {"trace": True}},
-    }, allow_modules=frozenset({__name__}))
+    spec = spec_from_config(
+        {
+            "name": "planner",
+            "constraint": Schema(Plan, strict=False).to_config(),
+            "instructions": "Make a plan.",
+            "adapter": "planner-lora",
+            "settings": {"temperature": 0.2, "max_tokens": 100, "extra_body": {"trace": True}},
+        },
+        allow_modules=frozenset({__name__}),
+    )
 
     assert spec == AgentSpec(
-        "planner", Schema(Plan, strict=False), "Make a plan.", adapter="planner-lora",
+        "planner",
+        Schema(Plan, strict=False),
+        "Make a plan.",
+        adapter="planner-lora",
         settings=Settings(temperature=0.2, max_tokens=100, extra_body={"trace": True}),
     )
 
 
 def test_schema_reference_outside_the_allowlist_is_rejected() -> None:
     with pytest.raises(ConfigError, match="not allowed"):
-        constraint_from_config(
-            {"kind": "schema", "ref": "pathlib:Path"}, allow_modules=frozenset({__name__})
-        )
+        constraint_from_config({"kind": "schema", "ref": "pathlib:Path"}, allow_modules=frozenset({__name__}))
 
 
 def test_custom_constraint_registration() -> None:

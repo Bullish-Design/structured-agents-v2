@@ -1,0 +1,11 @@
+15:58:34 [    INFO] (dbos:_dbos.py:464) Initializing DBOS (v2.23.0)
+15:58:34 [    INFO] (dbos:_dbos.py:535) Executor ID: local
+15:58:34 [    INFO] (dbos:_dbos.py:536) Application version: 85bfb86794e95b3dbb72019f315748ba
+15:58:34 [    INFO] (dbos:_sys_db.py:535) Initializing DBOS system database with URL: sqlite:///.scratch/projects/15-specialist-runtime-spikes/evidence/20260721-sp10-crash-effect/unprotected/dbos.sqlite (schema: dbos)
+15:58:34 [    INFO] (dbos:_sys_db.py:539) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+15:58:34 [    INFO] (dbos:_dbos.py:613) Recovering 1 workflows from application version 85bfb86794e95b3dbb72019f315748ba
+15:58:34 [    INFO] (dbos:_queue.py:666) Listening to 0 queues:
+15:58:34 [    INFO] (dbos:_dbos.py:711) DBOS launched!
+15:58:34 [    INFO] (dbos:_dbos.py:719) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=project15-crash-effect-probe
+15:58:35 [    INFO] (dbos:_queue.py:614) Stopping queue manager, joining all worker threads...
+15:58:36 [    INFO] (dbos:_dbos.py:381) DBOS successfully shut down

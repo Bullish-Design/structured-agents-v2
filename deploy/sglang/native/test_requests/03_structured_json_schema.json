@@ -1,0 +1,53 @@
+{
+  "model": "base",
+  "temperature": 0,
+  "max_tokens": 400,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Extract structured data from the user's text. Respond only with JSON matching the schema."
+    },
+    {
+      "role": "user",
+      "content": "Meeting notes: On March 3rd, Priya Nair (Engineering Lead) and Tom Baker (Product Manager) agreed to ship the v2 billing API by April 18th. Risk: the sandbox environment is unstable, owner is Priya, severity is high. A second, lower risk (medium severity) is that Stripe webhook retries aren't idempotent yet, owned by Tom."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "meeting_extraction",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "date": {"type": "string"},
+          "attendees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "role": {"type": "string"}
+              },
+              "required": ["name", "role"]
+            }
+          },
+          "deliverable": {"type": "string"},
+          "due_date": {"type": "string"},
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {"type": "string"},
+                "owner": {"type": "string"},
+                "severity": {"type": "string", "enum": ["low", "medium", "high"]}
+              },
+              "required": ["description", "owner", "severity"]
+            }
+          }
+        },
+        "required": ["date", "attendees", "deliverable", "due_date", "risks"]
+      }
+    }
+  }
+}

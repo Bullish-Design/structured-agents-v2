@@ -39,7 +39,7 @@ class _Schema[M: BaseModel]:
     strict: bool
 
     def parse(self, raw: Any) -> M:
-        return cast(M, raw)
+        return self.model.model_validate(raw, strict=self.strict)
 
     def check(self) -> None:
         try:

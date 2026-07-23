@@ -95,3 +95,13 @@ async def test_denial_prevents_effect_execution() -> None:
 async def test_timeout_returns_denied_decision() -> None:
     result = await approval_workflow("deploy later", 0.01)
     assert result == Decision(False, "timeout")
+
+
+async def test_malformed_approval_never_allows() -> None:
+    workflow_id = "approval-malformed-string-false"
+    with SetWorkflowID(workflow_id):
+        handle = await DBOS.start_workflow_async(approval_workflow, "deploy unsafe", 30)
+    await wait_for_pending(handle)
+    await DBOS.send_async(workflow_id, {"allowed": "false", "reason": "malformed"}, topic="approval")
+
+    assert await handle.get_result() == Decision(False, "invalid approval decision")

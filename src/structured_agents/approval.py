@@ -7,11 +7,19 @@ from dataclasses import dataclass
 from typing import Any
 
 from dbos import DBOS
+from pydantic import BaseModel, ConfigDict, StrictBool, ValidationError
 
 from .authority import Decision
 
 _PENDING_COMMAND = "pending_command"
 _PENDING_TO = "pending_to"
+
+
+class _ApprovalMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    allowed: StrictBool
+    reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -42,9 +50,11 @@ class Approval[C]:
         if message is None:
             return Decision(False, "timeout")
         if isinstance(message, Mapping):
-            allowed = bool(message.get("allowed", False))
-            reason = message.get("reason", "")
-            return Decision(allowed, reason if isinstance(reason, str) else str(reason))
+            try:
+                decision = _ApprovalMessage.model_validate(message)
+            except ValidationError:
+                return Decision(False, "invalid approval decision")
+            return Decision(decision.allowed, decision.reason)
         return Decision(False, "invalid approval decision")
 
 

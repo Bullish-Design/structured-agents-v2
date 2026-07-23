@@ -42,6 +42,7 @@ async def queued_run(prompt: str) -> str:
 
 class QueueAgent:
     raw = SimpleNamespace(run=queued_run)
+    workflow = staticmethod(queued_run)
 
     async def run(self, prompt: str) -> str:
         return await queued_run(prompt)
@@ -51,11 +52,17 @@ def comparison_response(request: httpx.Request) -> httpx.Response:
     global comparison_model_calls
     comparison_model_calls += 1
     body = json.loads(request.content)
-    return httpx.Response(200, json={
-        "id": "comparison", "object": "chat.completion", "created": 0, "model": body["model"],
-        "choices": [{"index": 0, "message": {"role": "assistant", "content": "COMPARE"}, "finish_reason": "stop"}],
-        "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
-    })
+    return httpx.Response(
+        200,
+        json={
+            "id": "comparison",
+            "object": "chat.completion",
+            "created": 0,
+            "model": body["model"],
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": "COMPARE"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        },
+    )
 
 
 comparison_primary = Backend(http_client=httpx.AsyncClient(transport=httpx.MockTransport(comparison_response))).build(

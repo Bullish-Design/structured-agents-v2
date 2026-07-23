@@ -64,6 +64,11 @@ def test_oot_config_reuses_in_tree_behavior():
     assert repr(quant_config) == "GGUFConfig()"
 
 
+def test_quantization_override_accepts_vllm_hf_config_keyword():
+    assert OOTGGUFConfig.override_quantization_method({}, "awq", hf_config=PretrainedConfig()) is None
+    assert OOTGGUFConfig.override_quantization_method({}, "gguf", hf_config=PretrainedConfig()) == "gguf"
+
+
 def test_supported_act_dtypes_includes_bfloat16():
     quant_config = OOTGGUFConfig.from_config({})
     supported = quant_config.get_supported_act_dtypes()

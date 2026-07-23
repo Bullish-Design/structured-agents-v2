@@ -1,9 +1,22 @@
 """Narrow local-config adapter for SGLang GGUF startup experiments.
 
-SGLang 0.5.14 asks Transformers to infer a config from a GGUF file. Transformers
-does not yet parse the Gemma 4 GGUF metadata, although it can parse the pinned
-upstream Gemma configuration. When explicitly opted in, keep the GGUF file as
-SGLang's weight path but resolve its model config from that existing local file.
+Gemma 4's mixed sliding/full attention config can't come from a live GGUF
+parse inside the server process: SGLang's model-config resolution is reached
+through ``sglang.srt.configs.model_config``, which does
+``from ...hf_transformers.config import get_config`` at import time. That
+copies a reference to the original function into its own namespace, so a
+later ``sglang.srt.utils.hf_transformers.config.get_config = wrapper``
+reassignment (the previous design here) never reaches that caller -- the
+live-derive path silently keeps building every attention layer with the
+un-swapped default head_dim. See ``resolve_gemma4_gguf_config.py`` for the
+full account and the offline resolver this replaced it with.
+
+Instead, ``SGLANG_GGUF_CONFIG_PATH`` (produced once by
+``resolve_gemma4_gguf_config.py``) is required, and is spliced in by
+patching ``HfModelConfigParser.parse`` directly on the class. Unlike
+``get_config``, that method is looked up fresh on every call (SGLang's
+parser registry constructs a new instance from the registry dict each time),
+so patching the class attribute is immune to the same import-order bug.
 """
 
 from __future__ import annotations
@@ -12,13 +25,13 @@ import os
 
 from gemma4_gguf_compat import (
     install_gguf_model_type_alias,
-    install_transformers_gguf_patch,
-    normalize_sglang_gemma4_text_config,
     prepare_sglang_gemma4_construction,
 )
 
 
 _config_path = os.environ.get("SGLANG_GGUF_CONFIG_PATH")
+if _config_path and not os.path.isfile(_config_path):
+    raise RuntimeError(f"SGLANG_GGUF_CONFIG_PATH is not a file: {_config_path}")
 
 # Newer Transformers already owns a small number of model-type names that
 # SGLang 0.5.14 registers at import time. Keep the upstream registration when
@@ -32,45 +45,34 @@ def _register_with_existing_ok(*args: object, **kwargs: object) -> None:
     _original_register(*args, **kwargs)
 
 AutoConfig.register = _register_with_existing_ok
-install_transformers_gguf_patch()
 install_gguf_model_type_alias()
 
-from sglang.srt.utils.hf_transformers import config as _config_module
+# Only patch the GGUF-config redirect when a resolved config is actually
+# available: this same devenv/python is also used to *produce* that file
+# (resolve_gemma4_gguf_config.py) and for other scripts that never touch
+# SGLang's GGUF path at all. serve.sh is the actual launch-time gate that
+# requires SGLANG_GGUF_CONFIG_PATH before a real server start.
+if _config_path:
+    _config_dir = os.path.dirname(_config_path)
 
-_original_get_config = _config_module.get_config
+    from sglang.srt.utils.hf_transformers.config import HfModelConfigParser
 
-if _config_path and not os.path.isfile(_config_path):
-    raise RuntimeError(f"SGLANG_GGUF_CONFIG_PATH is not a file: {_config_path}")
+    _original_parse = HfModelConfigParser.parse
 
-def _get_config_with_gemma4_gguf_compat(
-    model: str,
-    trust_remote_code: bool,
-    revision: str | None = None,
-    model_override_args: dict | None = None,
-    model_config_parser: str = "auto",
-    **kwargs: object,
-):
-    if _config_path and os.path.isfile(model) and model.lower().endswith(".gguf"):
-        config = _original_get_config(
-                _config_path,
-                trust_remote_code=trust_remote_code,
-                revision=revision,
-                model_override_args=model_override_args,
-                model_config_parser="hf",
-                **kwargs,
+    def _parse_with_gemma4_gguf_compat(self, model, trust_remote_code, revision=None, **kwargs):
+        if "gguf_file" in kwargs:
+            # A GGUF weight path: SGLang's get_config() already rewrote
+            # `model` to the GGUF's parent directory and stashed the GGUF
+            # path in `gguf_file`. Ignore both and load the pre-resolved
+            # static config instead of parsing the GGUF live.
+            return AutoConfig.from_pretrained(
+                _config_dir, trust_remote_code=trust_remote_code, revision=revision
             )
-    else:
-        config = _original_get_config(
-            model,
-            trust_remote_code=trust_remote_code,
-            revision=revision,
-            model_override_args=model_override_args,
-            model_config_parser=model_config_parser,
-            **kwargs,
+        return _original_parse(
+            self, model, trust_remote_code, revision=revision, **kwargs
         )
-    return normalize_sglang_gemma4_text_config(config)
 
-_config_module.get_config = _get_config_with_gemma4_gguf_compat
+    HfModelConfigParser.parse = _parse_with_gemma4_gguf_compat
 
 # SGLang supplies its own Triton/RadixAttention implementation for Gemma 4.
 # The HF base class still validates ``config._attn_implementation`` while the

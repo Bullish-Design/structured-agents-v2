@@ -1,0 +1,790 @@
+[
+  {
+    "finished": 1784665376.3435237,
+    "index": 0,
+    "marker": "item00",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item00.",
+          "role": "user"
+        }
+      ],
+      "model": "base",
+      "response_format": {
+        "json_schema": {
+          "name": "item_0",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "marker": {
+                "const": "item00",
+                "type": "string"
+              }
+            },
+            "required": [
+              "marker"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      },
+      "temperature": 0
+    },
+    "requested_model": "base",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "{\n  \"marker\": \"item00\"\n}",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-9621297f476683d2",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "base",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 12,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 31
+      }
+    },
+    "started": 1784665358.1887534,
+    "status": 200
+  },
+  {
+    "finished": 1784665432.9632974,
+    "index": 1,
+    "marker": "item01",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item01.",
+          "role": "user"
+        }
+      ],
+      "model": "control-a",
+      "structured_outputs": {
+        "regex": "item01-[0-9]{48}"
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-a",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item01-010000000000000000000000000000000000000000000000",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-93afdd4db744ec75",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-a",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 54,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 73
+      }
+    },
+    "started": 1784665358.1890423,
+    "status": 200
+  },
+  {
+    "finished": 1784665401.8925354,
+    "index": 2,
+    "marker": "item02",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item02.",
+          "role": "user"
+        }
+      ],
+      "model": "control-b",
+      "structured_outputs": {
+        "grammar": "root ::= \"item02-grammar-abcdefghijklmnopqrstuvwxyz0123456789\""
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-b",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item02-grammar-abcdefghijklmnopqrstuvwxyz0123456789",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-ada8b2e7797f08a9",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-b",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 26,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 45
+      }
+    },
+    "started": 1784665358.1893141,
+    "status": 200
+  },
+  {
+    "finished": 1784665377.8021657,
+    "index": 3,
+    "marker": "item03",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item03.",
+          "role": "user"
+        }
+      ],
+      "model": "base",
+      "response_format": {
+        "json_schema": {
+          "name": "item_3",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "marker": {
+                "const": "item03",
+                "type": "string"
+              }
+            },
+            "required": [
+              "marker"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      },
+      "temperature": 0
+    },
+    "requested_model": "base",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "{\n  \"marker\": \"item03\"\n}",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-a3e84b5383fa9319",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "base",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 12,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 31
+      }
+    },
+    "started": 1784665358.1895313,
+    "status": 200
+  },
+  {
+    "finished": 1784665432.9635243,
+    "index": 4,
+    "marker": "item04",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item04.",
+          "role": "user"
+        }
+      ],
+      "model": "control-a",
+      "structured_outputs": {
+        "regex": "item04-[0-9]{48}"
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-a",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item04-100000000000000000000000000000000000000000000000",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-a4b606b1c624cd0b",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-a",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 54,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 73
+      }
+    },
+    "started": 1784665358.1897533,
+    "status": 200
+  },
+  {
+    "finished": 1784665401.8128579,
+    "index": 5,
+    "marker": "item05",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item05.",
+          "role": "user"
+        }
+      ],
+      "model": "control-b",
+      "structured_outputs": {
+        "grammar": "root ::= \"item05-grammar-abcdefghijklmnopqrstuvwxyz0123456789\""
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-b",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item05-grammar-abcdefghijklmnopqrstuvwxyz0123456789",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-9a1841ff40f37ca0",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-b",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 26,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 45
+      }
+    },
+    "started": 1784665358.1902034,
+    "status": 200
+  },
+  {
+    "finished": 1784665377.8023922,
+    "index": 6,
+    "marker": "item06",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item06.",
+          "role": "user"
+        }
+      ],
+      "model": "base",
+      "response_format": {
+        "json_schema": {
+          "name": "item_6",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "marker": {
+                "const": "item06",
+                "type": "string"
+              }
+            },
+            "required": [
+              "marker"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      },
+      "temperature": 0
+    },
+    "requested_model": "base",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "{\n  \"marker\": \"item06\"\n}",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-b2a7934dbef2442e",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "base",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 12,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 31
+      }
+    },
+    "started": 1784665358.1914616,
+    "status": 200
+  },
+  {
+    "finished": 1784665432.9637432,
+    "index": 7,
+    "marker": "item07",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item07.",
+          "role": "user"
+        }
+      ],
+      "model": "control-a",
+      "structured_outputs": {
+        "regex": "item07-[0-9]{48}"
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-a",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item07-100000000000000000000000000000000000000000000000",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-a8b6f51d24b15c3d",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-a",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 54,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 73
+      }
+    },
+    "started": 1784665358.1918862,
+    "status": 200
+  },
+  {
+    "finished": 1784665419.6130166,
+    "index": 8,
+    "marker": "item08",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item08.",
+          "role": "user"
+        }
+      ],
+      "model": "control-b",
+      "structured_outputs": {
+        "grammar": "root ::= \"item08-grammar-abcdefghijklmnopqrstuvwxyz0123456789\""
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-b",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item08-grammar-abcdefghijklmnopqrstuvwxyz0123456789",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-a10092faa924ef71",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-b",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 26,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 45
+      }
+    },
+    "started": 1784665358.1921284,
+    "status": 200
+  },
+  {
+    "finished": 1784665399.814537,
+    "index": 9,
+    "marker": "item09",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item09.",
+          "role": "user"
+        }
+      ],
+      "model": "base",
+      "response_format": {
+        "json_schema": {
+          "name": "item_9",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "marker": {
+                "const": "item09",
+                "type": "string"
+              }
+            },
+            "required": [
+              "marker"
+            ],
+            "type": "object"
+          },
+          "strict": true
+        },
+        "type": "json_schema"
+      },
+      "temperature": 0
+    },
+    "requested_model": "base",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "{\n  \"marker\": \"item09\"\n}",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-b88540bae96e4841",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "base",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 12,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 31
+      }
+    },
+    "started": 1784665358.192349,
+    "status": 200
+  },
+  {
+    "finished": 1784665507.637007,
+    "index": 10,
+    "marker": "item10",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item10.",
+          "role": "user"
+        }
+      ],
+      "model": "control-a",
+      "structured_outputs": {
+        "regex": "item10-[0-9]{48}"
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-a",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item10-100000000000000000000000000000000000000000000000",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-89502b0f559b8555",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-a",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 54,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 73
+      }
+    },
+    "started": 1784665358.1925805,
+    "status": 200
+  },
+  {
+    "finished": 1784665435.504212,
+    "index": 11,
+    "marker": "item11",
+    "request": {
+      "max_tokens": 96,
+      "messages": [
+        {
+          "content": "Return only the constrained output for marker item11.",
+          "role": "user"
+        }
+      ],
+      "model": "control-b",
+      "structured_outputs": {
+        "grammar": "root ::= \"item11-grammar-abcdefghijklmnopqrstuvwxyz0123456789\""
+      },
+      "temperature": 0
+    },
+    "requested_model": "control-b",
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "item11-grammar-abcdefghijklmnopqrstuvwxyz0123456789",
+            "function_call": null,
+            "reasoning": null,
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1784665358,
+      "id": "chatcmpl-a87ac0bb9cb88626",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "control-b",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.25.0-19a61776",
+      "usage": {
+        "completion_tokens": 32,
+        "prompt_tokens": 19,
+        "prompt_tokens_details": null,
+        "total_tokens": 51
+      }
+    },
+    "started": 1784665358.192789,
+    "status": 200
+  }
+]

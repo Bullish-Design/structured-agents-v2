@@ -14,6 +14,25 @@ offload, and logs the fully resolved invocation. MTP is an explicit safety
 failure—not a fallback—until a version-specific configuration proves the Q8
 GGUF assistant has nonzero proposal and acceptance telemetry.
 
+## Config resolution
+
+Gemma 4's mixed sliding/full attention config is not derived live from the
+GGUF inside the server process. Run `resolve_gemma4_gguf_config.py` once per
+target GGUF to produce a static, SGLang-native `config.json`:
+
+```
+python resolve_gemma4_gguf_config.py "$MODEL_PATH" /path/to/resolved-config-dir
+```
+
+then set `SGLANG_GGUF_CONFIG_PATH` to the `config.json` it writes before
+running `serve.sh`/`run.sh`. `serve.sh` refuses to start without it. See
+`sitecustomize.py`'s module docstring for why a live-derive design (a
+monkeypatch on `sglang.srt.utils.hf_transformers.config.get_config`) was
+replaced: `sglang.srt.configs.model_config` imports `get_config` by name at
+import time, so reassigning the `config` module's attribute afterward never
+reached that caller — every server start silently kept the un-swapped
+default `head_dim` for full-attention layers and crashed at weight load.
+
 ## Validation sequence
 
 Run `./test_serve.sh` first; it is a shell contract test only. Then run
@@ -26,6 +45,16 @@ and `structured-agents-vllm.service` are out of scope.
 After startup succeeds, `./verify.sh` checks health, model listing, and a basic
 chat completion. Structured JSON/regex/grammar, LoRA, MTP, and performance are
 unverified until their individual runtime artifacts are captured.
+
+## Runtime evidence (2026-07-23)
+
+With a config resolved via `resolve_gemma4_gguf_config.py` and
+`SGLANG_GGUF_CONFIG_PATH` set, a real GPU-0 run of `run.sh` against the
+Unsloth Gemma 4 12B QAT `UD-Q4_K_XL` GGUF started cleanly (no hang, no
+weight-shape crash) and `./verify.sh` passed: health check, model listing,
+and a basic chat completion all succeeded. This is the first clean
+end-to-end result for this spike; structured JSON/regex/grammar, LoRA, MTP,
+and performance remain unverified.
 
 ## Source evidence (2026-07-14)
 

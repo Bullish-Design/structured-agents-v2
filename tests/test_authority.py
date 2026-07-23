@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from dbos import DBOS
 from pydantic import BaseModel
 
 from structured_agents.authority import (
     Allowlist,
+    ApprovalEvidence,
+    AuthorityMode,
+    AuthorityRequest,
+    CommandBinding,
     Decision,
+    DecisionKind,
     Denied,
     ProcessResult,
     Subprocess,
     all_of,
     any_of,
+    authorize,
     execute,
 )
 
@@ -76,9 +84,13 @@ def test_allowlist_fails_closed_and_composes() -> None:
     deny = Allowlist[Command]({"never": is_false})
     assert all_of(allow, deny).decide(command).allowed is False
     assert any_of(deny, allow).decide(command).allowed is True
+    with pytest.raises(Exception, match="at least one"):
+        all_of()
+    with pytest.raises(Exception, match="at least one"):
+        any_of()
 
 
-async def test_execute_is_exactly_once_per_business_key() -> None:
+async def test_completed_effect_is_replayed_per_business_key() -> None:
     global effects
     effects = 0
     allowed = StaticAuthorizer(True)
@@ -96,3 +108,69 @@ async def test_effect_failures_surface_and_subprocess_returns_result() -> None:
     with pytest.raises(RuntimeError, match="effect failed"):
         await execute(StaticAuthorizer(True), FailingEffector(), command, key="failure-1")
     assert await execute(StaticAuthorizer(True), Subprocess(), command, key="success-1") == ProcessResult(0, "", "")
+
+
+class AutomatedApproval:
+    def __init__(self, evidence: ApprovalEvidence) -> None:
+        self.evidence = evidence
+
+    async def decide(self, command: Command) -> ApprovalEvidence:
+        del command
+        return self.evidence
+
+
+async def test_automated_approval_requires_exact_command_binding() -> None:
+    binding = CommandBinding.create(
+        Command(argv=["deploy", "staging"]), subject="release", action="deploy", scope="staging"
+    )
+    request = AuthorityRequest(AuthorityMode.AUTOMATED, actor="approver-agent", scope="staging")
+    valid = ApprovalEvidence(DecisionKind.ALLOW, binding.digest, "approver-agent", "checks passed")
+
+    assert (await authorize(binding, request, AutomatedApproval(valid))).allowed
+
+    wrong = ApprovalEvidence(DecisionKind.ALLOW, "0" * 64, "approver-agent", "wrong command")
+    result = await authorize(binding, request, AutomatedApproval(wrong))
+    assert result.kind is DecisionKind.ERROR
+    assert not result.allowed
+
+
+async def test_scoped_bypass_is_explicit_bounded_and_bound() -> None:
+    now = datetime(2026, 7, 21, tzinfo=UTC)
+    binding = CommandBinding.create(
+        Command(argv=["deploy", "staging"]), subject="release", action="deploy", scope="staging"
+    )
+    request = AuthorityRequest(
+        AuthorityMode.BYPASS,
+        actor="operator",
+        scope="staging",
+        bypass_reason="incident recovery",
+        bypass_expires_at=now + timedelta(minutes=5),
+    )
+
+    evidence = await authorize(binding, request, now=now)
+    assert evidence.kind is DecisionKind.BYPASSED
+    assert evidence.request_digest == binding.digest
+
+    wrong_scope = AuthorityRequest(
+        AuthorityMode.BYPASS,
+        actor="operator",
+        scope="production",
+        bypass_reason="incident recovery",
+        bypass_expires_at=now + timedelta(minutes=5),
+    )
+    assert not (await authorize(binding, wrong_scope, now=now)).allowed
+
+    expired = AuthorityRequest(
+        AuthorityMode.BYPASS,
+        actor="operator",
+        scope="staging",
+        bypass_reason="incident recovery",
+        bypass_expires_at=now,
+    )
+    assert not (await authorize(binding, expired, now=now)).allowed
+
+    tampered = CommandBinding(
+        Command(argv=["deploy", "production"]), binding.subject, binding.action, binding.scope, binding.digest
+    )
+    with pytest.raises(Exception, match="digest"):
+        await authorize(tampered, request, now=now)

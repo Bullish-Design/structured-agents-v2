@@ -1,0 +1,12 @@
+{
+  "all_validated": true,
+  "engine": "vllm",
+  "metrics_samples": 1147,
+  "models": [
+    "base",
+    "control-a",
+    "control-b"
+  ],
+  "requests": 12,
+  "wall_seconds": 149.4482536315918
+}

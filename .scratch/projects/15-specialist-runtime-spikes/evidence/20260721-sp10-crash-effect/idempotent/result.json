@@ -1,0 +1,19 @@
+{
+  "after_crash": [
+    "remote-effect-key"
+  ],
+  "after_recovery": [
+    "remote-effect-key"
+  ],
+  "first_returncode": 71,
+  "mode": "idempotent",
+  "recovered": {
+    "ledger": [
+      "remote-effect-key"
+    ],
+    "mode": "idempotent",
+    "result": 1,
+    "status": "SUCCESS"
+  },
+  "replacement_returncode": 0
+}

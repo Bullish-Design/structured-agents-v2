@@ -1,0 +1,15 @@
+{
+  "model": "base",
+  "temperature": 0,
+  "max_tokens": 512,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a careful reasoning assistant. Show your work step by step before giving a final answer labeled 'Answer:'."
+    },
+    {
+      "role": "user",
+      "content": "A train leaves station A at 09:00 traveling at 60 km/h toward station B, 210 km away. A second train leaves station B at 09:20 traveling toward station A at 90 km/h. At what clock time do the two trains meet, and how far from station A is the meeting point? Then, if the first train needs to arrive at station B no later than 12:30, does it have enough time margin, and by how many minutes?"
+    }
+  ]
+}

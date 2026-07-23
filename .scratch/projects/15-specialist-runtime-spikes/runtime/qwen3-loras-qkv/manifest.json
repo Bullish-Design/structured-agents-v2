@@ -1,0 +1,33 @@
+{
+  "adapters": [
+    {
+      "config_sha256": "6ef359a318dd1d268470d84c7ddccc90b3be64743b2f650ede53e257bfc3497c",
+      "name": "control-a",
+      "rank": 8,
+      "seed": 101,
+      "target_modules": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj"
+      ],
+      "weights_bytes": 222024,
+      "weights_sha256": "8a9dbb13950674c9fbea367571f94ccbe9f3f59934ebe0993e1c7486ee9895b8"
+    },
+    {
+      "config_sha256": "6ef359a318dd1d268470d84c7ddccc90b3be64743b2f650ede53e257bfc3497c",
+      "name": "control-b",
+      "rank": 8,
+      "seed": 202,
+      "target_modules": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj"
+      ],
+      "weights_bytes": 222024,
+      "weights_sha256": "d6337c3823a451df2bf877134efa2b9b53d3a59e7624950bfb90c34f61bd617e"
+    }
+  ],
+  "base_model": "Qwen/Qwen3-4B-AWQ",
+  "purpose": "synthetic LoRA controls for local multi-adapter scheduler qualification",
+  "quality_claim": false
+}

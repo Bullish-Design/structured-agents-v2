@@ -20,12 +20,14 @@ def configure(*, database_url: str | None = None, app_name: str = "structured_ag
     """Create the DBOS singleton; call this before registering durable work."""
     if database_url is None:
         database_url = f"sqlite:///{Path.cwd() / 'structured_agents.sqlite'}"
-    DBOS(config=DBOSConfig(
-        name=app_name,
-        system_database_url=database_url,
-        use_listen_notify=False if database_url.startswith("sqlite:") else None,
-        **dbos_config,
-    ))
+    DBOS(
+        config=DBOSConfig(
+            name=app_name,
+            system_database_url=database_url,
+            use_listen_notify=False if database_url.startswith("sqlite:") else None,
+            **dbos_config,
+        )
+    )
 
 
 def launch() -> None:
@@ -56,9 +58,9 @@ class Queue:
     async def submit[T](self, agent: Agent[T], prompt: str, *, key: str | None = None) -> WorkflowHandleAsync[T]:
         """Enqueue one durable agent run, optionally keyed by business identity."""
         if key is None:
-            return cast(WorkflowHandleAsync[T], await self._queue.enqueue_async(agent.raw.run, prompt))
+            return cast(WorkflowHandleAsync[T], await self._queue.enqueue_async(agent.workflow, prompt))
         with SetWorkflowID(key):
-            return cast(WorkflowHandleAsync[T], await self._queue.enqueue_async(agent.raw.run, prompt))
+            return cast(WorkflowHandleAsync[T], await self._queue.enqueue_async(agent.workflow, prompt))
 
     async def submit_batch[T](
         self,
@@ -70,10 +72,12 @@ class Queue:
         """Enqueue every item and return independent handles for their outcomes."""
         if keys is not None and len(keys) != len(prompts):
             raise ValueError("keys must have the same length as prompts")
-        return await asyncio.gather(*(
-            self.submit(agent, prompt, key=None if keys is None else keys[index])
-            for index, prompt in enumerate(prompts)
-        ))
+        return await asyncio.gather(
+            *(
+                self.submit(agent, prompt, key=None if keys is None else keys[index])
+                for index, prompt in enumerate(prompts)
+            )
+        )
 
 
 def schedule(cron: str) -> Callable[[Any], Any]:
@@ -113,9 +117,7 @@ class Comparison[T]:
     reference_workflow_id: str
 
 
-async def compare[T](
-    primary: Agent[T], reference: Agent[T], prompt: str, *, key: str | None = None
-) -> Comparison[T]:
+async def compare[T](primary: Agent[T], reference: Agent[T], prompt: str, *, key: str | None = None) -> Comparison[T]:
     """Run two durable agent legs independently and return their recorded pair."""
     comparison_key = key or str(uuid4())
     primary_id = f"{comparison_key}:primary"

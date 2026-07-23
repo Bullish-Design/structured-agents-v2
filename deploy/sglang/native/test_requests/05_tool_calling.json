@@ -1,0 +1,49 @@
+{
+  "model": "base",
+  "temperature": 0,
+  "max_tokens": 300,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an assistant with access to tools. Call a tool when it would answer the user's request; otherwise respond directly."
+    },
+    {
+      "role": "user",
+      "content": "What's the current weather in Kyoto, Japan in Celsius, and also convert 42.5 Celsius to Fahrenheit while you're at it?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "description": "Get the current weather for a location",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {"type": "string", "description": "City and country, e.g. 'Kyoto, Japan'"},
+            "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
+          },
+          "required": ["location", "unit"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "convert_temperature",
+        "description": "Convert a temperature value between Celsius and Fahrenheit",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "value": {"type": "number"},
+            "from_unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+            "to_unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
+          },
+          "required": ["value", "from_unit", "to_unit"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}

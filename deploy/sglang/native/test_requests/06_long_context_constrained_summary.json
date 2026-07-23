@@ -1,0 +1,15 @@
+{
+  "model": "base",
+  "temperature": 0,
+  "max_tokens": 350,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an editor producing tightly constrained executive summaries."
+    },
+    {
+      "role": "user",
+      "content": "Summarize the following incident report in EXACTLY 3 bullet points (no more, no fewer), each bullet under 20 words, followed by a single line starting with 'Severity:' rating it Low/Medium/High/Critical.\n\nIncident report: At 02:14 UTC, the payments-api service began returning elevated 5xx rates after a routine config deploy pushed a database connection pool size reduction from 200 to 20 across all 12 pods. Within 6 minutes, checkout success rate dropped from 99.8% to 61%, and the on-call engineer was paged automatically by the error-rate alert. The engineer identified the recent deploy via the change log, confirmed the pool size regression by diffing the previous and current ConfigMaps, and rolled back the deploy at 02:31 UTC. Success rate recovered to 99.6% by 02:36 UTC. Total customer-facing impact window was approximately 22 minutes, during which an estimated 3,400 checkout attempts failed. No data loss occurred. A follow-up action item was created to add a canary stage and an automated regression test for connection pool configuration changes before they reach production."
+    }
+  ]
+}

@@ -7,6 +7,8 @@ set -euo pipefail
 : "${MODEL_PATH:?set MODEL_PATH to the exact local target GGUF}"
 : "${TOKENIZER_PATH:?set TOKENIZER_PATH to the existing local Gemma tokenizer directory}"
 : "${CUDA_VISIBLE_DEVICES:?set CUDA_VISIBLE_DEVICES to the isolated GPU}"
+: "${SGLANG_GGUF_CONFIG_PATH:?set SGLANG_GGUF_CONFIG_PATH to a config.json produced by resolve_gemma4_gguf_config.py}"
+[[ -f "$SGLANG_GGUF_CONFIG_PATH" ]] || { echo "SGLANG_GGUF_CONFIG_PATH does not exist: $SGLANG_GGUF_CONFIG_PATH" >&2; exit 1; }
 
 if [[ "${MODEL_LOAD_FORMAT:-gguf}" == "gguf" ]]; then
   [[ -f "$MODEL_PATH" ]] || { echo "target GGUF does not exist: $MODEL_PATH" >&2; exit 1; }
@@ -15,9 +17,11 @@ else
 fi
 [[ -f "$TOKENIZER_PATH/tokenizer.json" ]] || { echo "tokenizer.json does not exist under: $TOKENIZER_PATH" >&2; exit 1; }
 [[ -f "$TOKENIZER_PATH/config.json" ]] || { echo "config.json does not exist under: $TOKENIZER_PATH" >&2; exit 1; }
-# Config resolution must come from the GGUF on the clean compatibility path.
-# `SGLANG_GGUF_CONFIG_PATH` is an opt-in diagnostic adapter in sitecustomize,
-# not a launch requirement.
+# Config resolution comes from a static config.json produced once, offline,
+# by `resolve_gemma4_gguf_config.py` -- not from a live GGUF parse inside the
+# server process. See sitecustomize.py for why the live-derive path was
+# dropped (an import-order bug silently discarded the sliding/full attention
+# head_dim split on every server start).
 [[ "$CUDA_VISIBLE_DEVICES" == "0" ]] || { echo "SGLang spike is pinned to GPU 0; got CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES" >&2; exit 1; }
 [[ "${PORT:-8002}" == "8002" ]] || { echo "SGLang spike port is reserved as 8002; got PORT=${PORT:-}" >&2; exit 1; }
 [[ "${CONTEXT_LENGTH:-16384}" == "16384" ]] || { echo "spike requires CONTEXT_LENGTH=16384" >&2; exit 1; }

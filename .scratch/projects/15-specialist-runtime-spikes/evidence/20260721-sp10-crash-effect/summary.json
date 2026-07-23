@@ -1,0 +1,5 @@
+{
+  "conclusion": "DBOS retries the ambiguous step; remote idempotency prevents duplicate commit",
+  "idempotent_commits": 1,
+  "unprotected_attempts": 2
+}

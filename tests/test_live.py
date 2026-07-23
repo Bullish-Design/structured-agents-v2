@@ -48,18 +48,38 @@ class LiveCommand(BaseModel):
 
 
 backend = Backend(engine=ENGINE, base_url=BASE_URL, api_key=API_KEY, default_model=MODEL)
-schema_agent = backend.build(AgentSpec(
-    "live-schema", Schema(LiveCommand), "Return exactly the argv requested by the user.", settings=SETTINGS,
-))
-regex_agent = backend.build(AgentSpec(
-    "live-regex", Regex(r"phase7-[0-9]{4}"), "Return a phase7 code with exactly four digits.", settings=SETTINGS,
-))
-choice_agent = backend.build(AgentSpec(
-    "live-choice", Choice("phase7-allow", "phase7-deny"), "Choose phase7-allow.", settings=SETTINGS,
-))
-grammar_agent = backend.build(AgentSpec(
-    "live-grammar", Grammar('root ::= "phase7-grammar"'), "Return phase7-grammar.", settings=SETTINGS,
-))
+schema_agent = backend.build(
+    AgentSpec(
+        "live-schema",
+        Schema(LiveCommand),
+        "Return exactly the argv requested by the user.",
+        settings=SETTINGS,
+    )
+)
+regex_agent = backend.build(
+    AgentSpec(
+        "live-regex",
+        Regex(r"phase7-[0-9]{4}"),
+        "Return a phase7 code with exactly four digits.",
+        settings=SETTINGS,
+    )
+)
+choice_agent = backend.build(
+    AgentSpec(
+        "live-choice",
+        Choice("phase7-allow", "phase7-deny"),
+        "Choose phase7-allow.",
+        settings=SETTINGS,
+    )
+)
+grammar_agent = backend.build(
+    AgentSpec(
+        "live-grammar",
+        Grammar('root ::= "phase7-grammar"'),
+        "Return phase7-grammar.",
+        settings=SETTINGS,
+    )
+)
 
 effect_calls = 0
 
@@ -80,7 +100,7 @@ class LiveAuthorizer:
 
 @DBOS.workflow()
 async def live_durable_pipeline() -> int:
-    command = await schema_agent.run("Return argv [\"echo\", \"phase7-live\"] exactly.")
+    command = await schema_agent.run('Return argv ["echo", "phase7-live"] exactly.')
     result = await execute(LiveAuthorizer(), LiveCountingEffector(), command, key="phase7-live-effect")
     assert isinstance(result, int)
     return result
@@ -101,7 +121,7 @@ async def test_live_health_and_model_identity() -> None:
 
 
 async def test_live_schema_constraint() -> None:
-    command = await schema_agent.run("Return argv [\"echo\", \"phase7-live\"] exactly.")
+    command = await schema_agent.run('Return argv ["echo", "phase7-live"] exactly.')
     assert command == LiveCommand(argv=("echo", "phase7-live"))
 
 
@@ -120,9 +140,15 @@ async def test_live_grammar_constraint() -> None:
 async def test_live_lora_constraint() -> None:
     if not LORA_NAME:
         pytest.skip("set LORA_NAME when the tower exposes a LoRA adapter")
-    agent = backend.build(AgentSpec(
-        "live-lora", Choice("phase7-lora"), "Return phase7-lora.", adapter=LORA_NAME, settings=SETTINGS,
-    ))
+    agent = backend.build(
+        AgentSpec(
+            "live-lora",
+            Choice("phase7-lora"),
+            "Return phase7-lora.",
+            adapter=LORA_NAME,
+            settings=SETTINGS,
+        )
+    )
     assert await agent.run("Return phase7-lora.") == "phase7-lora"
 
 

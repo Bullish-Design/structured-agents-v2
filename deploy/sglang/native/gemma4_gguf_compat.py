@@ -126,4 +126,11 @@ def prepare_sglang_gemma4_construction(config: Any) -> Any:
     """
     if getattr(config, "model_type", None) == "gemma4_text":
         config._attn_implementation = "eager"
+        # Transformers' PreTrainedModel.__init__ now also validates
+        # `experts_implementation` unconditionally, defaulting to "grouped_mm"
+        # and raising for any class that doesn't support it. Gemma 4's dense
+        # (non-MoE) text model has no experts, so pin the only implementation
+        # it does support before construction, mirroring the attention override
+        # above.
+        config._experts_implementation = "eager"
     return config

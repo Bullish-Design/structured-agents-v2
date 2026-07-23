@@ -1,0 +1,15 @@
+{
+  "model": "base",
+  "temperature": 0,
+  "max_tokens": 700,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a senior Python engineer doing code review. Be specific and cite line behavior, not just style."
+    },
+    {
+      "role": "user",
+      "content": "This function is supposed to return the k most frequent elements from a list, but it's returning wrong results for some inputs and throws on empty input. Find every bug, explain why it's wrong, and give a corrected version.\n\n```python\ndef top_k_frequent(nums, k):\n    counts = {}\n    for n in nums:\n        counts[n] = counts.get(n, 0) + 1\n    sorted_items = sorted(counts.items(), key=lambda x: x[0])\n    result = []\n    for i in range(k):\n        result.append(sorted_items[i])\n    return result\n```"
+    }
+  ]
+}
