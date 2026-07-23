@@ -1,0 +1,14 @@
+[project]
+name = "structured-agents-sglang-native-ornith"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "sglang==0.5.14",
+  "transformers",
+]
+
+[tool.uv]
+# This is a CUDA server spike, intentionally locked only for its actual host.
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+# Required by SGLang 0.5.14's pinned flash-attn-4 dependency.
+prerelease = "allow"
