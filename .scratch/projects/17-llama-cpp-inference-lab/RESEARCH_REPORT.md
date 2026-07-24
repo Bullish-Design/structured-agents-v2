@@ -274,3 +274,175 @@ rates were 1.201/.679/.594/.574 tok/s. No measured break-even: disk read plus
 whole-state restore dominates. Async llama_decode enqueue timing is not
 throughput. Unit tests cover incompatible fingerprint/token, corruption, atomic
 publication, hit/miss, and the required restore-before-suffix lifecycle.
+
+## Phase-2 whole-state root-cause + per-sequence analysis — 2026-07-24
+
+This section attributes the negative break-even to a specific, source-grounded
+mechanism and explains the per-sequence divergence. It draws only on completed
+GPU-only artifacts and local source/headers; it does **not** run a new GPU
+measurement (GPU 0 was held by a concurrent live `run_json_workload.py` at
+analysis time, and the GPU-only policy requires exclusive GPU 0). New evidence
+requiring the GPU is designed, staged, and handed off below — not claimed.
+
+### Runtime tuple and artifacts (authoritative, already run)
+
+- Build: `out-cuda-3060-postfix2`, llama-cpp-python 0.3.34, torch 2.12.0,
+  Python 3.13.13, `CUDA_VISIBLE_DEVICES=0`, `n_ctx=512`, `n_batch=128`,
+  `n_gpu_layers=-1`, seed 17018. GPU 1 idle (9 MiB) in every accepted run.
+- Whole-state sweeps: `artifacts/project17-prefix-cache-20260724T175312Z/`
+  (16/32/64/96, exit 0) and `...191154Z/` (128/192/256, exit 0).
+- Per-sequence probe: `artifacts/project17-seq-state-20260724T191450Z/`
+  (K=32, 1-token suffix, exit 1 — divergence).
+- Ornith identity: `n_vocab=248320` (Gate 3 doc), hybrid attention +
+  GatedDeltaNet (linear-attention / recurrent) architecture.
+
+### A. Why whole-state restore never breaks even
+
+Per-phase synchronized means (ms), from the two summaries:
+
+| prefix | cold prefill | lookup | state read+cksum | state restore | suffix | cache e2e | blob MB |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 16 | 92.3 | 4.2 | 153.9 | 651.8 | 26.7 | 832.3 | 69.1 |
+| 32 | 83.1 | 3.4 | 209.5 | 1226.3 | 36.9 | 1472.7 | 85.5 |
+| 64 | 113.4 | 2.9 | 280.2 | 1366.7 | 36.6 | 1683.4 | 118.4 |
+| 96 | 145.7 | 3.5 | 375.1 | 1332.6 | 33.9 | 1741.6 | 151.2 |
+| 128 | 210.4 | 4.8 | 427.2 | 1471.7 | 53.2 | 1952.1 | 184.0 |
+| 192 | 271.8 | 3.7 | 470.3 | 1658.1 | 33.6 | 2162.0 | 186.1 |
+| 256 | 373.5 | 5.2 | 480.3 | 1763.4 | 49.9 | 2293.6 | 188.2 |
+
+Two dominant phases, both scaling with **blob size**: `state_read_wall` (disk
+read + SHA-256 of the blob) and `state_restore_wall` (which in
+`run_prefix_cache.py:160` bundles `pickle.loads`, `LlamaState.load_state`'s
+score-array apply, and the native `llama_state_set_data` host→device restore).
+Cold GPU prefill is cheap (~1.2 ms/token beyond a ~50 ms floor) and the cache
+path is 5–9× slower at every length. The gap **widens** with length, so a longer
+prefix cannot rescue it (eliminates Option C1 for this codec).
+
+**Blob composition (source-grounded, arithmetic-verified).**
+`Llama.save_state` (llama.py:2199) returns a `LlamaState` carrying
+`scores=self._scores.copy()` where `_scores = self.scores[: n_tokens, :]` and
+`self.scores` is allocated `(n_batch, n_vocab)` (llama.py:477), so the saved
+score rows saturate at `n_batch=128`. With `n_vocab=248320`, fp32:
+
+- scores bytes = `min(n_tokens, 128) · 248320 · 4`  (≈0.993 MB/token to the cap)
+- native `llama_state_get_size` ≈ 53 MB at 15 tokens (Gate 3) and grows only
+  ~0.03 MB/token (recurrent GatedDeltaNet state dominates and is nearly
+  token-count-independent).
+
+This model reproduces every recorded blob to ≈0.1 MB (see
+`benchmarks/project17/state_blob_model.py` and `tests/test_state_blob_model.py`,
+3 passing GPU-free tests). Implied native state: 53.2/53.7/54.8/55.8/56.9/59.0/
+61.1 MB for 16…256. **Consequence: the entire per-token blob growth is the
+`LlamaState` score buffer — prefill logits that the restore lifecycle never
+consumes (we always re-decode a suffix for fresh logits). At 96 tokens ~63% of
+the blob (95 of 151 MB) is dead-weight scores; past 128 tokens scores plateau
+and the blob is nearly flat.**
+
+**What this proves:** the negative result is dominated by moving a large blob
+(disk read + checksum + pickle + host→device set), and the growth term is a
+Python-wrapper artifact, not the model KV/recurrent state. **What it does not
+yet prove:** the split of `state_restore_wall` between pickle/score bookkeeping
+and the native `llama_state_set_data` transfer/reconstruction. That split is the
+one open attribution question and decides Option C3 — it is exactly what the
+staged decomposition runner measures.
+
+### B. Why the per-sequence byte-copy diverges
+
+`llama_state_seq_get_data`/`set_data` copied and re-loaded 53,740,972 bytes
+(size==copied==set_return) yet greedy continuation diverged (baseline 21059 vs
+restored 364). Byte-count round-trip proves buffer sizing, not semantic restore.
+
+Primary local evidence — the pinned `llama.h` (out-cuda-3060-postfix2):
+
+```
+// work only with partial states, such as SWA KV cache or recurrent cache (e.g. Mamba)
+#define LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY 1
+...
+LLAMA_API size_t llama_state_seq_get_data_ext(..., llama_state_seq_flags flags);
+```
+
+Ornith is a hybrid attention + recurrent (GatedDeltaNet) model. The header
+distinguishes recurrent/partial sequence state and provides `_ext` + flag
+variants for it; the spike used the **plain non-ext** `llama_state_seq_*` path
+(`FLAGS_NONE`). The installed 0.3.34 binding **does** expose the `_ext` symbols
+and `LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY`/`ON_DEVICE` (verified in
+`llama_cpp/llama_cpp.py`). Leading hypothesis: the plain per-sequence path does
+not correctly serialize/re-key the recurrent cache into `dest_seq_id`, so the
+attention KV round-trips but the GatedDeltaNet recurrent memory does not —
+producing a same-size blob with wrong continuation. Whole-state
+`llama_state_get_data`/`set_data` avoids this because it restores the entire
+context (recurrent state included) and is already proven bit-exact (Gate 3,
+same- and cross-instance; and all Phase-2 whole-state lengths matched).
+
+This is a hypothesis, not a proof of the internal cause: it must not be patched
+speculatively. The staged sweep tests it directly.
+
+### C. Options with go/no-go
+
+1. **Longer shared prefix.** No-go for this codec: cache cost grows faster than
+   cold prefill; the gap widens through 256 tokens and scores plateau while
+   restore stays >1.4 s. Only reconsider *after* a native codec flattens the blob.
+2. **In-memory whole-state checkpoint.** Removes `state_read_wall`
+   (154–480 ms) and pickle framing, not the native set or the score apply.
+   Best-case still ~650–1300 ms restore ≫ cold. Go only as an explicitly
+   in-memory teaching variant, not a persistent-cache speedup. Go/no-go:
+   in-memory restore total < cold prefill at some tested length.
+3. **Native `llama_state_get_data`/`set_data` codec (recommended).** Same C
+   entry point `load_state` already wraps, minus the score buffer, so restore
+   correctness is inherited (low risk) and the blob drops to a flat ~53–61 MB
+   (removes disk read/pickle/score-apply proportionally). Removes the dominant
+   *growth* term; whether it beats cold prefill depends on the native-set share
+   of restore, which is unmeasured. Go/no-go: instrumented run shows
+   `nat_restore_total_wall < cold_prefill_wall` at some length **and** exact
+   continuation match. Exact experiment: `run_native_state_decompose.py`.
+4. **Correct per-sequence codec.** Higher risk; blocked until a sweep proves
+   deterministic continuation equivalence. Exact experiment: the extended
+   `run_seq_state_spike.py` sweep (positions × suffix × `none`/`partial_only`
+   ext). Go/no-go: `match=True` across K and suffix lengths for a single flag
+   configuration. No production use before that.
+5. **Different checkpoint/suffix placement.** Does not change the dominant
+   blob-move cost; not a route to break-even. No-go as a speedup lever.
+6. **Plain-transformer control model.** Diagnostic only, to localize whether the
+   per-sequence divergence is recurrent-specific. Not an Ornith performance
+   baseline. Note: the only other local GGUFs are gemma-4 MTP variants (not
+   strictly plain); document the caveat if used.
+
+### Staged (not-yet-run) GPU evidence — handoff
+
+- `benchmarks/project17/run_native_state_decompose.py`: decomposes restore into
+  `ls_pickle_loads / ls_load_state / ls_suffix` vs `nat_set_data / nat_suffix`,
+  in-memory (no disk) to isolate codec cost, with a fail-closed continuation
+  gate against the cold baseline. Answers A's attribution and Options 2 & 3.
+- `benchmarks/project17/run_seq_state_spike.py` (extended): sweeps checkpoint
+  position, suffix length, and `none`/`partial_only`(`_ext`) flags; records
+  blob checksums; success = continuation match only. Answers Option 4.
+
+Run when GPU 0 is exclusively free (GPU 1 idle), using the pinned env
+(`CUDA_VISIBLE_DEVICES=0`, `LLAMA_CPP_LIB_PATH=...out-cuda-3060-postfix2/lib`,
+`LD_LIBRARY_PATH` from `.cuda_runtime_ld`, `n_gpu_layers=-1`), the same
+`.venv-spike` interpreter, and artifact dirs under `artifacts/project17-*`.
+
+### Proven / rejected / unknown
+
+- **Proven:** whole-state persistent cache is correct (restart-safe, exact
+  continuation 16→256) but never breaks even; both dominant phases scale with
+  blob size; the blob's per-token growth is entirely the `LlamaState` score
+  buffer (dead weight); native state is recurrent-dominated and nearly flat;
+  the per-sequence non-ext path round-trips bytes but diverges semantically.
+- **Rejected:** "longer prefix will break even" (gap widens); "byte-count copy
+  == correct restore"; "blob growth is model KV/recurrent state" (it is scores).
+- **Unknown (needs the staged GPU runs):** the pickle/score-apply vs
+  native-set split of restore; whether a native codec beats cold prefill;
+  whether the `_ext`/PARTIAL_ONLY path restores per-sequence continuation.
+
+### Recommendation and Phase-2 status
+
+Smallest justified next experiment: run `run_native_state_decompose.py` on an
+exclusive GPU 0. If native restore total < cold prefill with exact continuation,
+promote a native-bytes codec behind the existing `PrefixCache` contracts
+(fingerprint/token/size/checksum gates and restore-then-suffix lifecycle
+unchanged). Otherwise, **Phase 2 stays closed as a correct-but-negative
+whole-state persistent-cache teaching result**, with the native-codec and
+per-sequence(`_ext`) sweeps recorded as the two open follow-ups. No LMCache,
+radix tree, compression, or generic cache abstraction is warranted by this
+evidence.

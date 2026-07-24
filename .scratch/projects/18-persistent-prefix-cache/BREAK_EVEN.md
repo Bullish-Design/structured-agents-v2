@@ -39,3 +39,30 @@ continuation diverged (baseline token 21059, restored token 364). This API is
 therefore **not** used by the MVP. Whole-context `save_state`/`load_state`
 remains the only proven state codec; partial-prefix/per-sequence reuse is
 unproven and blocked on a correct upstream/runtime contract.
+
+## Teaching summary — three lessons (2026-07-24)
+
+1. **Correct ≠ faster.** The cache restores the exact continuation at every
+   length, yet it is 5–9× slower than just recomputing the prefill. On a fast
+   GPU, prefill is cheap (~1.2 ms/token); the cache instead moves a 69–188 MB
+   blob through disk read, SHA-256, pickle, and a host→device state set. Moving
+   a big blob is slower than recomputing a short prefix — and the gap *widens*
+   with length, so "use a longer prefix" makes it worse, not better.
+
+2. **The blob is mostly dead weight.** ~0.99 MB/token of the blob is
+   `LlamaState.scores` — prefill logits (`n_vocab=248320`, fp32, capped at
+   `n_batch=128` rows) that the restore lifecycle never uses, because we always
+   re-decode a suffix for fresh logits. The actual model state (recurrent
+   GatedDeltaNet + KV) is a nearly flat ~53–61 MB. A native codec
+   (`llama_state_get_data`/`set_data`, same C call minus the wrapper) would
+   drop the growth term entirely. That is the smallest justified next experiment
+   (`run_native_state_decompose.py`): it is only worth promoting if native
+   restore actually beats cold prefill with an exact continuation match.
+
+3. **A successful byte-copy is not a successful restore.** The per-sequence API
+   copied and re-loaded all 53,740,972 bytes and returned success, but the
+   continuation diverged (21059 vs 364). The pinned `llama.h` documents that
+   recurrent caches are a "partial state" needing the `_ext` + `PARTIAL_ONLY`
+   path; the probe used the plain path. Never trust byte counts, non-zero
+   returns, or absence of exceptions as proof of semantic correctness — only a
+   matching deterministic continuation counts.
