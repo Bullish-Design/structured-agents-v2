@@ -56,7 +56,18 @@ class JsonSchemaGrammar:
 
         return xgr.GrammarMatcher(self.compiled)
 
-    def logits_hook(self, matcher: Any) -> Any:
+    @staticmethod
+    def token_hook(matcher: Any) -> Any:
+        """Advance a matcher once, failing closed if a masked token is rejected."""
+
+        def accept(token: int) -> None:
+            accepted = matcher.accept_token(token)
+            if accepted is False:
+                raise RuntimeError(f"XGrammar rejected masked token {token}")
+
+        return accept
+
+    def logits_hook(self, matcher: Any, *, benchmark: Any | None = None) -> Any:
         """Return an owned-loop hook which fills and applies the next-token mask."""
         import numpy as np
         import xgrammar as xgr
@@ -65,7 +76,16 @@ class JsonSchemaGrammar:
 
         def apply(logits: Any) -> None:
             bitmask.fill(0)
-            if matcher.fill_next_token_bitmask(bitmask):
-                apply_packed_bitmask_inplace(logits, bitmask[0], self.vocab_size)
+            if benchmark is None:
+                needs_mask = matcher.fill_next_token_bitmask(bitmask)
+            else:
+                with benchmark.measure("mask_creation"):
+                    needs_mask = matcher.fill_next_token_bitmask(bitmask)
+            if needs_mask:
+                if benchmark is None:
+                    apply_packed_bitmask_inplace(logits, bitmask[0], self.vocab_size)
+                else:
+                    with benchmark.measure("mask_application"):
+                        apply_packed_bitmask_inplace(logits, bitmask[0], self.vocab_size)
 
         return apply

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ctypes
 from collections.abc import Sequence
+from contextlib import nullcontext
 from typing import Any, Protocol
 
 
@@ -103,6 +104,7 @@ class OwnedLlamaDecoder:
         logits_hook: LogitsHook | None = None,
         token_hook: TokenHook | None = None,
         stop_tokens: frozenset[int] = frozenset(),
+        benchmark: Any | None = None,
     ) -> list[int]:
         """Generate greedily or with the supplied sampler, without completion APIs."""
         if self._closed:
@@ -115,12 +117,22 @@ class OwnedLlamaDecoder:
         # A new decoder is normally paired with a fresh context.  Reset is
         # necessary for hybrid models, and keeps lifecycle ownership explicit.
         self.llm.reset()
-        for position, token in enumerate(prompt_tokens):
-            self._decode_one(token, position)
+        if benchmark is None:
+            for position, token in enumerate(prompt_tokens):
+                self._decode_one(token, position)
+        else:
+            with benchmark.measure("prefill"):
+                for position, token in enumerate(prompt_tokens):
+                    self._decode_one(token, position)
 
         generated: list[int] = []
         next_position = len(prompt_tokens)
         for _ in range(max_tokens):
+            token_started_ns = None
+            if benchmark is not None:
+                from time import perf_counter_ns
+
+                token_started_ns = perf_counter_ns()
             logits, candidates = self._candidate_array()
             if logits_hook is not None:
                 logits_hook(logits)
@@ -128,17 +140,28 @@ class OwnedLlamaDecoder:
                 # visible and unambiguous to readers of the loop.
                 for index, logit in enumerate(logits):
                     candidates.data[index].logit = float(logit)
-            self._native.llama_sampler_apply(self.sampler, ctypes.byref(candidates))
+            sample_measurement = benchmark.measure("sample") if benchmark is not None else nullcontext()
+            with sample_measurement:
+                self._native.llama_sampler_apply(self.sampler, ctypes.byref(candidates))
             token = int(candidates.data[candidates.selected].id)
             # This is the sole llama sampler acceptance; the convenience
             # sampling function would accept internally.
-            self._native.llama_sampler_accept(self.sampler, token)
-            if token_hook is not None:
-                token_hook(token)
-            generated.append(token)
+            accept_measurement = benchmark.measure("accept") if benchmark is not None else nullcontext()
+            with accept_measurement:
+                self._native.llama_sampler_accept(self.sampler, token)
+                if token_hook is not None:
+                    token_hook(token)
             if token in stop_tokens:
                 break
-            self._decode_one(token, next_position)
+            generated.append(token)
+            if benchmark is None:
+                self._decode_one(token, next_position)
+            else:
+                with benchmark.measure("decode"):
+                    self._decode_one(token, next_position)
+                from time import perf_counter_ns
+
+                benchmark.record_token_latency_ns(perf_counter_ns() - token_started_ns)
             next_position += 1
         return generated
 
@@ -149,6 +172,7 @@ class OwnedLlamaDecoder:
         max_tokens: int,
         logits_hook: LogitsHook | None = None,
         token_hook: TokenHook | None = None,
+        benchmark: Any | None = None,
     ) -> str:
         """Tokenize, run the owned loop, and detokenize its generated tokens."""
         prompt_tokens = self.llm.tokenize(prompt.encode("utf-8"), add_bos=False, special=True)
@@ -158,5 +182,9 @@ class OwnedLlamaDecoder:
             logits_hook=logits_hook,
             token_hook=token_hook,
             stop_tokens=frozenset({self.llm.token_eos()}),
+            benchmark=benchmark,
         )
-        return self.llm.detokenize(tokens, special=True).decode("utf-8", errors="replace")
+        if benchmark is None:
+            return self.llm.detokenize(tokens, special=True).decode("utf-8", errors="replace")
+        with benchmark.measure("detokenize"):
+            return self.llm.detokenize(tokens, special=True).decode("utf-8", errors="replace")

@@ -38,3 +38,4 @@ def test_xgrammar_compiler_matcher_and_numpy_bitmask_contract() -> None:
     assert matcher.fill_next_token_bitmask(bitmask) is True
     assert bitmask.shape == (1, 3)
     assert bitmask.dtype == numpy.int32
+    assert matcher.accept_token(1) is not False

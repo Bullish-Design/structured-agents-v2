@@ -76,3 +76,29 @@ The original failure log and post-fix artifacts are preserved under
 976.8 tok/s prefill; the post-fix rerun measured 44.67 tok/s and 922.7 tok/s.
 These are valid only for their recorded smoke configurations and are not a
 controlled performance comparison.
+
+## Grammar MVP runtime correction — 2026-07-24
+
+The first end-to-end owned-loop XGrammar smoke reached valid JSON text but
+Pydantic rejected the detokenized result because it contained a trailing
+`<|im_end|>` special stop token.  This was an output-lifecycle bug, not a
+grammar failure: `OwnedLlamaDecoder.generate_tokens` accepted and appended a
+stop token before checking it.  The minimal fix accepts the sampler and matcher
+exactly once, then checks stop membership before adding that token to the
+returned completion.  A fresh Ornith JSON smoke is required after this change;
+the failure artifact remains ignored under `artifacts/project17-xgrammar-json-*`.
+
+## Grammar MVP verification — 2026-07-24
+
+The fresh CPU Ornith smoke passed after the stop-token correction. With the
+pinned project environment (`xgrammar 0.2.1`, `transformers 4.57.6`, `torch
+2.12.0`) it emitted and Pydantic-validated
+`{"city":"Paris","country":"France"}`.
+
+The tokenizer gate was repeated with this Transformers version and still passed
+all 26 probes and all 600 fuzz strings. Local ignored benchmark artifacts
+compare a 48-token unconstrained run (4.44 decode tok/s) with the 9-token JSON
+completion (4.38 decode tok/s). The constrained run measured 0.55 ms total
+mask creation and 15.49 ms mask application, or roughly 1.78 ms/token. The
+different output lengths and CPU-only setting mean this is a teaching smoke,
+not a controlled performance comparison.

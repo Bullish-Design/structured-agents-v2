@@ -112,6 +112,12 @@ version tuple + bench skeleton runnable.
   DLPack and apply packed masks ourselves because xgrammar's public apply
   helper is torch-only.  xgrammar is a required runtime dependency, and full
   logits width remains mandatory.
+- Re-ran Gate 2 with pinned Transformers 4.57.6: 26/26 boundary probes and
+  600/600 fuzz cases still match. The owned-loop strict Pydantic JSON smoke on
+  CPU Ornith passed with `{"city":"Paris","country":"France"}`. A local CPU
+  comparison recorded ~4.44 tok/s unconstrained (48 tokens) and ~4.38 tok/s
+  constrained (9-token JSON); mask construction plus application was ~1.78
+  ms/token. These are smoke measurements, not a controlled throughput claim.
 
 ---
 

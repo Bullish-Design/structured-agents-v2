@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from structured_agents.llama_core.grammar import apply_packed_bitmask_inplace
+from structured_agents.llama_core.grammar import JsonSchemaGrammar, apply_packed_bitmask_inplace
 
 
 def test_packed_mask_masks_padded_model_vocabulary_ids() -> None:
@@ -22,3 +22,21 @@ def test_packed_mask_masks_padded_model_vocabulary_ids() -> None:
 def test_packed_mask_rejects_wrong_dimension() -> None:
     with pytest.raises(ValueError, match="smaller"):
         apply_packed_bitmask_inplace(np.zeros(4), np.zeros(1, dtype=np.int32), 33)
+
+
+def test_matcher_token_hook_accepts_once_and_fails_closed() -> None:
+    class Matcher:
+        def __init__(self, accepted: bool) -> None:
+            self.accepted = accepted
+            self.tokens: list[int] = []
+
+        def accept_token(self, token: int) -> bool:
+            self.tokens.append(token)
+            return self.accepted
+
+    matcher = Matcher(True)
+    JsonSchemaGrammar.token_hook(matcher)(17)
+    assert matcher.tokens == [17]
+
+    with pytest.raises(RuntimeError, match="rejected"):
+        JsonSchemaGrammar.token_hook(Matcher(False))(18)
