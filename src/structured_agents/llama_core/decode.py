@@ -167,12 +167,15 @@ class OwnedLlamaDecoder:
             for position, token in enumerate(prompt_tokens):
                 self._decode_one(token, position)
         else:
+            from time import perf_counter_ns
+
+            prefill_started_ns = perf_counter_ns()
             with benchmark.measure("prefill_enqueue"):
                 for position, token in enumerate(prompt_tokens):
                     self._decode_one(token, position)
-            with benchmark.measure("prefill_wall"):
-                if synchronize is not None:
-                    synchronize()
+            if synchronize is not None:
+                synchronize()
+            benchmark.add_ns("prefill_wall", perf_counter_ns() - prefill_started_ns)
 
         generated: list[int] = []
         next_position = len(prompt_tokens)

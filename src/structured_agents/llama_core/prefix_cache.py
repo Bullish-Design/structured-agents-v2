@@ -8,9 +8,15 @@ state-capture codec must obey.
 from __future__ import annotations
 
 import hashlib
+import json
+import os
+import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
+from pathlib import Path
+from time import time_ns
+from typing import Any, Protocol
 
 from .fingerprint import LlamaEngineFingerprint
 
@@ -96,6 +102,11 @@ class PrefixCacheEntry:
     key: PrefixCacheKey
     state_size_bytes: int
     state_checksum_sha256: str
+    state_blob_path: str | None = None
+    created_at_ns: int | None = None
+    accessed_at_ns: int | None = None
+    llama_state_version: str | None = None
+    runtime_facts: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         if self.state_size_bytes < 0:
@@ -168,6 +179,168 @@ class PrefixCacheIndex(Protocol):
     def get(self, key: PrefixCacheKey) -> PrefixCacheEntry | None: ...
 
     def put(self, entry: PrefixCacheEntry) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class CacheLookup:
+    """Safe lookup result; failure is data, never an inference exception."""
+
+    entry: PrefixCacheEntry | None
+    state: bytes | None
+    hit: bool
+    reason: str
+
+
+class PersistentPrefixCache:
+    """Small SQLite-indexed, atomic whole-state cache with manual retention.
+
+    This deliberately stores one blob per checkpoint boundary.  It has no
+    eviction daemon or radix tree: deletion/retention is manual for the MVP.
+    """
+
+    def __init__(self, root: Path) -> None:
+        self.root = root.resolve()
+        self.blobs = self.root / "blobs"
+        self.db_path = self.root / "index.sqlite3"
+        self.blobs.mkdir(parents=True, exist_ok=True)
+        with self._connect() as db:
+            db.execute(
+                """CREATE TABLE IF NOT EXISTS prefix_cache_entries (
+                storage_key TEXT PRIMARY KEY, key_json TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL, checksum TEXT NOT NULL,
+                blob_path TEXT NOT NULL, created_at_ns INTEGER NOT NULL,
+                accessed_at_ns INTEGER NOT NULL, llama_state_version TEXT,
+                runtime_facts_json TEXT NOT NULL)"""
+            )
+
+    def _connect(self) -> sqlite3.Connection:
+        db = sqlite3.connect(self.db_path)
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA synchronous=FULL")
+        return db
+
+    @staticmethod
+    def _key_json(key: PrefixCacheKey) -> str:
+        return json.dumps(
+            {
+                "namespace": key.namespace,
+                "engine_fingerprint_key": key.engine_fingerprint_key,
+                "prefix_token_ids": key.prefix_token_ids,
+                "checkpoint_token_count": key.checkpoint_token_count,
+                "format_version": key.format_version,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+    @staticmethod
+    def _entry(row: tuple[Any, ...]) -> PrefixCacheEntry:
+        raw = json.loads(row[1])
+        key = PrefixCacheKey(
+            namespace=raw["namespace"],
+            engine_fingerprint_key=raw["engine_fingerprint_key"],
+            prefix_token_ids=tuple(raw["prefix_token_ids"]),
+            checkpoint_token_count=raw["checkpoint_token_count"],
+            format_version=raw["format_version"],
+        )
+        return PrefixCacheEntry(
+            key,
+            int(row[2]),
+            str(row[3]),
+            str(row[4]),
+            int(row[5]),
+            int(row[6]),
+            row[7],
+            tuple(tuple(item) for item in json.loads(row[8])),
+        )
+
+    def publish(
+        self,
+        key: PrefixCacheKey,
+        state: bytes,
+        *,
+        llama_state_version: str | None = None,
+        runtime_facts: dict[str, str] | None = None,
+    ) -> PrefixCacheEntry:
+        """Durably publish a verified blob before its SQLite metadata row."""
+        checksum = hashlib.sha256(state).hexdigest()
+        digest = hashlib.sha256(key.storage_key.encode()).hexdigest()
+        target = self.blobs / f"{digest}.bin"
+        temporary = self.blobs / f".{digest}.{os.getpid()}.tmp"
+        try:
+            with temporary.open("xb") as handle:
+                handle.write(state)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if hashlib.sha256(temporary.read_bytes()).hexdigest() != checksum:
+                raise OSError("state blob checksum changed before publication")
+            os.replace(temporary, target)
+            now = time_ns()
+            entry = PrefixCacheEntry(
+                key,
+                len(state),
+                checksum,
+                str(target.relative_to(self.root)),
+                now,
+                now,
+                llama_state_version,
+                tuple(sorted((runtime_facts or {}).items())),
+            )
+            with self._connect() as db:
+                db.execute("BEGIN IMMEDIATE")
+                db.execute(
+                    """INSERT OR REPLACE INTO prefix_cache_entries VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        key.storage_key,
+                        self._key_json(key),
+                        entry.state_size_bytes,
+                        entry.state_checksum_sha256,
+                        entry.state_blob_path,
+                        now,
+                        now,
+                        llama_state_version,
+                        json.dumps(entry.runtime_facts, separators=(",", ":")),
+                    ),
+                )
+            return entry
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    def lookup(self, key: PrefixCacheKey) -> CacheLookup:
+        try:
+            with self._connect() as db:
+                row = db.execute(
+                    "SELECT * FROM prefix_cache_entries WHERE storage_key = ?", (key.storage_key,)
+                ).fetchone()
+                if row is None:
+                    return CacheLookup(None, None, False, "miss_not_found")
+                entry = self._entry(row)
+                compatible = check_compatibility(entry, key)
+                if not compatible.accepted:
+                    return CacheLookup(entry, None, False, str(compatible.reason))
+                state = (self.root / str(entry.state_blob_path)).read_bytes()
+                integrity = check_state_integrity(entry, state)
+                if not integrity.accepted:
+                    return CacheLookup(entry, None, False, str(integrity.reason))
+                now = time_ns()
+                db.execute(
+                    "UPDATE prefix_cache_entries SET accessed_at_ns = ? WHERE storage_key = ?", (now, key.storage_key)
+                )
+                return CacheLookup(entry, state, True, "hit")
+        except (OSError, sqlite3.Error, ValueError, json.JSONDecodeError) as exc:
+            return CacheLookup(None, None, False, f"miss_storage_error:{type(exc).__name__}")
+
+
+def restore_then_decode_suffix(
+    plan: RestorePlan,
+    state: bytes,
+    *,
+    load_state: Callable[[bytes], None],
+    decode_suffix: Callable[[tuple[int, ...]], None],
+) -> None:
+    """Enforce the only valid lifecycle: load state, then refresh logits."""
+    load_state(state)
+    decode_suffix(plan.uncached_suffix_token_ids)
 
 
 def check_compatibility(entry: PrefixCacheEntry, requested_key: PrefixCacheKey) -> CacheCompatibility:
