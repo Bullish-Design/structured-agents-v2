@@ -84,15 +84,16 @@ docs' parallel-stack duplication).
 - If Ornith has no clean HF tokenizer match, evaluate the GGUF-derived RAW path
   here (parked as primary, but may be forced). **Blocks Phase 1.**
 
-### 0.f GATE 3 — Ornith hybrid-KV restore
-- Ornith-1.0-9B is hybrid (GatedDeltaNet linear-attention). Test
-  `llama_state_seq_get_data`/`set_data` round-trip correctness on Ornith:
-  capture after N tokens, restore into a fresh sequence/process, continue, and
-  compare generated tokens/logits to the no-cache baseline within tolerance.
-- Also run the same on a conventional transformer control (e.g. a small Qwen).
-- Outcome decides the cache pillar's base model. If Ornith hybrid state does not
-  restore correctly, the cache demo uses a plain-transformer base while Ornith
-  stays the router-fleet base. **Blocks Phase 2.**
+### 0.f GATE 3 — Ornith hybrid-KV restore — ✅ RESOLVED (see 08-GATE3-ORNITH-RESTORE)
+- PASS: Ornith hybrid (GatedDeltaNet) state restores bit-exact (greedy),
+  same-instance AND cross-instance (restart). Also cleared the prerequisite:
+  Ornith loads + generates COHERENTLY in llama.cpp (overturns the sglang
+  gibberish result).
+- Cache pillar CAN use Ornith as base (no plain-transformer forced for
+  correctness). State is large (~3.5 MB/token) → break-even TBD on GPU.
+- Phase 2 contract: restore prefix KV then DECODE the suffix (logits not in saved
+  state; get_logits after load_state is stale). Per-seq `llama_state_seq_*` and
+  partial-prefix restore still to confirm in Phase 2.
 
 **Phase 0 exit:** three gates resolved with evidence; shared fingerprint +
 version tuple + bench skeleton runnable.
