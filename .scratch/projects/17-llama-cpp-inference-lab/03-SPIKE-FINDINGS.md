@@ -16,6 +16,16 @@ questions. GPU only matters for later perf numbers.
 - High-level `Llama` takes only a single `lora_path` at init.
 - Low-level `llama_adapter_lora_init(model, path)` + `llama_set_adapter_lora`
   exist, but `set_adapter_lora` is **context-level** (ctx, adapter, scale).
+- CORRECTION (from the cffi bindgen spike, verified against the shipped
+  `include/llama.h`): the current primary symbol is the PLURAL
+  `llama_set_adapters_lora(ctx, adapters**, n, scales*)` — `set_adapter_lora`
+  (singular) is now a **deprecated Python compat shim** in the binding
+  (`llama_cpp.py:2210`) forwarding to the plural with n=1. This spike recorded
+  the deprecated alias. The plural sets/stacks N adapters on **one context** with
+  per-adapter scales — still context-level, so it does NOT enable per-sequence
+  mixed-adapter batching; the conclusion below is unchanged. Phase 3 should call
+  `llama_set_adapters_lora` directly (and can compose multiple adapters per
+  context).
 - **`llama_batch` fields = [n_tokens, token, embd, pos, n_seq_id, seq_id,
   logits] — NO per-token adapter field.** => Cannot mix adapters in a single
   `llama_decode`. vLLM-style punica/SGMV mixed-batch is not available.

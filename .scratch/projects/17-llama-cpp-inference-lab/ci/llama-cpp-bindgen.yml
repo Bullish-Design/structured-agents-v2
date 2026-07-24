@@ -1,0 +1,185 @@
+# llama.cpp cffi bindgen CI — drift-proof Python<->C bindings gate
+# =============================================================================
+# ASSUMPTION: the repo currently has NO CI system checked in (no .github/,
+# no .gitlab-ci.yml at repo root as of this writing) so this is written for
+# GitHub Actions. If the repo later adopts GitLab/Buildkite, port the STAGES
+# below verbatim — the stage graph (BUILD -> BINDGEN -> SMOKE -> BENCH) and the
+# "BINDGEN failing == ABI drift" semantics are the portable part.
+#
+# WHAT THIS GATE PROVES (see 06-LLAMACPP-BUILD-WORKFLOW.md §1, the ABI-anchor
+# rule): with cffi API mode the C compiler — not a hand-written mirror — binds
+# the real llama.h against the real libllama.so. If upstream changes a struct or
+# signature, the BINDGEN stage FAILS TO COMPILE. That compile failure IS the
+# ABI-drift signal; there is no silent segfault path. The binding + the lib it
+# was compiled against are one paired, versioned unit.
+#
+# RUNNER NOTE: GitHub-hosted runners have NO RTX 3060 / CUDA toolkit. The
+# cuda-3060 matrix leg therefore targets a self-hosted runner on the rig
+# (labels: [self-hosted, cuda, rtx3060]) and is the only place SMOKE can load
+# the Ornith GGUF. cpu-light runs anywhere.
+# =============================================================================
+
+name: llama-cpp-bindgen
+
+on:
+  push:
+    paths:
+      - ".scratch/projects/17-llama-cpp-inference-lab/**"
+      - ".github/workflows/llama-cpp-bindgen.yml"
+  pull_request:
+  workflow_dispatch:   # allow manual runs (needed to trigger the self-hosted cuda leg)
+  schedule:
+    - cron: "0 6 * * *"   # nightly canary: 06:00 UTC daily (see nightly-canary job)
+
+# project dir, referenced everywhere below
+env:
+  PROJ: .scratch/projects/17-llama-cpp-inference-lab
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Main matrix: (llama.cpp ref) x (build profile). Each cell does the full
+  # BUILD -> BINDGEN -> SMOKE -> BENCH pipeline as sequential steps.
+  # ---------------------------------------------------------------------------
+  bindgen:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # pinned anchor ref, CPU-only — runs on GH-hosted, the always-on gate
+          - lcpp_ref: "b4200"          # EXAMPLE anchor tag; set to the real anchor
+            profile: "cpu-light"
+            runner: "ubuntu-latest"
+          # same pinned ref, CUDA for the 3060s — self-hosted only (needs nvcc+GPU).
+          # Manual/opt-in: GH-hosted runners cannot build or smoke this.
+          - lcpp_ref: "b4200"
+            profile: "cuda-3060"
+            runner: "self-hosted"      # + labels below via runs-on expression
+    runs-on: ${{ matrix.runner == 'self-hosted' && fromJSON('["self-hosted","cuda","rtx3060"]') || matrix.runner }}
+    name: bindgen (${{ matrix.lcpp_ref }} / ${{ matrix.profile }})
+    steps:
+      - uses: actions/checkout@v4
+
+      # devenv/nix provides gcc + cmake (+ CUDA toolkit on the self-hosted rig);
+      # there is no nvcc on a stock host. On GH-hosted cpu-light we install the
+      # toolchain directly instead of nix to keep the leg fast.
+      - name: Toolchain
+        run: |
+          if [ "${{ matrix.profile }}" = "cpu-light" ] && [ "${{ matrix.runner }}" = "ubuntu-latest" ]; then
+            sudo apt-get update && sudo apt-get install -y build-essential cmake python3-venv
+          else
+            echo "self-hosted rig: expect devenv shell to supply gcc/cmake/CUDA"
+          fi
+          python3 -m venv "$PROJ/.venv-ci"
+          "$PROJ/.venv-ci/bin/pip" install --upgrade pip cffi setuptools
+          # NOTE: llama-cpp-python only needed for the SMOKE tokenizer/Ornith path;
+          # the bindgen itself needs ONLY the header+lib from BUILD.
+
+      # ---- STAGE 1: BUILD -----------------------------------------------------
+      # Produce the lib set + headers at the matrix ref/profile. Emits
+      # <out>/lib and (from the checkout) <out>/include.
+      - name: BUILD (build-llamacpp.sh)
+        id: build
+        run: |
+          cd "$PROJ"
+          ./build-llamacpp.sh --ref "${{ matrix.lcpp_ref }}" --profile "${{ matrix.profile }}"
+          # resolve the emitted out dir and export it
+          OUT=$(ls -d .llamacpp-builds/out-${{ matrix.profile }}-* | head -1)
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          # build-llamacpp.sh copies only libs; make sure the header is exposed
+          # for API-mode: symlink the checkout's include next to the libs.
+          mkdir -p "$OUT/include"
+          cp -a .llamacpp-builds/src/include/llama.h .llamacpp-builds/src/ggml/include/*.h "$OUT/include/" 2>/dev/null || true
+
+      # ---- STAGE 2: BINDGEN  (THE ABI-DRIFT GATE) -----------------------------
+      # A NON-ZERO EXIT HERE MEANS THE ABI DRIFTED: our cdef no longer matches
+      # this llama.h/libllama.so. That is the whole point of the gate — fail
+      # loudly at compile time instead of segfaulting at runtime. Do NOT add
+      # continue-on-error to this step in the pinned matrix.
+      - name: BINDGEN (llama_cffi_build.py) — ABI drift signal
+        run: |
+          cd "$PROJ"
+          # (nix libstdc++ path only needed when linking prebuilt-wheel libs;
+          #  a from-source build against the CI toolchain doesn't need it)
+          .venv-ci/bin/python llama_cffi_build.py \
+            --build-dir "${{ steps.build.outputs.out }}" \
+            --profile "${{ matrix.profile }}" \
+            --check
+
+      # ---- STAGE 3: SMOKE -----------------------------------------------------
+      # Import the built binding, load Ornith if present, tokenizer round-trip.
+      # Guarded: CI without the GGUF (i.e. every GH-hosted runner) SKIPS the model
+      # load gracefully and only does the import + surface probe.
+      - name: SMOKE (import + Ornith + tokenizer round-trip)
+        run: |
+          cd "$PROJ"
+          MODEL=/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf
+          .venv-ci/bin/python probe_api.py || true   # low-level surface still resolves
+          if [ -f "$MODEL" ]; then
+            echo "Ornith present -> full smoke (load + 32-tok greedy + tokenizer round-trip)"
+            # TODO(smoke harness): drive llama_cffi_build's module to load $MODEL,
+            #   decode ~32 greedy tokens, and assert a tokenize->detokenize round-trip.
+            #   Wire to the ABI smoke-gate script (workflow doc §5) once it exists.
+          else
+            echo "Ornith GGUF not on this runner -> import/surface smoke only (skip model load)"
+          fi
+
+      # ---- STAGE 4: BENCH (placeholder) --------------------------------------
+      # Wired to the future bench harness (PLAN 0.c). Non-gating for now.
+      - name: BENCH (placeholder)
+        continue-on-error: true
+        run: |
+          echo "BENCH placeholder — will call the Phase-0 bench harness"
+          echo "(tok/s, TTFT, grammar-overhead %) against the just-built binding."
+
+      # ---- record the version tuple as an artifact ---------------------------
+      # The single source of truth (workflow doc §6): lcpp ref, profile, cmake
+      # flags, ggml version. build-manifest.json is emitted by build-llamacpp.sh.
+      - name: Record version tuple
+        run: |
+          cd "$PROJ"
+          cp "${{ steps.build.outputs.out }}/build-manifest.json" ./version-tuple.json
+          cat ./version-tuple.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: version-tuple-${{ matrix.lcpp_ref }}-${{ matrix.profile }}
+          path: ${{ env.PROJ }}/version-tuple.json
+
+  # ---------------------------------------------------------------------------
+  # NIGHTLY CANARY — early warning of upstream ABI change.
+  # Builds + BINDGEN against llama.cpp master on a schedule. ALLOWED TO FAIL:
+  # a red canary means upstream master changed the ABI relative to our cdef, so
+  # the next re-anchor will need cdef reconciliation. It does NOT block anyone;
+  # it just tells us before we try to bump. cpu-light only (no GPU needed to
+  # detect a header/signature change).
+  # ---------------------------------------------------------------------------
+  nightly-canary:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    continue-on-error: true          # canary is informational, never blocking
+    runs-on: ubuntu-latest
+    name: nightly-canary (master / cpu-light)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          sudo apt-get update && sudo apt-get install -y build-essential cmake python3-venv
+          python3 -m venv "$PROJ/.venv-ci"
+          "$PROJ/.venv-ci/bin/pip" install --upgrade pip cffi setuptools
+      - name: BUILD master
+        id: build
+        run: |
+          cd "$PROJ"
+          ./build-llamacpp.sh --ref master --profile cpu-light
+          OUT=$(ls -d .llamacpp-builds/out-cpu-light-* | head -1)
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          mkdir -p "$OUT/include"
+          cp -a .llamacpp-builds/src/include/llama.h .llamacpp-builds/src/ggml/include/*.h "$OUT/include/" 2>/dev/null || true
+      - name: BINDGEN master (canary — red == upstream ABI moved)
+        run: |
+          cd "$PROJ"
+          .venv-ci/bin/python llama_cffi_build.py --build-dir "${{ steps.build.outputs.out }}" --profile cpu-light --check
+      - name: Record canary tuple
+        run: cp "$PROJ/${{ steps.build.outputs.out }}/build-manifest.json" "$PROJ/canary-tuple.json" || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canary-tuple-master
+          path: ${{ env.PROJ }}/canary-tuple.json

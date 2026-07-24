@@ -162,13 +162,19 @@ Every flag change is a teaching data point: rebuild → bench → record delta.
      - if far ahead → bump llama-cpp-python too, re-anchor
 3. BUILD  (build-llamacpp.sh)
      - checkout llama.cpp @ ref
-     - cmake configure with tailoring flags (§3) inside devenv (toolchain + CUDA)
+     - cmake configure with tailoring flags (§4) inside devenv (toolchain + CUDA)
      - build the .so set → out dir
-4. INTEGRATE
+4. BINDGEN  (llama_cffi_build.py)   [pinned path — cffi API mode, §2]
+     - compile the cffi extension against THAT build's llama.h, using the SAME
+       preprocessor defines used to build the lib
+     - if the ABI drifted incompatibly the compile FAILS HERE (loud, early) —
+       the compile-time check the §6 smoke gate then layers behavioral checks on
+5. INTEGRATE
      - Mode B (iterate): export LLAMA_CPP_LIB_PATH=<out>/lib
      - Mode A (pin):     rebuild llama-cpp-python from source against the ref
-5. VERIFY — ABI smoke gate (§5). MUST pass before use.
-6. RECORD the tuple in versions.py (§6).
+6. VERIFY — ABI smoke gate (§6). MUST pass before use. The BINDGEN compile
+     proves ABI shape; the smoke gate proves ABI behavior.
+7. RECORD the tuple in versions.py (§7).
 ```
 
 ---
@@ -222,7 +228,12 @@ real.
 - `build-llamacpp.sh` — parameterized by ref + flag profile; emits the lib set +
   a `build-manifest.json` (ref, flags, ggml version).
 - Named build profiles: `cpu-light`, `cuda-3060`, `cuda-3060-fat` (debug).
-- ABI smoke-gate script wrapping §5.
+- `llama_cffi_build.py` — the BINDGEN stage (§2, §5-step-4): cffi API-mode build
+  against the built header. Plus a CI matrix + canary job that runs BINDGEN on
+  each anchor/build tuple so drift surfaces as a compile failure in CI, not in a
+  demo. *(Forthcoming — being drafted separately; do not conflate with the shell
+  build script.)*
+- ABI smoke-gate script wrapping §6.
 - `versions.py` tuple emitter (shared with the rest of Phase 0).
 - Short "how to pull a new llama.cpp release" and "how to run my fork" runbook.
 ```
