@@ -67,25 +67,3 @@ class GenerationResult(_BoundaryModel):
     request_id: str | None = None
     validated: bool | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-class BenchmarkRecord(_BoundaryModel):
-    """One local benchmark observation, serialized as a portable JSON record."""
-
-    schema_version: int = Field(default=1, ge=1)
-    run_id: str
-    generation_id: str | None = None
-    started_at_unix_ns: int = Field(ge=0)
-    timing_ns: dict[str, int] = Field(default_factory=dict)
-    prompt_token_count: int = Field(default=0, ge=0)
-    completion_token_count: int = Field(default=0, ge=0)
-    engine_fingerprint: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-    @field_validator("timing_ns")
-    @classmethod
-    def _timings_are_nonnegative(cls, value: dict[str, int]) -> dict[str, int]:
-        for name, duration_ns in value.items():
-            if duration_ns < 0:
-                raise ValueError(f"timing {name!r} must be non-negative")
-        return value

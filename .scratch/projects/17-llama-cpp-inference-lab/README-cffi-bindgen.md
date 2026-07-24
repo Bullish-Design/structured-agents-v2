@@ -1,5 +1,9 @@
 # cffi bindgen — drift-proof llama.cpp bindings
 
+> `cpu-light` is retained for ABI/build diagnostics only. Use the CUDA build
+> and GPU offload for every current Project 17 inference soak, benchmark, or
+> evaluation.
+
 `llama_cffi_build.py` builds a **cffi API-mode** Python↔C binding against a chosen
 llama.cpp. Unlike llama-cpp-python's hand-written ctypes (ABI mode), the C
 compiler binds the real `llama.h` against the real `libllama.so`, so the binding

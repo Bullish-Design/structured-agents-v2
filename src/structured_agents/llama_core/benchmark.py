@@ -22,12 +22,18 @@ from typing import Any
 from uuid import uuid4
 
 TIMING_FIELDS = (
-    "prefill",
-    "decode",
+    "tokenizer_preparation",
+    "grammar_compile",
+    "matcher_creation",
+    "prefill_enqueue",
+    "prefill_wall",
+    "generation_wall",
+    "candidate_array",
     "mask_creation",
     "mask_application",
-    "sample",
-    "accept",
+    "sampler_apply",
+    "sampler_accept",
+    "matcher_accept",
     "detokenize",
     "validation",
 )
@@ -66,12 +72,12 @@ class BenchmarkRecord:
 
     @property
     def prefill_tokens_per_second(self) -> float | None:
-        duration = self.timings_ns.get("prefill", 0)
+        duration = self.timings_ns.get("prefill_wall", 0)
         return self.prompt_tokens * 1_000_000_000 / duration if duration and self.prompt_tokens else None
 
     @property
     def decode_tokens_per_second(self) -> float | None:
-        duration = self.timings_ns.get("decode", 0)
+        duration = self.timings_ns.get("generation_wall", 0)
         return self.completion_tokens * 1_000_000_000 / duration if duration and self.completion_tokens else None
 
     @property
@@ -79,7 +85,7 @@ class BenchmarkRecord:
         """Time to first emitted token, when token latency was observed."""
         if not self.token_latencies_ns:
             return None
-        return self.timings_ns.get("prefill", 0) + self.token_latencies_ns[0]
+        return self.timings_ns.get("prefill_wall", 0) + self.token_latencies_ns[0]
 
     def to_dict(self) -> dict[str, Any]:
         latency = sorted(self.token_latencies_ns)

@@ -10,7 +10,6 @@ from pydantic import ValidationError
 
 from structured_agents.llama_core import (
     ArtifactIdentity,
-    BenchmarkRecord,
     EngineConfig,
     GenerationRequest,
     GenerationResult,
@@ -24,23 +23,10 @@ def test_boundary_models_validate_generation_and_benchmark_shapes() -> None:
     config = EngineConfig(model_path="ornith.gguf", n_ctx=1024, active_loras=("router-a",))
     request = GenerationRequest(prompt="Hello", max_tokens=4)
     result = GenerationResult(text="Hi", prompt_token_count=1, completion_token_count=1, finish_reason="stop")
-    record = BenchmarkRecord(
-        run_id="local-1",
-        started_at_unix_ns=1,
-        timing_ns={"prefill": 10, "sample": 2, "accept": 1},
-        prompt_token_count=1,
-        completion_token_count=1,
-    )
 
     assert config.active_loras == ("router-a",)
     assert request.temperature == 0
     assert result.token_ids == ()
-    assert record.timing_ns["prefill"] == 10
-
-
-def test_benchmark_rejects_negative_timing() -> None:
-    with pytest.raises(ValidationError, match="non-negative"):
-        BenchmarkRecord(run_id="run", started_at_unix_ns=0, timing_ns={"accept": -1})
 
 
 def test_artifact_registration_hashes_once_then_validates_by_stat(tmp_path: Path) -> None:

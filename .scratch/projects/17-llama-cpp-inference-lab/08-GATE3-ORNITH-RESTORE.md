@@ -1,5 +1,8 @@
 # Gate 3 — Ornith hybrid-KV restore — RESOLVED ✅
 
+> Historical CPU correctness evidence only. Current Project 17 inference
+> evaluation and all performance work use the CUDA/GPU runtime.
+
 **Question (PLAN Phase 0.f):** does Ornith-1.0-9B's hybrid (GatedDeltaNet /
 linear-attention) sequence state survive a save/restore round-trip? Decides
 whether the cache pillar can use Ornith or needs a plain-transformer base.

@@ -5,6 +5,13 @@ llama.cpp via llama-cpp-python, demonstrating what small specialized models can
 do when you own the low-level control loop. Flagship: a multi-LoRA agent-router
 fleet on Ornith-1.0-9B.
 
+**Runtime policy — 2026-07-24:** all current inference correctness soaks,
+overhead measurements, benchmarks, cache experiments, and router evaluations
+run on the CUDA llama.cpp build with GPU offload. CPU is restricted to
+dependency-free unit tests, ABI/build diagnostics, and historical evidence;
+never use it as a current performance baseline or a long-running evaluation.
+The CPU results below are retained as dated provenance only.
+
 **Sequencing decision:** shared core first, then pillars (grammar → cache →
 flagship). **Gating spikes** (must pass before the dependent build effort):
 Ornith hybrid-KV restore, sampler double-accept, tokenizer equivalence. CUDA
@@ -29,9 +36,9 @@ the single spine both pillars and the flagship reuse (prevents the two intern
 docs' parallel-stack duplication).
 
 ### 0.a Environment + pinned-version tuple
-- Reproducible env: CPU spike venv already works (nix `libstdc++` on
-  LD_LIBRARY_PATH — see `.stdcxx_dir`). Fold into devenv/uv the way prior spikes
-  did (`launch-spike.sh` pattern).
+- Reproducible runtime: use the CUDA build plus its recorded driver/runtime
+  library paths. The older CPU spike venv is diagnostic provenance only, not an
+  inference evaluation environment.
 - Record the lockstep tuple in runtime diagnostics: llama-cpp-python release +
   vendored llama.cpp commit + xgrammar release + (only if used) torch. Verify
   the actual vendored commit rather than trusting the intern doc's hash.

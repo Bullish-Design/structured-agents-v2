@@ -9,9 +9,9 @@ from structured_agents.llama_core.benchmark import BenchmarkTimer, write_benchma
 
 def test_benchmark_record_emits_all_timing_fields_and_metrics(tmp_path) -> None:
     timer = BenchmarkTimer("owned-loop", metadata={"backend": "cpu"})
-    timer.add_ns("prefill", 100)
-    timer.add_ns("decode", 80)
-    timer.add_ns("sample", 15)
+    timer.add_ns("prefill_wall", 100)
+    timer.add_ns("generation_wall", 80)
+    timer.add_ns("sampler_apply", 15)
     timer.record_token_latency_ns(30)
     timer.record_token_latency_ns(50)
 
@@ -20,12 +20,18 @@ def test_benchmark_record_emits_all_timing_fields_and_metrics(tmp_path) -> None:
 
     assert payload["tokens"] == {"prompt": 20, "completion": 2}
     assert set(payload["timings_ns"]) == {
-        "prefill",
-        "decode",
+        "tokenizer_preparation",
+        "grammar_compile",
+        "matcher_creation",
+        "prefill_enqueue",
+        "prefill_wall",
+        "generation_wall",
+        "candidate_array",
         "mask_creation",
         "mask_application",
-        "sample",
-        "accept",
+        "sampler_apply",
+        "sampler_accept",
+        "matcher_accept",
         "detokenize",
         "validation",
     }

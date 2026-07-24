@@ -57,7 +57,7 @@ Implement a reproducible CLI soak harness that:
 4. returns nonzero on any malformed, rejected, or truncated result.
 
 Add GPU-free unit tests for aggregation and failure accounting. Run a bounded
-CPU Ornith smoke (at least 10 requests if practical; otherwise record the
+GPU-offloaded Ornith smoke (at least 10 requests if practical; otherwise record the
 exact resource/time limitation). Preserve raw logs/artifacts only under an
 ignored artifacts/project17-* directory.
 
@@ -166,14 +166,14 @@ CLI. Report changed files, evidence, intentionally deferred scope, commit, and
 push status.
 ```
 
-## 4. Stateful llama.cpp capture/restore adapter and CPU correctness smoke
+## 4. Stateful llama.cpp capture/restore adapter and GPU correctness smoke
 
 ```text
 You are continuing Project 17 in structured-agents-v2.
 
 Objective: connect the already-merged prefix-cache contracts/store to
 llama-cpp-python state capture and restore, then prove the strict suffix-decode
-contract on CPU Ornith. Do not attempt GPU break-even, cache scheduling, or
+contract on GPU-offloaded Ornith. Do not attempt cache break-even, cache scheduling, or
 multi-LoRA work.
 
 Read in full first:
@@ -195,7 +195,7 @@ and explicitly decode one or more uncached suffix tokens before reading logits.
 Never read logits immediately after a restore as if they were fresh.
 
 Add pure/fake-native tests that enforce operation order, checksum/error
-handling, and no stale-logit access. Then run a fresh ignored CPU Ornith smoke:
+handling, and no stale-logit access. Then run a fresh ignored GPU Ornith smoke:
 baseline greedy continuation versus save/restart-or-new-instance/restore plus
 suffix decode must match token-for-token. Record exact model/runtime inputs and
 raw artifacts under ignored artifacts/project17-*.

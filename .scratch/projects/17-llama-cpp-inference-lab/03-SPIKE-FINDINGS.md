@@ -1,5 +1,9 @@
 # Spike findings — API feasibility (llama-cpp-python 0.3.34, CPU probe)
 
+> Historical diagnostic only. Project 17 now runs all inference soaks,
+> benchmarks, and evaluations on the CUDA/GPU build; this CPU probe must not be
+> used as current runtime or performance guidance.
+
 Method: isolated venv (`.venv-spike`), CPU wheel from the official index. On
 NixOS the wheel needs nix `libstdc++.so.6` on `LD_LIBRARY_PATH` (stored in
 `.stdcxx_dir`). Introspection only — no model load needed to answer the API

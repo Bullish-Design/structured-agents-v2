@@ -181,6 +181,11 @@ Every flag change is a teaching data point: rebuild → bench → record delta.
 
 ## 6. ABI smoke gate (mandatory after every swap)
 
+**Evaluation policy:** `cpu-light` remains useful for ABI/build diagnostics,
+but all current inference soaks, overhead numbers, and benchmarks must run with
+the CUDA profile and GPU offload. Do not publish or compare CPU inference rates
+as Project 17 performance evidence.
+
 A swap is only "done" when all pass:
 1. `probe_api.py` — the low-level surface still resolves (functions + flags
    present, argtypes intact). Catches gross ABI/symbol drift.

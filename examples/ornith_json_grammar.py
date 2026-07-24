@@ -53,19 +53,24 @@ def main() -> None:
             metadata={"request_index": request_index, "vocab_size": llm.n_vocab()},
         )
         with OwnedLlamaDecoder(llm) as decoder:
-            text = decoder.generate_text(
+            generated = decoder.generate_text(
                 prompt,
                 max_tokens=args.max_tokens,
                 logits_hook=grammar.logits_hook(matcher, benchmark=benchmark),
                 token_hook=grammar.token_hook(matcher),
                 benchmark=benchmark,
             )
+        if generated.finish_reason != "stop":
+            raise RuntimeError(
+                f"request {request_index} stopped on {generated.finish_reason!r} after "
+                f"{generated.completion_token_count} tokens; output is likely truncated: {generated.text!r}"
+            )
         with benchmark.measure("validation"):
-            answer = CapitalAnswer.model_validate_json(text)
+            answer = CapitalAnswer.model_validate_json(generated.text)
         artifact = write_benchmark_record(
             benchmark.record(
                 prompt_tokens=prompt_tokens,
-                completion_tokens=len(llm.tokenize(text.encode(), add_bos=False)),
+                completion_tokens=generated.completion_token_count,
             ),
             args.artifacts,
         )

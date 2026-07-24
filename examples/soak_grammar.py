@@ -20,6 +20,7 @@ import statistics
 import traceback
 from dataclasses import replace
 from pathlib import Path
+from time import perf_counter_ns
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
@@ -68,6 +69,7 @@ def aggregate_outcomes(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
     """
     counts: dict[str, int] = {}
     phase_values = {field: [] for field in TIMING_FIELDS}
+    wall_values = {"generation": [], "request": []}
     completion_tokens = 0
     prompt_tokens = 0
     mask_values: list[int] = []
@@ -81,12 +83,16 @@ def aggregate_outcomes(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
         for field in TIMING_FIELDS:
             phase_values[field].append(int(timings.get(field, 0)))
         mask_values.append(int(timings.get("mask_creation", 0)) + int(timings.get("mask_application", 0)))
+        wall_timings = outcome.get("wall_timings_ns", {})
+        for field in wall_values:
+            wall_values[field].append(int(wall_timings.get(field, 0)))
 
     valid_count = counts.get("valid", 0)
     cutoff_count = counts.get("cutoff", 0)
     invalid_count = sum(count for status, count in counts.items() if status in FAILURE_STATUSES)
     mask_total_ns = sum(mask_values)
-    decode_total_ns = sum(phase_values["decode"])
+    generation_total_ns = sum(wall_values["generation"])
+    request_total_ns = sum(wall_values["request"])
     return {
         "request_count": len(outcomes),
         "valid_count": valid_count,
@@ -100,20 +106,39 @@ def aggregate_outcomes(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
             "total": prompt_tokens + completion_tokens,
         },
         "phase_timings_ns": {field: _percentiles(values) for field, values in phase_values.items()},
+        "wall_timings_ns": {field: _percentiles(values) for field, values in wall_values.items()},
+        "end_to_end": {
+            "generation_tokens_per_second": (
+                completion_tokens * 1_000_000_000 / generation_total_ns
+                if generation_total_ns and completion_tokens
+                else None
+            ),
+            "request_tokens_per_second": (
+                completion_tokens * 1_000_000_000 / request_total_ns if request_total_ns and completion_tokens else None
+            ),
+            "generation_ns_per_completion_token": (
+                generation_total_ns / completion_tokens if generation_total_ns and completion_tokens else None
+            ),
+            "request_ns_per_completion_token": (
+                request_total_ns / completion_tokens if request_total_ns and completion_tokens else None
+            ),
+        },
         "mask_overhead": {
             **_percentiles(mask_values),
             "per_completion_token_ns": (mask_total_ns / completion_tokens if completion_tokens else None),
-            "percent_of_decode_ns": (mask_total_ns * 100 / decode_total_ns if decode_total_ns else None),
+            "percent_of_generation_wall_ns": (
+                mask_total_ns * 100 / generation_total_ns if generation_total_ns else None
+            ),
         },
     }
 
 
 def compare_decode_overhead(constrained: dict[str, Any], baseline: dict[str, Any]) -> dict[str, float | None]:
-    """Compare aggregate decode time per emitted token; not a controlled TPS claim."""
+    """Compare synchronized generation wall time per emitted token."""
     constrained_tokens = constrained["token_counts"]["completion"]
     baseline_tokens = baseline["token_counts"]["completion"]
-    constrained_decode = constrained["phase_timings_ns"]["decode"]["total_ns"]
-    baseline_decode = baseline["phase_timings_ns"]["decode"]["total_ns"]
+    constrained_decode = constrained["phase_timings_ns"]["generation_wall"]["total_ns"]
+    baseline_decode = baseline["phase_timings_ns"]["generation_wall"]["total_ns"]
     if not constrained_tokens or not baseline_tokens:
         return {"constrained_decode_ns_per_token": None, "baseline_decode_ns_per_token": None, "delta_percent": None}
     constrained_per_token = constrained_decode / constrained_tokens
@@ -125,6 +150,33 @@ def compare_decode_overhead(constrained: dict[str, Any], baseline: dict[str, Any
         if baseline_per_token
         else None,
     }
+
+
+def compare_end_to_end_overhead(constrained: dict[str, Any], baseline: dict[str, Any]) -> dict[str, float | None]:
+    """Compare synchronized generation wall time per emitted token."""
+    constrained_per_token = constrained["end_to_end"]["generation_ns_per_completion_token"]
+    baseline_per_token = baseline["end_to_end"]["generation_ns_per_completion_token"]
+    if constrained_per_token is None or baseline_per_token is None:
+        return {
+            "constrained_generation_ns_per_token": None,
+            "baseline_generation_ns_per_token": None,
+            "delta_percent": None,
+        }
+    return {
+        "constrained_generation_ns_per_token": constrained_per_token,
+        "baseline_generation_ns_per_token": baseline_per_token,
+        "delta_percent": ((constrained_per_token - baseline_per_token) * 100 / baseline_per_token)
+        if baseline_per_token
+        else None,
+    }
+
+
+def _synchronize_gpu() -> None:
+    """Wait for queued CUDA work before recording an outer wall duration."""
+    import torch
+
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
 
 def _model_for_schema(schema: dict[str, Any]) -> type[BaseModel]:
@@ -194,6 +246,7 @@ def _run_once(
     request_index: int,
     max_tokens: int,
     constrained: bool,
+    synchronize_gpu: bool,
 ) -> tuple[dict[str, Any], BenchmarkRecord]:
     """Run and classify one request, preserving the benchmark even on failure."""
     benchmark = BenchmarkTimer(
@@ -208,14 +261,18 @@ def _run_once(
         "completion_tokens": 0,
         "finish_reason": None,
     }
+    request_started_ns = perf_counter_ns()
+    generation_started_ns: int | None = None
     try:
         logits_hook = None
         token_hook = None
         if constrained:
             assert grammar is not None
-            matcher = grammar.new_matcher()  # Never share state across requests.
+            with benchmark.measure("matcher_creation"):
+                matcher = grammar.new_matcher()  # Never share state across requests.
             logits_hook = grammar.logits_hook(matcher, benchmark=benchmark)
             token_hook = grammar.token_hook(matcher)
+        generation_started_ns = perf_counter_ns()
         with OwnedLlamaDecoder(llm) as decoder:
             generated = decoder.generate_text(
                 prompt,
@@ -224,6 +281,9 @@ def _run_once(
                 token_hook=token_hook,
                 benchmark=benchmark,
             )
+        if synchronize_gpu:
+            _synchronize_gpu()
+        outcome["wall_timings_ns"] = {"generation": perf_counter_ns() - generation_started_ns}
         outcome["finish_reason"] = generated.finish_reason
         outcome["completion_tokens"] = generated.completion_token_count
         outcome["text"] = generated.text
@@ -243,6 +303,10 @@ def _run_once(
     except Exception as exc:  # noqa: BLE001 -- a soak must account for every request.
         outcome["detail"] = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
 
+    wall_timings = outcome.setdefault("wall_timings_ns", {})
+    if generation_started_ns is not None and "generation" not in wall_timings:
+        wall_timings["generation"] = perf_counter_ns() - generation_started_ns
+    wall_timings["request"] = perf_counter_ns() - request_started_ns
     record = benchmark.record(prompt_tokens=prompt_tokens_count, completion_tokens=outcome["completion_tokens"])
     outcome["timings_ns"] = dict(record.timings_ns)
     return outcome, record
@@ -259,6 +323,7 @@ def _run_batch(
     max_tokens: int,
     constrained: bool,
     artifacts: Path,
+    synchronize_gpu: bool,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     outcomes: list[dict[str, Any]] = []
     for request_index in range(request_count):
@@ -271,6 +336,7 @@ def _run_batch(
             request_index=request_index,
             max_tokens=max_tokens,
             constrained=constrained,
+            synchronize_gpu=synchronize_gpu,
         )
         outcomes.append(outcome)
         write_benchmark_record(
@@ -299,12 +365,21 @@ def main() -> int:
     )
     parser.add_argument("--n-ctx", type=int, default=512)
     parser.add_argument("--n-threads", type=int, default=8)
+    parser.add_argument(
+        "--n-gpu-layers",
+        type=int,
+        default=-1,
+        help="llama.cpp layers to offload; defaults to -1 for full GPU offload",
+    )
     parser.add_argument("--artifacts", type=Path, default=Path("artifacts/project17-grammar-soak"))
     parser.add_argument("--no-baseline", action="store_true", help="skip the equal-size unconstrained comparison batch")
+    parser.add_argument("--baseline-only", action="store_true", help="run only the unconstrained timing batch")
     args = parser.parse_args()
     if args.requests <= 0 or args.max_tokens <= 0 or args.n_ctx <= 0 or args.n_threads <= 0:
         raise ValueError("--requests, --max-tokens, --n-ctx, and --n-threads must be positive")
     _require_project17_artifacts(args.artifacts)
+    if args.baseline_only and args.no_baseline:
+        raise ValueError("--baseline-only and --no-baseline cannot be used together")
     schema = _load_schema(args)
     validator = _model_for_schema(schema)
 
@@ -317,25 +392,12 @@ def main() -> int:
         n_ctx=args.n_ctx,
         n_batch=128,
         n_threads=args.n_threads,
+        n_gpu_layers=args.n_gpu_layers,
         seed=args.seed,
         logits_all=False,
         verbose=False,
     )
-    tokenizer = AutoTokenizer.from_pretrained(_resolve_tokenizer(args.tokenizer, allow_network=args.allow_network))
-    # Compile once for this entire constrained batch. _run_once creates only matchers.
-    grammar = JsonSchemaGrammar.from_huggingface(tokenizer, schema, vocab_size=llm.n_vocab())
     prompt_tokens_count = len(llm.tokenize(args.prompt.encode(), add_bos=False, special=True))
-    constrained_outcomes, constrained = _run_batch(
-        llm=llm,
-        grammar=grammar,
-        validator=validator,
-        prompt=args.prompt,
-        prompt_tokens_count=prompt_tokens_count,
-        request_count=args.requests,
-        max_tokens=args.max_tokens,
-        constrained=True,
-        artifacts=args.artifacts,
-    )
     summary: dict[str, Any] = {
         "schema_version": 1,
         "model": str(args.model),
@@ -343,10 +405,8 @@ def main() -> int:
         "seed": args.seed,
         "prompt": args.prompt,
         "schema": schema,
-        "constrained": constrained,
-        "result": "pass" if constrained["failure_count"] == 0 else "fail",
     }
-    if not args.no_baseline:
+    if args.baseline_only:
         _, baseline = _run_batch(
             llm=llm,
             grammar=None,
@@ -357,15 +417,50 @@ def main() -> int:
             max_tokens=args.max_tokens,
             constrained=False,
             artifacts=args.artifacts,
+            synchronize_gpu=args.n_gpu_layers != 0,
         )
         summary["baseline"] = baseline
-        summary["decode_comparison"] = compare_decode_overhead(constrained, baseline)
+        summary["result"] = "completed"
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(_resolve_tokenizer(args.tokenizer, allow_network=args.allow_network))
+        # Compile once for this entire constrained batch. _run_once creates only matchers.
+        grammar = JsonSchemaGrammar.from_huggingface(tokenizer, schema, vocab_size=llm.n_vocab())
+        _, constrained = _run_batch(
+            llm=llm,
+            grammar=grammar,
+            validator=validator,
+            prompt=args.prompt,
+            prompt_tokens_count=prompt_tokens_count,
+            request_count=args.requests,
+            max_tokens=args.max_tokens,
+            constrained=True,
+            artifacts=args.artifacts,
+            synchronize_gpu=args.n_gpu_layers != 0,
+        )
+        summary["constrained"] = constrained
+        summary["result"] = "pass" if constrained["failure_count"] == 0 else "fail"
+        if not args.no_baseline:
+            _, baseline = _run_batch(
+                llm=llm,
+                grammar=None,
+                validator=validator,
+                prompt=args.prompt,
+                prompt_tokens_count=prompt_tokens_count,
+                request_count=args.requests,
+                max_tokens=args.max_tokens,
+                constrained=False,
+                artifacts=args.artifacts,
+                synchronize_gpu=args.n_gpu_layers != 0,
+            )
+            summary["baseline"] = baseline
+            summary["decode_comparison"] = compare_decode_overhead(constrained, baseline)
+            summary["end_to_end_comparison"] = compare_end_to_end_overhead(constrained, baseline)
 
     summary_path = args.artifacts / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
     print(f"Summary: {summary_path}")
-    return 0 if constrained["failure_count"] == 0 else 1
+    return 0 if args.baseline_only or summary["constrained"]["failure_count"] == 0 else 1
 
 
 if __name__ == "__main__":

@@ -246,3 +246,17 @@ passes: `...T1010Z` contains valid constrained request indices 0--8 (nine
 records), `...T1015Z` indices 0--3 (four), and `...T1025Z` indices 0--2
 (three). They confirm that the command wrapper did not terminate Python, but
 their overlap and resource contention make them non-authoritative.
+
+## GPU-only evaluation policy — 2026-07-24
+
+CPU execution was useful only to establish early API and correctness evidence.
+It is not the performance or evaluation target for the current project. From
+this point, every Ornith JSON soak, unconstrained baseline, grammar-overhead
+measurement, prefix-cache experiment, and router evaluation must use the
+recorded CUDA llama.cpp library set with GPU layers offloaded. CPU remains
+permitted solely for GPU-free unit tests and build/ABI diagnostics.
+
+Accordingly, the historical CPU rates and the recovered CPU baseline above are
+provenance, not actionable performance data. GPU artifact manifests must record
+`LLAMA_CPP_LIB_PATH`, CUDA runtime/driver library paths, GPU identity, driver
+version, and `n_gpu_layers`.
