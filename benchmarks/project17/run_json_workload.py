@@ -58,8 +58,9 @@ def main() -> int:
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "0" or not os.environ.get("LLAMA_CPP_LIB_PATH"):
         raise RuntimeError("GPU-only policy requires CUDA_VISIBLE_DEVICES=0 and LLAMA_CPP_LIB_PATH")
-    if not args.artifacts.as_posix().startswith("artifacts/project17-"):
-        raise ValueError("artifacts must be under artifacts/project17-*")
+    artifact_path = args.artifacts.resolve()
+    if artifact_path.parent.name != "artifacts" or not artifact_path.name.startswith("project17-"):
+        raise ValueError("artifacts must be an artifacts/project17-* directory")
     registry = json.loads(args.schema_registry.read_text(encoding="utf-8"))
     entries = read_jsonl(args.corpus)
     validate_corpus(entries, registry["schemas"])
