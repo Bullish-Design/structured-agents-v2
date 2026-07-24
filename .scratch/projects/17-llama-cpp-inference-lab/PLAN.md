@@ -76,13 +76,14 @@ docs' parallel-stack duplication).
   `matcher.accept_token` once). Never call chain-accept after
   `llama_sampler_sample`. Encode as a tested helper in Phase 1.
 
-### 0.e GATE 2 — tokenizer equivalence on Ornith
-- Build `TokenizerInfo.from_huggingface` (needs `transformers` + a tokenizer for
-  the Ornith base) AND compare against llama.cpp GGUF tokenization on the boundary
-  probe corpus (spaces, newlines, UTF-8, byte-fallback, control/EOG, tool markers)
-  + a Unicode/JSON fuzz corpus.
-- If Ornith has no clean HF tokenizer match, evaluate the GGUF-derived RAW path
-  here (parked as primary, but may be forced). **Blocks Phase 1.**
+### 0.e GATE 2 — tokenizer equivalence on Ornith — ✅ RESOLVED (see 09-GATE2-TOKENIZER-EQUIV)
+- PASS: llama.cpp GGUF vs HF base tokenizer (deepreinforce-ai/Ornith-1.0-9B)
+  agree token-for-token on 26/26 probes + 600/600 fuzz, incl. special/tool
+  markers. Reference tokenizer identified from GGUF metadata (qwen35, gpt2 BPE).
+- KEY note: model logits dim (248320) > tokenizer vocab (248077) — grammar
+  bitmask MUST be sized to n_vocab, not tokenizer vocab (padding hazard).
+- xgrammar `TokenizerInfo` construction (consumes this same HF tokenizer) is a
+  Phase-1 step; keep the numpy mask backend (avoid torch).
 
 ### 0.f GATE 3 — Ornith hybrid-KV restore — ✅ RESOLVED (see 08-GATE3-ORNITH-RESTORE)
 - PASS: Ornith hybrid (GatedDeltaNet) state restores bit-exact (greedy),
