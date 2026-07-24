@@ -699,3 +699,88 @@ risk), correctness near per-seq cell capacity, and isolation beyond two live
 sequences. The teaching MVP recommendation stands: whole-state persistent disk
 cache is correct-but-negative; the promising path is in-context per-sequence KV
 reuse (≳192-token shared prefixes) inside a batched multi-sequence router.
+
+## Per-sequence LoRA — Phase-3 readiness + implementation feasibility — 2026-07-24
+
+Assessment only (no GPU run): can we begin the per-sequence-LoRA investigation,
+and is library implementation still needed? Grounded in the pinned header,
+binding, and llama.cpp source.
+
+### Entry criteria — what is ready vs. what blocks
+
+Ready and reusable (no library work): the proven per-sequence KV reuse
+(nonzero-seq restore into a live context, isolation, cross-process, matched
+`n_seq_max` rule) and the batched multi-sequence decode (~4× to S=16). The
+adapter API is bound and current — `llama_adapter_lora_init` +
+`llama_set_adapters_lora(ctx, adapters**, n, scales*)` (context-level; the
+singular `llama_set_adapter_lora` is now a deprecated shim); `Llama(lora_path=)`
+also works. Conversion tooling `convert_lora_to_gguf.py` is present in the pinned
+source.
+
+**Gap 1 — asset gap (blocks ALL empirical LoRA work, no code change).** There
+are zero LoRA adapters on this machine (no GGUF LoRA, no HF
+`adapter_config.json`/`adapter_model`). Prerequisites: (1) ≥2 LoRA adapters
+fine-tuned on the Ornith base → `convert_lora_to_gguf.py`; (2) a one-time smoke
+test that llama.cpp applies a LoRA to Ornith's hybrid GatedDeltaNet architecture
+at all (adapter tensor-name mapping is arch-specific). Item (2) is the first real
+unknown and needs (1). The context-pool router (Decision D2 path a) is otherwise
+ready to investigate with no library change once adapters exist; its new
+measurables are adapter-swap cost of `llama_set_adapters_lora`, whether adapter
+application composes with restored per-sequence KV state, and the 3060
+context-count/VRAM ceiling.
+
+### Gap 2 — the literal per-sequence mixed-batch: NOT a binding problem
+
+"Different adapter per sequence in one `llama_decode`" cannot be added in our
+Python ctypes bindings: bindings only wrap compiled `libllama.so` symbols, and
+LoRA is applied **inside the compiled ggml forward graph**. Owning the
+sampling/decode loop in Python does not help — LoRA is upstream of the logits we
+hook. Local source proof — `src/llama-graph.cpp:1382` `build_lora_mm`:
+
+```cpp
+res = ggml_mul_mat(ctx0, w, cur);              // base matmul over the whole ubatch
+for (const auto & lora : *loras) {             // context-level adapter set
+    ab_cur = B @ (A @ cur) * scale;            // low-rank delta, applied to EVERY token
+    res = ggml_add(ctx0, res, ab_cur);
+}
+```
+
+`cur` is the full ubatch (all tokens of all sequences); the delta is applied
+uniformly. `llama_batch` has no per-token adapter field. So there is no
+per-sequence routing — confirmed, and it is a C++ graph property, not a binding
+limitation.
+
+### But it IS implementable — because we own the build, and ggml already has the primitive
+
+Key finding: per-sequence LoRA is structurally the **same operation as MoE
+expert routing** — per-token selection of which weight matrices to apply. ggml
+already provides `ggml_mul_mat_id` (`GGML_OP_MUL_MAT_ID`), and it is **CUDA-backed
+in this pinned build** (`ggml/src/ggml-cuda/ggml-cuda.cu`). llama.cpp even
+already has a routed LoRA path, `build_lora_mm_id` (`llama-graph.cpp:1413`), used
+where the base matmul is itself routed. So the punica/SGMV-style capability does
+not need a from-scratch CUDA kernel; it needs a **C++ graph patch on our own
+fork**:
+
+1. Stack the N adapters' `A`/`B` into "expert" tensors (pad to a common rank).
+2. Build a per-token `ids` tensor from each token's `seq_id → adapter` mapping.
+3. Replace `build_lora_mm` with a routed variant applying the delta via
+   `ggml_mul_mat_id(B_stack, ggml_mul_mat_id(A_stack, cur, ids), ids)`.
+4. Plumb per-token adapter ids into the graph (extend the batch or a side buffer
+   keyed by seq_id), surviving the batch→ubatch split, and rebuild `libllama.so`.
+
+Real complications (tractable, not blockers): adapters must be padded to a common
+rank; adapters targeting different tensor subsets need a null/zero participant
+per routed op; quantized base (Q4_K) with f16 adapters must go through the
+mixed-type `mul_mat_id` path (the MoE path already does). This is a genuine
+C++/ggml feature on our fork (we already patch the CMake target and rebuild), on
+the order of days—weeks — the project's flagship differentiator, not a Python
+binding change.
+
+### Recommendation
+
+- **Now (no library change):** obtain 2 Ornith LoRA adapters, smoke-test
+  application on the hybrid arch (Gap 1), then investigate the context-pool
+  router (path a) reusing the proven KV-reuse + batching.
+- **Stretch (own-fork C++):** implement per-sequence mixed-batch LoRA via
+  `mul_mat_id`-routed deltas — architecturally feasible on this build, gated only
+  by the C++ work and the same adapter assets. Do not attempt in Python bindings.
