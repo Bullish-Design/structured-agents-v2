@@ -446,3 +446,102 @@ whole-state persistent-cache teaching result**, with the native-codec and
 per-sequence(`_ext`) sweeps recorded as the two open follow-ups. No LMCache,
 radix tree, compression, or generic cache abstraction is warranted by this
 evidence.
+
+## Phase-2 staged GPU runs — RESULTS — 2026-07-24
+
+GPU 0 became exclusively free (GPU 1 idle, 9 MiB) and both staged experiments
+ran on the pinned postfix2 CUDA build, `.venv-spike`, commit 15a933c. These are
+fresh, CUDA-synchronized, GPU-only results. They confirm the whole-state
+attribution **and overturn the per-sequence "established fact": that divergence
+was a test-harness bug, not an API/semantic failure.**
+
+### Native-vs-LlamaState restore decomposition (in-memory, no disk)
+
+`artifacts/project17-native-decompose-20260724T194604Z/` (exit 0, GPU 0 active,
+GPU 1 idle). Continuation matched the cold baseline at every length (fail-closed
+gate). Means, ms:
+
+| prefix | cold | LS pickle_loads | LS load_state | LS total | nat set_data | nat total | native blob | pickle blob |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 16 | 41.2 | 37.3 | 176.0 | 238.8 | 150.9 | 175.2 | 53.2 MB | 69.1 MB |
+| 64 | 65.3 | 71.2 | 209.4 | 303.1 | 155.7 | 179.4 | 54.8 MB | 118.4 MB |
+| 128 | 116.1 | 109.7 | 257.2 | 390.1 | 159.2 | 179.1 | 56.9 MB | 184.0 MB |
+| 256 | 210.1 | 116.8 | 253.6 | 393.6 | 171.9 | 192.1 | 61.1 MB | 188.2 MB |
+
+(`LS load_state` includes the native set **plus** the score-array apply; suffix
+decode was ~20–26 ms in every path. Cold is lower than the persistent-run cold
+because this runner keeps one warm context, which is the fair internal control.)
+
+**Attribution (answers A's open question):** the dominant restore cost is the
+**native `llama_state_set_data`** host→device reconstruction, ~151–172 ms and
+**flat** in prefix length (the native state is recurrent-dominated ~53–61 MB).
+The `LlamaState` wrapper adds a large **variable** penalty on top —
+`pickle.loads` (37→117 ms) plus score-array apply (~25→98 ms, = `LS load_state −
+nat set_data`) — that grows with the dead-weight score blob. So the native codec
+is 1.4–2.2× faster than the wrapper path and its blob is flat.
+
+**Break-even (in-memory native codec):** cold prefill grows ~0.8 ms/token while
+native restore is flat ~180–192 ms, so they **cross at ≈256 tokens** (256: cold
+210.1 vs native 192.1 — native wins by 18 ms; at 128 native still loses by
+63 ms). This is a real, bounded success criterion for **Option 2 + Option 3
+combined**: an in-memory native-state checkpoint is beneficial for prefixes
+≳256 tokens. Persistent disk is still not there at 256 — adding read+SHA-256 of
+the ~55–61 MB blob (~120 ms, extrapolated from the 69 MB→154 ms persistent
+measurement) pushes native total to ~310 ms > cold 210 ms; disk break-even needs
+a longer prefix, which requires `n_ctx > 512`.
+
+### Per-sequence sweep — the earlier divergence was a harness bug
+
+`artifacts/project17-seq-state-sweep-20260724T194742Z/` (GPU 0 active, GPU 1
+idle). Sweep of checkpoint K∈{1,16,31} × suffix∈{1,4} × flag∈{none, partial_only}.
+
+**Plain non-ext `llama_state_seq_get_data`/`set_data` (flag=none): match=TRUE in
+all 6 configurations.** The `partial_only` (`_ext`) path matched only 1/6 —
+expected, because `PARTIAL_ONLY` serializes only the recurrent/SWA sub-state,
+not the full sequence state, so restoring it into a fresh context is wrong by
+construction.
+
+**Root cause of the original 191450Z divergence (21059 vs 364): the original
+probe omitted the Python n_past bookkeeping after `set_data`.** It left
+`target.n_tokens = 0`, so `Llama.eval(suffix)` ran `kv_cache_seq_rm(-1, 0, -1)`
+(llama.py:665) and **wiped the just-restored KV cache**, then decoded the suffix
+at position 0 against an empty cache. The extended runner restores
+`target.n_tokens = len(prefix)` and `input_ids` before `eval`, and the plain
+per-sequence API then round-trips Ornith's hybrid recurrent state correctly.
+This confirms the hypothesis explicitly listed for B ("whether the test harness
+is using the API incorrectly") — **it was.** Byte-count success was never the
+issue; the missing bookkeeping was.
+
+Scope of this per-sequence proof (do not over-claim): greedy continuation only,
+K≤31, suffix≤4, `dest_seq_id=0`, same build, same-process fresh context. Still
+unproven: larger K, nonzero `dest_seq_id`, cross-process/disk round-trip, and
+multi-sequence isolation. The whole-state runner's own bookkeeping (via
+`load_state`) was always correct, which is why whole-state never showed this bug.
+
+### Updated proven / rejected / unknown
+
+- **Newly proven:** dominant whole-state restore cost is the native state set
+  (~151–172 ms, flat); the `LlamaState` wrapper adds a variable pickle+score
+  penalty; a native codec is ~1.4–2.2× faster with a flat ~53–61 MB blob; an
+  **in-memory** native checkpoint breaks even at ≈256 tokens. The **plain
+  per-sequence API restores Ornith correctly** once n_past bookkeeping is
+  replayed — the earlier divergence was a harness error.
+- **Newly rejected:** "per-sequence `llama_state_seq_*` is semantically broken
+  for Ornith" (established fact #3) — refuted; it was our harness. "pickle/scores
+  are negligible" — they are the variable penalty, though the native set is the
+  floor.
+- **Still unknown:** disk-inclusive native break-even and whether `n_ctx>512`
+  moves persistent break-even; per-sequence correctness at large K / nonzero
+  dest_seq_id / cross-process; multi-sequence isolation.
+
+### Updated recommendation and Phase-2 status
+
+The smallest justified next step is now a small, **correct** code change, not a
+new question: add a **native-bytes state codec** (`llama_state_get_data`/
+`set_data` with n_past replay) behind the existing `PrefixCache` contracts, used
+as an **in-memory** checkpoint for long shared prefixes (≳256 tokens) — the only
+regime where it beats recompute. The persistent-disk whole-state cache **stays
+closed as correct-but-negative** at n_ctx=512. Per-sequence reuse is now
+promising rather than blocked, but must clear the larger-K / nonzero-dest /
+cross-process sweep before production use. Still no need for LMCache, radix tree,
+compression, or a generic cache abstraction.

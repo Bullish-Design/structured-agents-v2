@@ -66,3 +66,23 @@ unproven and blocked on a correct upstream/runtime contract.
    path; the probe used the plain path. Never trust byte counts, non-zero
    returns, or absence of exceptions as proof of semantic correctness — only a
    matching deterministic continuation counts.
+
+## Correction — the per-sequence divergence was our bug (2026-07-24)
+
+A follow-up GPU sweep (`artifacts/project17-seq-state-sweep-20260724T194742Z`)
+**overturns the divergence result above.** The plain non-ext
+`llama_state_seq_get_data`/`set_data` path matches the greedy baseline in all
+six tested configs (K∈{1,16,31} × suffix∈{1,4}) once the caller restores the
+Python n_past bookkeeping (`n_tokens`, `input_ids`) after `set_data`. The
+original probe left `n_tokens=0`, so `Llama.eval()` ran `kv_cache_seq_rm` and
+**wiped the restored KV cache** before decoding the suffix — that, not the API,
+caused 21059→364. Lesson 3 still holds (byte counts prove nothing), but the
+cause here was the harness, not a broken recurrent-state API. The `_ext`
+`PARTIAL_ONLY` path is *expected* to mismatch: it serializes only the partial
+recurrent sub-state, not the full sequence.
+
+A companion decomposition run
+(`artifacts/project17-native-decompose-20260724T194604Z`) confirms lesson 2 with
+numbers: a native codec (no score buffer) restores in a flat ~180 ms vs the
+`LlamaState` path's 239–394 ms, and an **in-memory** native checkpoint crosses
+cold prefill at ≈256 tokens. Persistent disk still loses at n_ctx=512.
