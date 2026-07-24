@@ -11,8 +11,13 @@ import os
 from ornith_gguf_compat import (
     install_causal_lm_registry_entry,
     install_dense_expert_location_skip,
+    install_gdn_ba_unquantized,
+    install_gdn_packed_gguf_loader_binding,
+    install_gdn_ssm_tensor_map_fix,
     install_gguf_arch_name_translation,
     install_gguf_model_type_alias,
+    install_hybrid_gdn_config_recognition,
+    install_qwen3_5_text_config_hybrid_properties,
     install_static_config_redirect,
     install_text_only_mm_processor_skip,
 )
@@ -29,3 +34,8 @@ if _config_path:
     install_text_only_mm_processor_skip()
     install_dense_expert_location_skip()
     install_gguf_arch_name_translation()
+    install_gdn_ssm_tensor_map_fix()
+    install_gdn_ba_unquantized()
+    install_gdn_packed_gguf_loader_binding()
+    install_hybrid_gdn_config_recognition()
+    install_qwen3_5_text_config_hybrid_properties()

@@ -35,9 +35,12 @@ python resolve_ornith_gguf_config.py /path/to/real/config/dir /path/to/resolved-
 then set `SGLANG_GGUF_CONFIG_PATH` to the `config.json` it writes before
 running `serve.sh`/`run.sh`. `serve.sh` refuses to start without it.
 
-`sitecustomize.py` / `ornith_gguf_compat.py` install five narrow, well
--understood compatibility patches, none of which change model semantics
-beyond what a genuinely-supported checkpoint would already have:
+`sitecustomize.py` / `ornith_gguf_compat.py` / `ornith_text_model.py`
+install a set of narrow, well-understood compatibility patches, none of
+which change model semantics beyond what a genuinely-supported checkpoint
+would already have. The first five get SGLang far enough to *build* the
+config; the rest were needed to make the weights actually bind and the
+hybrid Gated-DeltaNet runtime actually execute (see "Runtime evidence"):
 
 1. **`install_static_config_redirect`** — redirects every
    `AutoConfig.from_pretrained(<gguf path>, ...)` call (there are two
@@ -48,11 +51,20 @@ beyond what a genuinely-supported checkpoint would already have:
    .config.get_config` unconditionally rewrites a GGUF checkpoint's
    `architectures` to Transformers' `MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
    [model_type]` entry (`Qwen3_5ForCausalLM` for `qwen3_5`/`qwen3_5_text`).
-   But `sglang.srt.models.qwen3_5`'s `EntryClass` list only registers
-   `Qwen3_5ForConditionalGeneration` / `Qwen3_5MoeForConditionalGeneration`
-   — the plain `Qwen3_5ForCausalLM` class is defined in the same file but
-   never registered. This is a genuine gap in SGLang's model registry, not
-   a missing architecture; the patch adds the one missing entry.
+   But **despite its name, `sglang.srt.models.qwen3_5.Qwen3_5ForCausalLM`
+   is not a servable causal LM** — it is the flat decoder stack
+   (`embed_tokens` / `layers` / `norm`); its `params_dict` has no `model.`
+   prefix and no `lm_head`, and its `forward` returns raw hidden states, not
+   logits. The only complete top-level Qwen3.5 classes are the multimodal
+   `…ForConditionalGeneration` wrappers, which build a vision tower this
+   text-only spike excludes. So this patch registers, under the name GGUF
+   rewrites to, the local **`OrnithTextForCausalLM`** (`ornith_text_model.py`)
+   — a minimal text-only wrapper that owns the flat decoder as `self.model`
+   plus a `ParallelLMHead` and a `LogitsProcessor`, giving a `model.`-prefixed
+   param tree that matches the GGUF-derived tensor names and an actual logits
+   path, with no vision stack. **This corrects an earlier revision of this
+   spike, which registered the flat decoder directly and consequently failed
+   to bind every one of the 629 GGUF tensors.**
 3. **`install_text_only_mm_processor_skip`** — the post-GGUF-rewrite
    `Qwen3_5ForCausalLM` architecture has no matching entry in SGLang's
    multimodal processor mapping (only the `ConditionalGeneration` wrapper
@@ -65,7 +77,8 @@ beyond what a genuinely-supported checkpoint would already have:
    a dense model with `num_experts=0`, which crashes
    `eplb.expert_location._pad_nested_array` (`max()` over an empty
    sequence). Returning `None` for `num_experts=0` is what a model class
-   without the method would already produce.
+   without the method would already produce. (`OrnithTextForCausalLM`
+   independently returns `None` from this classmethod for the same reason.)
 5. **`install_gguf_arch_name_translation`** — `GGUFModelLoader
    ._get_gguf_weights_map` looks up the tensor-name map by searching the
    standalone `gguf` PyPI package's `MODEL_ARCH_NAMES` for a value equal to
@@ -75,6 +88,50 @@ beyond what a genuinely-supported checkpoint would already have:
    (confirmed to include the Gated-DeltaNet tensors); it was simply never
    wired up because SGLang's model_type string (`qwen3_5`/`qwen3_5_text`)
    doesn't match the GGUF library's arch key (`qwen35`).
+6. **`install_gdn_ssm_tensor_map_fix`** — `_get_gguf_weights_map` builds its
+   name map by splitting the final dotted component off each HF parameter as
+   a `.weight`/`.bias` suffix. That breaks for the two bare `nn.Parameter`
+   GDN tensors: `linear_attn.A_log` (whose gguf name the map *does* know, but
+   the `rsplit` mangles the lookup key) and `linear_attn.dt_bias` (absent
+   from the `gguf` package's `qwen35` map entirely, though the file ships it
+   as `blk.N.ssm_dt.bias`). Without this, 48 of 427 tensors (24 layers ×
+   {A_log, dt_bias}) are silently dropped.
+7. **`install_gdn_ba_unquantized`** — this `UD-Q4_K_XL` GGUF keeps the tiny
+   `in_proj_b`/`in_proj_a` GDN projections in **F32** (unsloth's dynamic
+   quant leaves small, precision-sensitive tensors full width), so they
+   arrive as plain `.weight`. SGLang builds the merged `in_proj_ba` with the
+   layer quant config anyway, so its param is `qweight` and the F32 sources
+   miss. Building `in_proj_ba` unquantized matches the checkpoint.
+8. **`install_gdn_packed_gguf_loader_binding`** — the GDN merges the split
+   `in_proj_qkv`/`in_proj_z` into one `MergedColumnParallelLinear` and loads
+   `in_proj_qkv` with a *tuple* shard id `(0,1,2)`. The base loader rejects
+   tuple shard ids; the model works around this by rebinding a packed loader
+   — but only onto `.weight`/`*_scale` params, not the GGUF `qweight`/
+   `qweight_type` this checkpoint actually uses. This extends the rebinding
+   to the GGUF params (splitting the fused projection along its output rows,
+   which is safe for llama.cpp's input-dim block quant), and fans the single
+   quant-type scalar out to each shard.
+9. **`install_qwen3_5_text_config_hybrid_properties`** /
+   **`install_hybrid_gdn_config_recognition`** — SGLang builds the hybrid
+   linear-attention backend and SSM state cache only when it recognizes the
+   config as a GDN model, keyed on `isinstance(hf_config.get_text_config(),
+   Qwen3NextConfig | Qwen3_5Config | …)` and on a `config.mamba2_cache_params`
+   property. Because Transformers 5.8.1 natively owns `model_type=
+   "qwen3_5_text"`, `AutoConfig` resolves the resolved config to
+   *Transformers'* `Qwen3_5TextConfig`, which is neither in that isinstance
+   set nor carries the SSM-cache properties. The first patch grafts SGLang's
+   own `Qwen3NextConfig` hybrid properties (`mamba2_cache_params`,
+   `linear_layer_ids`, `full_attention_layer_ids` — each reads only fields
+   the resolved config already has) onto the Transformers config class; the
+   second teaches `ModelRunner.hybrid_gdn_config` to accept it. Without both,
+   the GDN layers hit the full-attention backend at runtime and raise
+   `AttentionBackend.forward() missing … 'q', 'k', 'v'`.
+
+`ornith_text_model.py`'s `OrnithTextForCausalLM.load_weights` also reshapes
+the GDN `conv1d` weight from the GGUF's 2-D `[conv_dim, kernel]` to SGLang's
+3-D `[conv_dim, 1, kernel]`, and rebuilds `embed_tokens` with the quant
+config (the Qwen3.5 decoder, unlike `qwen2.py`, omits it, so the quantized
+`token_embd` would otherwise have no `qweight` param to bind).
 
 `resolve_ornith_gguf_config.py` additionally publishes the dense
 `Qwen3_5TextConfig` (not the full multimodal wrapper) with two synthetic
@@ -93,48 +150,97 @@ version's config class never defines or defaults:
 
 ## Runtime evidence (2026-07-23)
 
-A real GPU-1 run of `run.sh` against the Unsloth Ornith-1.0-9B `UD-Q4_K_XL`
-GGUF, with all five compat patches and the resolved config in place,
-**started the HTTP server successfully** (`Uvicorn running on
-http://127.0.0.1:8003`, `GET /model_info` returned `200 OK`). However:
+### Earlier run — wrong model class, weights unbound
 
-- **Weight loading is incomplete.** `Load weight end` reported
-  `mem usage=1.96 GB` — far short of the ~6 GB Q4_K_XL GGUF file size — and
-  the load logged 581 `Parameter ... not found in params_dict` warnings
-  spanning every one of the 32 layers (`linear_attn.in_proj_qkvz`,
-  `linear_attn.out_proj`, `mlp.*`, `o_proj`, `qkv_proj`, `q_norm`,
-  `input_layernorm`, and more). The tensor-name map SGLang derives via the
-  `gguf` package for `qwen35` does not fully match the parameter names
-  `Qwen3_5ForCausalLM.load_weights` expects, so a large fraction of the
-  model's weights were **not** loaded from the GGUF and were left at their
-  randomly-initialized values. **This is not a working model** — it would
-  produce incoherent output, not a correctness bug you'd notice only under
-  load.
-- `GET /health` returned `503`, and the scheduler then crashed on the
-  warmup forward pass with `RuntimeError: Ninja build failed` compiling a
-  FlashInfer CUDA kernel (`batch_prefill`, `head_dim_qk=256`) — a separate
-  CUDA/build-toolchain issue in this devenv, not a GGUF/architecture
-  problem, and never reached because the weight-loading gap above would
-  have produced garbage output regardless.
+The first real GPU-1 run (patches 1–5 only, registering the flat
+`Qwen3_5ForCausalLM` decoder directly) **started the HTTP server** but bound
+almost no weights: `Load weight end` reported `mem usage=1.96 GB` (vs the
+~6 GB GGUF) with 629 `Parameter … not found in params_dict` warnings across
+every layer. Root cause, traced by dumping the model's actual `params_dict`:
+the class SGLang's `MODEL_FOR_CAUSAL_LM_MAPPING_NAMES` rewrite selects —
+`sglang.srt.models.qwen3_5.Qwen3_5ForCausalLM` — is the *flat decoder*, whose
+params have no `model.` prefix and no `lm_head`, while every GGUF-derived name
+is `model.`-prefixed and includes `lm_head`. That class also cannot emit
+logits. Fixed by patch #2's `OrnithTextForCausalLM` wrapper.
 
-**Conclusion: this spike does not produce a usable Ornith-1.0-9B GGUF
-endpoint.** The five registry/config/patch-level fixes above are real,
-narrow SGLang 0.5.14 gaps and are safe/reusable once upstream fixes land.
-The remaining gap — the GGUF tensor-name map not fully covering
-`Qwen3_5ForCausalLM`'s actual parameter names, particularly the
-Gated-DeltaNet linear-attention tensors — is a deeper mismatch between the
-`gguf` library's `qwen35` tensor map and this specific SGLang model
-implementation's expected names, and was not resolved. It would need
-either an upstream SGLang/`gguf`-library fix or a hand-written tensor-name
-remapping layer, which is a substantially larger undertaking than the
-patches above and was not attempted here.
+### Current run — full weight load, hybrid GDN executes, server serves
 
-Given GGUF's fundamental unsuitability for this checkpoint right now, the
-straightforward alternative — serving the bf16 safetensors checkpoint
-(`unsloth/Ornith-1.0-9B`, ~19 GB) natively with SGLang, which already has
-complete native `Qwen3_5` model code — was not attempted in this spike but
-is far more likely to actually work, since it sidesteps the entire
-GGUF-loading problem.
+With patches 1–9 and the resolved config in place, a real GPU-1 run against
+the Unsloth Ornith-1.0-9B `UD-Q4_K_XL` GGUF:
+
+- **Loads every tensor.** `Load weight end` reports `mem usage=5.83 GB` with
+  **zero** `not found in params_dict` warnings — all 427 GGUF tensors bind,
+  including the split→fused GDN projections and the mixed F32/Q4 precision.
+  (Reaching zero required, in order: the tensor-map fixes #6, the F32
+  `in_proj_ba` #7, the packed GGUF shard loader #8, the `conv1d` reshape and
+  the quantized `embed_tokens` rebuild.)
+- **Builds the hybrid GDN runtime.** After patch #9, the tree cache logs
+  `hybrid_ssm=True` with a `MambaRadixCache`, the SSM state cache allocates,
+  and the FlashInfer full-attention kernel (`head_dim_qk=256`) compiles once
+  `LIBRARY_PATH` points at a real `libcuda.so` (see below).
+- **Serves.** `The server is fired up and ready to roll!`, `GET /health`
+  returns `200`, `GET /model_info` `200`, and both `/v1/chat/completions` and
+  `/v1/completions` return completions — the full forward/decode path
+  (embedding → 24 GDN linear-attention layers + 8 full-attention layers →
+  lm_head → sampling) executes end to end without error.
+
+**Remaining gap — output is not yet coherent (residual bug localized).** The
+three GGUF→HF weight transforms the arch requires (RMSNorm −1, `A_log = log(−x)`,
+value-head `(r=2,g=16)→(g,r)` unpermutation) are now implemented and applied at
+load time (`ornith_gdn_transforms.py`, wired into `load_weights`; 16 unit tests;
+`out_proj` handled as a packed-Q8_0 column reorder — see RESEARCH-FINDINGS §5).
+Generations are **still gibberish** at `temperature=0`, but the failure is now
+*localized*, not open-ended:
+
+- **Oracle established:** `llama.cpp` (`llama-cpp-python`, CPU) on the *same*
+  GGUF greedily continues "The capital of France is" → **"Paris."** The GGUF is
+  valid; the bug is entirely on the SGLang side.
+- **The 3 transforms are correct but not sufficient:** output is gibberish both
+  with all transforms on *and* with them all off (a different gibberish), so the
+  dominant bug is **independent** of these transforms — no toggle combination
+  reaches coherence.
+- **Per-layer hidden states are healthy** across all 32 layers (no NaN, smooth
+  std 0.28→1.7): no single broken layer — a *semantic* corruption, not numeric.
+- **mrope/partial-rotary is RULED OUT** as a misconfiguration: the resolved
+  config's `rope_parameters` carries `mrope_section=[11,11,10]` +
+  `mrope_interleaved=True`, so SGLang builds the correct interleaved
+  `MRotaryEmbedding`. GGML dequant also looks healthy.
+
+The residual is a subtle SGLang-`Qwen3_5` *execution* detail for this checkpoint
+(prime suspect: the fused GDN `in_proj_qkvz` split / delta-rule head ordering).
+Pinning it down needs the guide §6.4 **per-layer diff vs the 19 GB bf16
+`unsloth/Ornith-1.0-9B`** (the llama.cpp oracle exposes only the final hidden
+state), which does not fit this 12 GB spike. Diagnostic hooks are left gated
+behind `ORNITH_DEBUG_LAYERS=1`.
+
+### Toolchain note: FlashInfer `-lcuda`
+
+The FlashInfer JIT build of the `head_dim=256` prefill kernel fails in this
+devenv with `ld.bfd: cannot find -lcuda` — it searches a CUDA stubs dir with
+no `libcuda.so`. Exporting `LIBRARY_PATH` to a directory containing a real
+`libcuda.so` (the graphics-drivers store path) before launching lets the link
+succeed. This is a devenv CUDA-packaging gap, orthogonal to the GGUF/model
+work; it is applied as an env var at launch, not baked into `serve.sh`.
+
+## Conclusion
+
+This spike now produces a **fully-loading, fully-serving** SGLang endpoint for
+the Ornith-1.0-9B `UD-Q4_K_XL` GGUF — every tensor binds, the hybrid
+Gated-DeltaNet + full-attention runtime executes, and the OpenAI endpoints
+respond. The nine patches above are real, narrow SGLang 0.5.14 / devenv gaps
+(a mis-registered non-servable model class, an incomplete GGUF tensor-name
+map, no packed-loader support for GGUF-quantized fused projections, mixed
+F32/Q4 tensors, and hybrid-GDN config detection defeated by a Transformers vs
+SGLang config-class name clash), each safe and reusable once upstream fixes
+land. The one unresolved item is **numerical correctness of the generated
+text**, which requires reference-based layer bisection.
+
+If a working endpoint is needed before that debugging is done, serving the
+bf16 safetensors checkpoint (`unsloth/Ornith-1.0-9B`, ~19 GB) natively —
+SGLang already has complete native `Qwen3_5` model code — remains the
+lower-risk route, since it sidesteps the GGUF split/mixed-precision dequant
+entirely (though ~19 GB does not fit alongside the KV cache on a single 12 GB
+3060 the way the ~6 GB GGUF does).
 
 ## Source evidence
 

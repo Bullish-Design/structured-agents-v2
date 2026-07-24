@@ -71,7 +71,7 @@ def install_static_config_redirect(config_dir: str) -> None:
 
 
 def install_causal_lm_registry_entry() -> None:
-    """Register Qwen3_5ForCausalLM under SGLang's model registry.
+    """Register a servable text-only model under the name GGUF rewrites to.
 
     ``sglang.srt.utils.hf_transformers.config.get_config`` forcibly rewrites
     a GGUF checkpoint's ``config.architectures`` to Transformers'
@@ -79,16 +79,69 @@ def install_causal_lm_registry_entry() -> None:
     ``model_type="qwen3_5"`` that is ``"Qwen3_5ForCausalLM"``, unconditionally,
     for every GGUF load regardless of what architecture the source config
     declared. But ``sglang.srt.models.qwen3_5``'s ``EntryClass`` list only
-    registers ``Qwen3_5ForConditionalGeneration`` / ``Qwen3_5MoeForConditionalGeneration``
-    -- the plain ``Qwen3_5ForCausalLM`` class it also defines is never
-    registered, even though it is a complete, working model implementation.
-    This is a gap in SGLang's registry, not a missing architecture; add the
-    one missing entry directly rather than waiting on an upstream release.
+    registers the multimodal ``Qwen3_5ForConditionalGeneration`` /
+    ``Qwen3_5MoeForConditionalGeneration`` wrappers, and the plain
+    ``Qwen3_5ForCausalLM`` class defined in the same file -- despite its name
+    -- is **not** a servable causal LM: it is the flat decoder stack
+    (``embed_tokens`` / ``layers`` / ``norm``), its ``params_dict`` has no
+    ``model.`` prefix and no ``lm_head``, and its ``forward`` returns raw
+    hidden states, not logits. Registering that flat class (as an earlier
+    revision of this spike did) makes every GGUF tensor -- whose names are
+    ``model.``-prefixed and include ``lm_head`` -- miss ``params_dict``, and
+    leaves nothing to turn hidden states into tokens.
+
+    Register instead the text-only ``OrnithTextForCausalLM`` wrapper, which
+    owns the flat decoder as ``self.model`` plus an ``lm_head`` and a
+    ``LogitsProcessor`` -- a param tree that matches the GGUF-derived names --
+    without pulling in the vision tower the ``ConditionalGeneration`` wrappers
+    build. See ``ornith_text_model`` for the full rationale.
     """
-    from sglang.srt.models.qwen3_5 import Qwen3_5ForCausalLM
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from ornith_text_model import OrnithTextForCausalLM
+
     from sglang.srt.models.registry import ModelRegistry
 
-    ModelRegistry.models.setdefault("Qwen3_5ForCausalLM", Qwen3_5ForCausalLM)
+    # Force our complete wrapper even if a prior import registered the flat
+    # decoder under this name.
+    ModelRegistry.models["Qwen3_5ForCausalLM"] = OrnithTextForCausalLM
+
+
+def install_qwen3_5_text_config_hybrid_properties() -> None:
+    """Graft SGLang's hybrid-GDN config properties onto the Transformers config.
+
+    SGLang sizes and allocates the Gated-DeltaNet SSM state cache from
+    ``config.mamba2_cache_params`` and partitions layers with
+    ``config.linear_layer_ids`` / ``full_attention_layer_ids`` -- properties
+    defined on SGLang's *own* ``Qwen3NextConfig`` (the base of SGLang's
+    ``Qwen3_5TextConfig``). But this Transformers version natively owns
+    ``model_type="qwen3_5_text"``, so ``AutoConfig`` resolves the resolved
+    config to *Transformers'* identically-named ``Qwen3_5TextConfig``, which
+    lacks those properties -- and ``handle_max_mamba_cache`` then fails with
+    ``'Qwen3_5TextConfig' object has no attribute 'mamba2_cache_params'``.
+
+    Each of these properties reads only fields the resolved config already
+    carries (``layers_block_type`` and the ``linear_*`` head/dim/conv sizes),
+    so copy the descriptors across verbatim rather than reimplementing them.
+    ``HybridLayerType.full_attention == "attention"`` -- exactly the value
+    ``resolve_ornith_gguf_config.py`` writes into ``layers_block_type`` -- so
+    the layer partitioning lines up with no further translation.
+    """
+    from transformers.models.qwen3_5.configuration_qwen3_5 import (
+        Qwen3_5TextConfig as TransformersQwen3_5TextConfig,
+    )
+
+    from sglang.srt.configs.qwen3_next import Qwen3NextConfig
+
+    for name in (
+        "mamba2_cache_params",
+        "linear_layer_ids",
+        "full_attention_layer_ids",
+    ):
+        if not hasattr(TransformersQwen3_5TextConfig, name):
+            setattr(TransformersQwen3_5TextConfig, name, getattr(Qwen3NextConfig, name))
 
 
 def install_text_only_mm_processor_skip() -> None:
@@ -178,3 +231,202 @@ def install_gguf_arch_name_translation() -> None:
             model_config.hf_config.model_type = original_model_type
 
     GGUFModelLoader._get_gguf_weights_map = _get_gguf_weights_map_with_translation
+
+
+def install_gdn_ssm_tensor_map_fix() -> None:
+    """Add the two Gated-DeltaNet tensors SGLang's GGUF map builder drops.
+
+    ``GGUFModelLoader._get_gguf_weights_map`` builds its gguf->hf name map by
+    walking a dummy HF model's ``state_dict`` and, for each parameter,
+    splitting off the final dotted component as a ``weight``/``bias`` suffix
+    (``name, suffix = hf_name.rsplit(".", 1)``) before reverse-looking-up the
+    remaining ``name`` in the ``gguf`` package's tensor-name map. That shape
+    assumption holds for ``nn.Linear`` weights but breaks for the two bare
+    ``nn.Parameter`` tensors in ``Qwen3_5GatedDeltaNet``:
+
+    - ``linear_attn.A_log`` -- the ``gguf`` map *does* know this HF name
+      (``model.layers.{bid}.linear_attn.A_log`` -> ``blk.{bid}.ssm_a``), but
+      SGLang's ``rsplit`` mangles it to ``model.layers.{bid}.linear_attn``
+      (treating ``A_log`` as the suffix), which maps to nothing.
+    - ``linear_attn.dt_bias`` -- genuinely absent from the ``gguf`` package's
+      ``qwen35`` tensor map (its ``SSM_DT`` HF patterns cover ``dt_proj``/``dt``
+      only), even though the GGUF file ships the tensor as
+      ``blk.{bid}.ssm_dt.bias``.
+
+    Both are per-linear-attention-layer. Without them, 48 of the 427 GGUF
+    tensors (24 layers x {A_log, dt_bias}) are silently dropped and left at
+    their randomly-initialized values -- exactly the class of GDN weight-load
+    gap the earlier runtime evidence flagged. This adds the two missing
+    ``gguf_name -> hf_name`` entries for each linear-attention layer, using the
+    resolved config's ``layers_block_type`` to target only the layers that
+    actually have a Gated-DeltaNet mixer. The HF names it emits
+    (``...linear_attn.A_log`` / ``...linear_attn.dt_bias``) are exactly the
+    parameter names ``Qwen3_5ForCausalLM.load_weights`` places directly into
+    ``params_dict`` (no stacked-mapping rewrite), matching the SGLang model's
+    own ``nn.Parameter`` names.
+    """
+    from sglang.srt.model_loader.loader import GGUFModelLoader
+
+    _original = GGUFModelLoader._get_gguf_weights_map
+
+    def _get_gguf_weights_map_with_gdn_ssm(self, model_config):
+        gguf_to_hf_name_map = _original(self, model_config)
+
+        config = model_config.hf_config
+        block_types = getattr(config, "layers_block_type", None) or []
+        num_layers = getattr(config, "num_hidden_layers", len(block_types))
+        for layer_id in range(num_layers):
+            # Only linear-attention layers carry a Gated-DeltaNet mixer; the
+            # periodic full-attention layers have neither tensor. Default to
+            # treating a layer as linear when block metadata is unavailable so
+            # the (harmless, file-absent) key simply goes unused.
+            block_type = block_types[layer_id] if layer_id < len(block_types) else "linear_attention"
+            if block_type not in ("linear_attention", "linear"):
+                continue
+            gguf_to_hf_name_map.setdefault(
+                f"blk.{layer_id}.ssm_a",
+                f"model.layers.{layer_id}.linear_attn.A_log",
+            )
+            gguf_to_hf_name_map.setdefault(
+                f"blk.{layer_id}.ssm_dt.bias",
+                f"model.layers.{layer_id}.linear_attn.dt_bias",
+            )
+        return gguf_to_hf_name_map
+
+    GGUFModelLoader._get_gguf_weights_map = _get_gguf_weights_map_with_gdn_ssm
+
+
+def install_gdn_packed_gguf_loader_binding() -> None:
+    """Let the GDN fused-projection packed loader drive GGUF-quant params.
+
+    ``Qwen3_5GatedDeltaNet`` merges the checkpoint's split
+    ``in_proj_qkv``/``in_proj_z`` (and ``in_proj_b``/``in_proj_a``) into single
+    ``MergedColumnParallelLinear`` modules and, in ``load_weights``, loads the
+    ``in_proj_qkv`` shard with a *tuple* ``loaded_shard_id`` ``(0, 1, 2)`` (it
+    itself packs q+k+v). The base ``LinearBase.weight_loader`` explicitly
+    rejects tuple shard ids (``NotImplementedError: Shard id with multiple
+    indices ... use weight_loader_v2``); the model works around this by
+    rebinding a packed loader that splits the tuple into per-output-block int
+    shards. But ``_bind_packed_weight_loaders`` only rebinds the ``weight`` /
+    ``*_scale`` params -- under ``--load-format gguf`` the merged linear's real
+    params are ``qweight`` / ``qweight_type`` instead, so the packed loader
+    never gets installed and the tuple-shard load crashes.
+
+    Extend the rebinding to cover the GGUF params. Splitting the fused
+    projection along its output dimension (whole rows) is safe for llama.cpp
+    block quant, which quantizes along the *input* dimension within each row --
+    so each output row's packed bytes stay intact -- and each resulting int
+    shard then flows through the same GGUF ``MergedColumnParallelLinear`` path
+    that already loads e.g. ``gate_up_proj`` from split GGUF tensors.
+    """
+    from sglang.srt.models.qwen3_5 import Qwen3_5GatedDeltaNet
+
+    _original = Qwen3_5GatedDeltaNet._bind_packed_weight_loaders
+
+    def _make_gguf_type_packed_loader(original_weight_loader):
+        """Fan a split tensor's single GGUF quant-type scalar out to its shards.
+
+        ``qweight_type`` is a per-shard 0-d code array; the base GGUF loader
+        does ``param.data[idx].copy_(loaded_weight)`` with a 0-d
+        ``loaded_weight``. The generic packed loader would ``view(-1)`` that
+        scalar to shape ``[1]`` and mismatch the 0-d destination, so route the
+        type scalar straight to each int shard unchanged (all sub-blocks of a
+        single split checkpoint tensor share one quant type).
+        """
+
+        def weight_loader(param, loaded_weight, loaded_shard_id=None):
+            if isinstance(loaded_shard_id, tuple):
+                for idx in loaded_shard_id:
+                    original_weight_loader(param, loaded_weight, idx)
+                return
+            return original_weight_loader(param, loaded_weight, loaded_shard_id)
+
+        return weight_loader
+
+    def _bind_packed_weight_loaders_with_gguf(self, module):
+        _original(self, module)
+        # Packed (output-dim split) loader for the quantized weight bytes.
+        qweight = getattr(module, "qweight", None)
+        if qweight is not None:
+            original_loader = getattr(qweight, "weight_loader", None)
+            if original_loader is not None:
+                self._override_weight_loader(
+                    qweight, self._make_packed_weight_loader(module, original_loader)
+                )
+        # Scalar-broadcast loader for the per-shard quant-type codes.
+        qweight_type = getattr(module, "qweight_type", None)
+        if qweight_type is not None:
+            original_loader = getattr(qweight_type, "weight_loader", None)
+            if original_loader is not None:
+                self._override_weight_loader(
+                    qweight_type, _make_gguf_type_packed_loader(original_loader)
+                )
+
+    Qwen3_5GatedDeltaNet._bind_packed_weight_loaders = (
+        _bind_packed_weight_loaders_with_gguf
+    )
+
+
+def install_gdn_ba_unquantized() -> None:
+    """Build the tiny GDN ``in_proj_ba`` projection unquantized.
+
+    This ``UD-Q4_K_XL`` GGUF keeps the low-rank beta/alpha projections
+    (``ssm_beta`` / ``ssm_alpha`` -> ``in_proj_b`` / ``in_proj_a``, each only
+    ``num_v_heads`` outputs) in **F32**, not block-quantized -- unsloth's
+    dynamic quant leaves such small, precision-sensitive tensors full-width.
+    SGLang builds ``in_proj_ba`` with the layer's quant config regardless, so
+    the merged param is ``qweight``/``qweight_type`` while the checkpoint only
+    provides plain ``.weight`` tensors, and the load misses. Because the GGUF
+    representation is already F32 here, build ``in_proj_ba`` with no quant
+    config so the merged param is a normal ``.weight`` -- which the existing
+    ``_bind_packed_weight_loaders`` (``weight`` branch) already fans the split
+    ``in_proj_b`` / ``in_proj_a`` shards into.
+    """
+    from sglang.srt.models.qwen3_5 import Qwen3_5GatedDeltaNet
+
+    _original = Qwen3_5GatedDeltaNet.create_ba_proj
+
+    def create_ba_proj_unquantized(
+        self, hidden_size, num_v_heads, quant_config, prefix, tp_rank=None, tp_size=None
+    ):
+        return _original(
+            self, hidden_size, num_v_heads, None, prefix, tp_rank, tp_size
+        )
+
+    Qwen3_5GatedDeltaNet.create_ba_proj = create_ba_proj_unquantized
+
+
+def install_hybrid_gdn_config_recognition() -> None:
+    """Make SGLang recognize the resolved text config as a hybrid-GDN model.
+
+    ``ModelRunner.hybrid_gdn_config`` gates whether the runner builds a
+    ``HybridLinearAttnBackend`` (routing the Gated-DeltaNet layers to the
+    linear-attention/mamba backend and the periodic full-attention layers to
+    flashinfer) plus the SSM state cache. It does so with
+    ``isinstance(hf_config.get_text_config(), Qwen3NextConfig | Qwen3_5Config |
+    ...)``. This spike deliberately publishes the flat ``Qwen3_5TextConfig``
+    (``model_type="qwen3_5_text"``) rather than the multimodal ``Qwen3_5Config``
+    wrapper, so the isinstance check misses, ``mambaish_config`` is ``None``,
+    and **no** linear-attention backend is created. At runtime the GDN layers
+    then call ``get_attn_backend()`` and get the full-attention backend, which
+    raises ``AttentionBackend.forward() missing ... 'q', 'k', 'v'``.
+
+    The text config carries every field the hybrid path reads
+    (``linear_key_head_dim`` / ``linear_num_value_heads`` /
+    ``layers_block_type`` / ...), so return it directly for our known
+    text model_types when the built-in check declines.
+    """
+    from sglang.srt.model_executor.model_runner import ModelRunner
+
+    _original = ModelRunner.hybrid_gdn_config.fget
+
+    def _hybrid_gdn_config(self):
+        result = _original(self)
+        if result is not None:
+            return result
+        text_config = self.model_config.hf_config.get_text_config()
+        if getattr(text_config, "model_type", None) in ("qwen3_5", "qwen3_5_text"):
+            return text_config
+        return None
+
+    ModelRunner.hybrid_gdn_config = property(_hybrid_gdn_config)

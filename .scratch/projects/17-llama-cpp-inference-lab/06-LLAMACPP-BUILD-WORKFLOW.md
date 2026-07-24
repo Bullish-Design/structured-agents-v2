@@ -29,15 +29,81 @@ from headers at install time. Therefore:
 - To ride a llama.cpp far ahead of the anchor, you must **also** move
   `llama-cpp-python` to a release whose bindings track that ABI, then re-anchor.
 - Failure mode if you ignore this: signature/struct drift → segfaults or, worse,
-  silent memory corruption and wrong outputs. Hence the mandatory smoke gate (§5).
+  silent memory corruption and wrong outputs. Hence the mandatory smoke gate (§6).
 
 **Practical policy:** fork/branch off the anchor commit. Rebase your fork onto a
 new anchor only together with a `llama-cpp-python` bump. Record the whole tuple
-(§6).
+(§7).
 
 ---
 
-## 2. Two integration modes
+## 2. Binding generation strategy (own the ABI, don't re-type it)
+
+The ABI-anchor rule (§1) is a workaround for a deeper fragility: the low-level
+bindings hand-**re-assert** the C ABI in Python. `llama_cpp/llama_cpp.py` is a
+hand-maintained ctypes transcription of one `llama.h` — struct field orders,
+enum values, `argtypes`/`restype` — mirrored by eye. When the built header and
+the Python transcription disagree, most disagreements are **silent**: a wrong
+struct offset reads the wrong bytes → memory corruption or plausible-but-wrong
+outputs, with no exception. Only a symbol *rename or removal* fails loudly (an
+unresolved lookup). Everything subtler slips through to runtime.
+
+Generating the binding **from the exact header you build against** makes ABI
+mismatch structurally impossible rather than a discipline you enforce by hand.
+Three approaches:
+
+| Approach | Build step | ABI truth source | Drift is silent? | You find out about drift... |
+| --- | --- | --- | --- | --- |
+| Hand-written ctypes (status quo, what llama-cpp-python ships) | none | a human reading `llama.h` | **yes** (except symbol rename/removal) | in production / demo — wrong output or corruption |
+| Generated ctypes (`clang2py` / `ctypesgen`) | codegen only (no compile) | libclang parse of the real `llama.h` at generation time | yes, if the runtime lib differs from the header it was generated from | in production / demo — regeneration is automated, but it's still a runtime-libffi snapshot per header |
+| **cffi API mode (RECOMMENDED — pinned path)** | **C compile** | the **C compiler** resolving `#include "llama.h"` against that build | **no — cannot silently drift** | **CI build time — a compile error** |
+
+The recommended path is **cffi API mode**: `ffi.set_source(...)` emits C that
+`#include`s the real `llama.h`, and `ffi.compile()` invokes the actual C
+compiler to build a CPython extension module. The compiler — not a human, not a
+one-time parse — derives every struct offset, enum value, and call signature
+from the same header the library was built from. You declare *intent* with
+cffi's `...` ("dotdotdot": incomplete structs, unknown enum values, unspecified
+array sizes) and the compiler fills in the **binary truth**. A field that moved,
+an enum that shifted, a signature that changed → the compile fails, loudly, at
+build time. That early-failure property is the main reason to adopt it.
+
+The generated-ctypes middle option is strictly better than hand-writing (the
+transcription is automated from the real header), but it still ships a
+runtime-libffi snapshot: run it against a lib other than the one it was
+generated from and silent drift returns. Only the compile step closes that gap.
+
+Costs, stated honestly:
+
+- **Needs a compiler + header + lib at build time.** cffi API mode is not a
+  pure-Python install; it's a compile.
+- **Binding + library become a UNIT** — the extension is compiled against one
+  header, so it is only valid for a lib of that ABI. This tightens Mode B (§3):
+  the rigorous pinned model becomes "rebuild the binding **and** the lib
+  together"; loose `LLAMA_CPP_LIB_PATH` swapping stays fine **only** for
+  same-ABI experiments (the ABI-anchor rule still gates it).
+- **It's a compiled, per-platform artifact** (here: linux / x86-64 / CUDA
+  sm_86), not a universal wheel. For a self-hosted teaching rig that already
+  builds llama.cpp from source this is the right tradeoff — but it is a real
+  constraint, not a free lunch.
+
+### Two adoption shapes
+
+- **Hybrid (start here):** keep `llama-cpp-python`'s high-level `Llama` for
+  model lifecycle and ergonomics; add a cffi low-level module only for the
+  surfaces we own on the hot path — logits access, the sampler chain, the state
+  save/restore APIs, LoRA adapter control. Smallest surface, immediate
+  ABI-safety where it matters most.
+- **Full:** own the entire low-level cffi layer plus a thin ergonomic wrapper.
+  This is the "own the substrate" teaching thesis carried to its end, but it's a
+  larger build and takes ownership of surfaces the high-level package handles
+  today.
+
+Start Hybrid; graduate surfaces to Full as the pillars justify it.
+
+---
+
+## 3. Two integration modes
 
 ### Mode A — source rebuild (coordinated build) — the *pinned/distributable* path
 Rebuild `llama-cpp-python` from source so its bundled lib set IS your build.
@@ -63,7 +129,7 @@ and fork experiments; promote a winner to Mode A.
 
 ---
 
-## 3. Tailoring for this rig (performance + lightness)
+## 4. Tailoring for this rig (performance + lightness)
 
 Target: 2×3060 (CUDA compute capability **8.6**, sm_86), a text-gen teaching
 workload. Candidate CMake flags (validate each with the bench harness):
@@ -86,7 +152,7 @@ Every flag change is a teaching data point: rebuild → bench → record delta.
 
 ---
 
-## 4. The workflow (repeatable)
+## 5. The workflow (repeatable)
 
 ```
 1. PICK target llama.cpp ref
@@ -107,7 +173,7 @@ Every flag change is a teaching data point: rebuild → bench → record delta.
 
 ---
 
-## 5. ABI smoke gate (mandatory after every swap)
+## 6. ABI smoke gate (mandatory after every swap)
 
 A swap is only "done" when all pass:
 1. `probe_api.py` — the low-level surface still resolves (functions + flags
@@ -121,7 +187,7 @@ Green on 1–3 is the minimum bar to trust a new lib for development.
 
 ---
 
-## 6. Version tuple (single source of truth)
+## 7. Version tuple (single source of truth)
 
 Recorded by `versions.py` and stamped into every benchmark/diagnostic:
 ```
@@ -139,7 +205,7 @@ real.
 
 ---
 
-## 7. NixOS specifics
+## 8. NixOS specifics
 
 - No `nvcc` on the host. The CUDA toolkit must come via nix/devenv (unfree),
   matching the existing spike pattern (`launch-spike.sh` used
@@ -151,7 +217,7 @@ real.
 
 ---
 
-## 8. Deliverables (fold into PLAN Phase 0)
+## 9. Deliverables (fold into PLAN Phase 0)
 
 - `build-llamacpp.sh` — parameterized by ref + flag profile; emits the lib set +
   a `build-manifest.json` (ref, flags, ggml version).

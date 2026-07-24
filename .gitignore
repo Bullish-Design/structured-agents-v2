@@ -236,3 +236,4 @@ deploy/vllm/docker-compose.override.yml
 # Nix build output
 /result
 /result-*
+.scratch/vendor/
