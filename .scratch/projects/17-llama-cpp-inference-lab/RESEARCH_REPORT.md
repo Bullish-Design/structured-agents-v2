@@ -545,3 +545,90 @@ closed as correct-but-negative** at n_ctx=512. Per-sequence reuse is now
 promising rather than blocked, but must clear the larger-K / nonzero-dest /
 cross-process sweep before production use. Still no need for LMCache, radix tree,
 compression, or a generic cache abstraction.
+
+## Per-sequence reuse — deep investigation — 2026-07-24
+
+Follow-up to the corrected per-sequence result: does per-sequence state reuse
+work for the *router* use case — restoring a cached prefix into one sequence
+slot of a **live multi-sequence** context — and under what constraints? All
+evidence GPU-only (`CUDA_VISIBLE_DEVICES=0`, GPU 1 idle), CUDA-synchronized,
+own-batch multi-sequence decode (the high-level `Llama.eval` only ever uses
+seq 0). Runner: `benchmarks/project17/run_seq_reuse.py`. Artifact:
+`artifacts/project17-seq-reuse-20260724T201749Z/` (exit 0, GPU 0 5503 MiB,
+GPU 1 9 MiB). `n_ctx=2048`, `n_batch=128`. Contexts are built with a custom
+`n_seq_max` via `llama_new_context_with_model`, reusing the loaded weights.
+
+**Success = greedy continuation equality only.** Two decode caveats found and
+fixed while building the runner (both are real llama.cpp constraints, worth
+teaching): (a) a single `llama_decode` must satisfy `n_tokens <= n_batch`, so
+prefixes are chunked; (b) `n_ctx` is **divided across sequences**
+(`n_ctx/n_seq_max` cells each), so `n_ctx` must be large enough that the longest
+prefix fits under every `n_seq_max`.
+
+### Proven for the router pillar
+
+1. **Parallel multi-sequence decode is correct.** Two independent sequences in
+   one `n_seq_max=2` context each reproduce their isolated single-sequence
+   baselines (`multiseq_control.A_ok/B_ok = true`). Ornith's hybrid recurrent
+   architecture runs true parallel sequences.
+2. **Restore into a nonzero seq of a live context, with isolation.** Capturing
+   sequence B (matched `n_seq_max`) and `llama_state_seq_set_data` into seq 1 of
+   a context already holding sequence A on seq 0 yields the correct B
+   continuation **and** leaves A's continuation unchanged, for checkpoints
+   K∈{32,64,128,256} (`router_path[*].restored_ok_all` and `isolation_ok_all`
+   all true). This is the exact KV-reuse primitive a multi-prefix / multi-LoRA
+   router needs.
+3. **Cross-process restart.** Capture a sequence blob to disk in one process,
+   restore in a fresh process/context → identical continuation
+   (`crossprocess.match = true`, token 25147; child exit 0).
+
+### The portability constraint (must become a cache key)
+
+Per-sequence blobs are portable **only across identical `n_seq_max`**. The
+capture×restore matrix is clean:
+
+| capture n_seq_max → restore n_seq_max | set_data return | continuation |
+| :-- | :-- | :-- |
+| 1→1, 2→2, 4→4 (diagonal) | > 0 (loaded) | match |
+| every off-diagonal (1→2, 2→1, 2→4, 4→2, …) | **0 = failed to load** | n/a |
+
+Blob size encodes `n_seq_max` (53,740,972 / …976 / …984 bytes for
+`n_seq_max` 1/2/4 — a 4-byte-per-doubling header field). A mismatch **fails
+safe**: `set_data` returns 0, nothing is corrupted, no crash — so a per-sequence
+cache can detect it and fall back to cold prefill. **`n_seq_max` (and the rest of
+the context config that shapes the state) must be part of the per-sequence cache
+compatibility key.** This is a design requirement for any future per-sequence
+codec; it is deliberately *not* retrofitted into the frozen
+`LlamaEngineFingerprint` in this investigation (which carries `n_ctx` but not
+`n_seq_max`), to preserve the existing whole-state contract.
+
+### Restore cost (synchronized, in-memory, one sequence)
+
+`set_data` of a single sequence's state: 103 / 106 / 110 / 118 ms mean for
+K = 32 / 64 / 128 / 256 (blob 53.7 / 54.8 / 56.9 / 61.1 MB). It is **flatter and
+cheaper than the whole-state native set** (~150–172 ms) because it moves one
+sequence's recurrent+KV state, not the whole context. Suggestive, not yet a
+break-even claim: whole-state cold prefill at 256 tokens was ~210 ms (warm
+single context), so per-sequence restore (~118 ms) is well under it — per-seq
+reuse may cross break-even *earlier* than whole-state. The fair test is a
+cold-prefill-vs-restore comparison **inside the same multi-sequence context**
+(different runner, different n_ctx), which this run did not do.
+
+### Still unknown / next
+
+- Cold-vs-restore break-even measured in the same multi-sequence context.
+- Larger `n_seq_max` (8/16) and concurrent batched-decode throughput.
+- Per-sequence **LoRA** adapters in one batch — a separate, known-hard llama.cpp
+  limitation ([[llama-cpp-inference-lab]]); this experiment covers KV reuse only,
+  not per-seq adapters.
+- Recurrent-state correctness at very long K (near per-seq cell capacity) and
+  multi-sequence isolation beyond two live sequences.
+
+### Bottom line
+
+Per-sequence KV reuse for the router is **feasible and correct** (nonzero-seq
+restore into a live context, isolated, cross-process), bounded by one clean
+rule: **matching `n_seq_max`**, which fails safe on mismatch. Restore is cheaper
+than whole-state. The remaining gate before production use is a same-context
+break-even measurement and a larger-scale batched-decode check; per-seq LoRA
+remains a distinct, separately-tracked risk.
