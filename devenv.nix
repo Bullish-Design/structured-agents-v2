@@ -103,11 +103,12 @@
         export LD_LIBRARY_PATH="$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
         export PYTHONPATH="src:.devenv/state/venv/lib/python3.13/site-packages''${PYTHONPATH:+:$PYTHONPATH}"
         env | rg "^(CUDA_VISIBLE_DEVICES|LLAMA_CPP_LIB_PATH|LD_LIBRARY_PATH|PYTHONPATH)=" > "$out/runtime-environment.txt"
-        printf "%q " .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" > "$out/command.txt"; printf "\n" >> "$out/command.txt"
+        extra="''${PROJECT17_PREFIX_CACHE_ARGS:-}"
+        printf "%q " .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/command.txt"; printf "\n" >> "$out/command.txt"
         ( while :; do date -u +%FT%TZ; nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader; sleep 15; done ) > "$out/gpu-during.csv" 2>&1 & monitor=$!
         trap "kill $monitor 2>/dev/null || true" EXIT
         set +e
-        .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" > "$out/stdout-stderr.log" 2>&1
+        .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/stdout-stderr.log" 2>&1
         rc=$?
         set -e
         printf "%s\n" "$rc" > "$out/exit-status.txt"

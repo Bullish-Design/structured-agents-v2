@@ -169,3 +169,8 @@ matched at 16/32/64/96 tokens. State blobs were 69.1/85.5/118.4/151.2 MB.
 Synchronized cold/cache means were 92.3/832.3, 83.1/1472.7, 113.4/1683.4,
 145.7/1741.6 ms: no observed disk-cache break-even. Enqueue timing is not
 throughput.
+
+Longer 128/192/256-token CUDA evidence also has no crossover (artifact
+`project17-prefix-cache-20260724T191154Z`). A GPU `llama_state_seq_*` probe
+copied/loaded its advertised byte count but diverged after suffix decode;
+per-sequence/partial-prefix restoration is rejected and remains unproven.
