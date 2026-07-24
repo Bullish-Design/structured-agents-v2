@@ -67,11 +67,14 @@ docs' parallel-stack duplication).
   KV break-even, router accuracy. Reuse for every pillar. Parallel fan-out on
   DBOS is future (parked).
 
-### 0.d GATE 1 — sampler double-accept
-- Read the pinned llama.cpp `llama-sampler.cpp`: does `llama_sampler_sample`
-  already call `llama_sampler_accept` on the chain internally?
-- Decide the canonical decode-loop contract (who accepts what, once). Encode as a
-  tested helper. **Blocks Phase 1.**
+### 0.d GATE 1 — sampler double-accept — ✅ RESOLVED (see 07-GATE1-DOUBLE-ACCEPT)
+- Answer: YES, `llama_sampler_sample` accepts the chain internally (pinned
+  `llama.h:1488` documents it). Intern's hot path double-accepts stateful
+  samplers — confirmed bug.
+- Canonical contract chosen: Option B (own the candidate array; apply mask →
+  `llama_sampler_apply` → select → `llama_sampler_accept` once →
+  `matcher.accept_token` once). Never call chain-accept after
+  `llama_sampler_sample`. Encode as a tested helper in Phase 1.
 
 ### 0.e GATE 2 — tokenizer equivalence on Ornith
 - Build `TokenizerInfo.from_huggingface` (needs `transformers` + a tokenizer for

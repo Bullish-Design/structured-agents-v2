@@ -31,13 +31,13 @@ not feasibility.
 
 ## XGRAMMAR doc — sharpest points
 
-- **Likely double-accept bug in the hot path.** The loop edits raw logits, then
-  calls `llama_sampler_sample(chain, ctx, idx)` AND then
-  `llama_sampler_accept(chain, token)`. In current llama.cpp,
-  `llama_sampler_sample` already calls `llama_sampler_accept` on the chain
-  internally. The extra explicit accept double-advances stateful samplers
-  (penalties/repetition). VERIFY against the pinned sampler source; if true,
-  drop the manual chain-accept (keep only `matcher.accept_token`).
+- **Double-accept bug in the hot path — CONFIRMED (Gate 1, 07-doc).** The loop
+  edits raw logits, then calls `llama_sampler_sample(chain, ctx, idx)` AND then
+  `llama_sampler_accept(chain, token)`. The pinned `llama.h:1488` documents
+  `llama_sampler_sample` as already calling `llama_sampler_accept` internally, so
+  the extra explicit accept double-advances stateful samplers
+  (penalties/repetition). Fix: drop the manual chain-accept (keep only
+  `matcher.accept_token`), or use the Option-B owned-candidate-array loop.
 - **The recommended path is worst-suited to the flagship.** Host-logit masking
   forces a device→host sync every token and blocks GPU-resident sampling
   (§12.3). The doc's own §12.4 says the Python-first path degrades exactly under
