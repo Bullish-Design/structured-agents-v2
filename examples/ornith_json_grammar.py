@@ -27,8 +27,11 @@ def main() -> None:
     parser.add_argument("--model", required=True, type=Path)
     parser.add_argument("--tokenizer", default="deepreinforce-ai/Ornith-1.0-9B")
     parser.add_argument("--max-tokens", type=int, default=48)
+    parser.add_argument("--requests", type=int, default=1)
     parser.add_argument("--artifacts", type=Path, default=Path("artifacts/benchmarks"))
     args = parser.parse_args()
+    if args.requests <= 0:
+        raise ValueError("--requests must be positive")
 
     from llama_cpp import Llama
     from transformers import AutoTokenizer
@@ -40,28 +43,34 @@ def main() -> None:
         CapitalAnswer.model_json_schema(),
         vocab_size=llm.n_vocab(),
     )
-    matcher = grammar.new_matcher()
-    benchmark = BenchmarkTimer("ornith-xgrammar-json", metadata={"vocab_size": llm.n_vocab()})
     prompt = "Return only a JSON object naming the capital city and country of France."
-    with OwnedLlamaDecoder(llm) as decoder:
-        text = decoder.generate_text(
-            prompt,
-            max_tokens=args.max_tokens,
-            logits_hook=grammar.logits_hook(matcher, benchmark=benchmark),
-            token_hook=grammar.token_hook(matcher),
-            benchmark=benchmark,
+    prompt_tokens = len(llm.tokenize(prompt.encode(), add_bos=False))
+    for request_index in range(args.requests):
+        # The grammar is shared; its matcher is intentionally fresh per request.
+        matcher = grammar.new_matcher()
+        benchmark = BenchmarkTimer(
+            "ornith-xgrammar-json",
+            metadata={"request_index": request_index, "vocab_size": llm.n_vocab()},
         )
-    with benchmark.measure("validation"):
-        answer = CapitalAnswer.model_validate_json(text)
-    artifact = write_benchmark_record(
-        benchmark.record(
-            prompt_tokens=len(llm.tokenize(prompt.encode(), add_bos=False)),
-            completion_tokens=len(llm.tokenize(text.encode(), add_bos=False)),
-        ),
-        args.artifacts,
-    )
-    print(json.dumps(answer.model_dump(), sort_keys=True))
-    print(artifact)
+        with OwnedLlamaDecoder(llm) as decoder:
+            text = decoder.generate_text(
+                prompt,
+                max_tokens=args.max_tokens,
+                logits_hook=grammar.logits_hook(matcher, benchmark=benchmark),
+                token_hook=grammar.token_hook(matcher),
+                benchmark=benchmark,
+            )
+        with benchmark.measure("validation"):
+            answer = CapitalAnswer.model_validate_json(text)
+        artifact = write_benchmark_record(
+            benchmark.record(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=len(llm.tokenize(text.encode(), add_bos=False)),
+            ),
+            args.artifacts,
+        )
+        print(json.dumps(answer.model_dump(), sort_keys=True))
+        print(artifact)
 
 
 if __name__ == "__main__":

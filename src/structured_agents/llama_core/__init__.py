@@ -7,6 +7,7 @@ from .fingerprint import (
     file_identity,
     register_artifact,
 )
+from .grammar import GrammarCacheKey, GrammarCompilerCache, JsonSchemaGrammar
 from .models import BenchmarkRecord, EngineConfig, GenerationRequest, GenerationResult
 
 __all__ = [
@@ -15,6 +16,9 @@ __all__ = [
     "EngineConfig",
     "GenerationRequest",
     "GenerationResult",
+    "GrammarCacheKey",
+    "GrammarCompilerCache",
+    "JsonSchemaGrammar",
     "LlamaEngineFingerprint",
     "RuntimeDiagnostics",
     "collect_runtime_diagnostics",

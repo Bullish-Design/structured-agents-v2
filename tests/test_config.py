@@ -97,4 +97,8 @@ def test_only_config_imports_importlib_in_package_source() -> None:
             if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("importlib"):
                 importlib_users.append(path)
 
-    assert importlib_users == [package / "config.py", package / "llama_core" / "diagnostics.py"]
+    assert importlib_users == [
+        package / "config.py",
+        package / "llama_core" / "diagnostics.py",
+        package / "llama_core" / "grammar.py",
+    ]

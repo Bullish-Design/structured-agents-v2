@@ -102,3 +102,14 @@ completion (4.38 decode tok/s). The constrained run measured 0.55 ms total
 mask creation and 15.49 ms mask application, or roughly 1.78 ms/token. The
 different output lengths and CPU-only setting mean this is a teaching smoke,
 not a controlled performance comparison.
+
+## Compiler-cache multi-request smoke — 2026-07-24
+
+`GrammarCompilerCache` now keys compiler reuse by the full engine fingerprint
+and compiled grammar reuse by the canonical JSON schema, strictness, and
+xgrammar version. It intentionally never shares a matcher. Two sequential CPU
+Ornith requests with one compiled grammar and fresh matchers each wrote a
+validated 9-token JSON record; their decode rates were 4.68 and 4.61 tok/s.
+An exploratory third request exited without a Python traceback or artifact, so
+this report only claims two-request evidence. Reproduce and classify that
+repeat-run boundary before using a long-lived worker as a benchmark baseline.

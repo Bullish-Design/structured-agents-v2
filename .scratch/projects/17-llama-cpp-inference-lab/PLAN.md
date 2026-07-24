@@ -118,6 +118,13 @@ version tuple + bench skeleton runnable.
   comparison recorded ~4.44 tok/s unconstrained (48 tokens) and ~4.38 tok/s
   constrained (9-token JSON); mask construction plus application was ~1.78
   ms/token. These are smoke measurements, not a controlled throughput claim.
+- Added an explicit in-process grammar cache keyed by engine fingerprint,
+  canonical schema, strict-mode choice, and xgrammar version. It caches only
+  compatible compilers/compiled grammars; every request still obtains a fresh
+  matcher. Two sequential CPU Ornith requests using one compiled grammar both
+  produced valid JSON records. A third exploratory request did not emit a
+  record or traceback, so repeated-run reliability beyond two requests remains
+  a small follow-up investigation before the cache pillar.
 
 ---
 
