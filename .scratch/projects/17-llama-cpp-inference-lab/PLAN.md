@@ -179,7 +179,21 @@ upstream llama.cpp KV-block API, multi-tenant security, compression. Each has a
 revival trigger recorded.
 
 ## Open decisions to revisit
-- Cache-pillar base model — decided by GATE 3.
+- Cache-pillar base model — RESOLVED by GATE 3 (Ornith OK).
 - Whether to shed `transformers`/HF-tokenizer dep via the GGUF-derived path —
-  after GATE 2 proves correctness.
+  after GATE 2 proves correctness (GATE 2 passed via HF path).
 - When to trigger the native sampler — Phase 3 profiling.
+
+## xgrammar / torch finding (2026-07-24)
+- **xgrammar HARD-requires torch to install** — its `requires_dist` lists
+  `torch>=1.10.0` (mandatory, not an extra), plus `apache-tvm-ffi`, `triton`
+  (Linux x86_64), `transformers<5,>=4.38.0`, numpy, pydantic. So Phase 1 pulls
+  torch. It stays OFF the hot path (numpy mask backend per standing rules) — torch
+  is installed-but-idle.
+- **Version conflict to handle:** xgrammar pins `transformers<5`; we installed
+  transformers 5.14.1 for Gate 2. Installing xgrammar will downgrade transformers.
+  Gate 2 tokenization is version-insensitive here, but pin deliberately.
+- **Torch-free escape hatch (future):** build a cffi binding to xgrammar's C++
+  core (matcher.h/compiler.h) the same way as the llama binding — drops the torch
+  wheel entirely and aligns with the "own the substrate" thesis. Park until/unless
+  the torch footprint becomes a real problem.
