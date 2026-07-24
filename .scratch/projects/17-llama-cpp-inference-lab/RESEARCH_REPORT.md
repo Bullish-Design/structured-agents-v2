@@ -214,3 +214,35 @@ but the same approximately-28-second command-runner limit stopped it while
 entering `tests/test_agent.py`; it produced no failure result and must be
 rerun in the host facility. This does not weaken the completed focused suite,
 but it is not evidence of a full-suite pass.
+
+## Recovered host soak result — 2026-07-24
+
+The apparent command-runner termination was a control-plane observation error:
+the command interface lost its process handle, but the child Python processes
+continued on the host. A detached Zellij session (`project17-soak-20260724t1035z`)
+was then used to capture the authoritative completed run at
+`artifacts/project17-grammar-soak-20260724T1035Z/`.
+
+The process exited 0 and wrote `summary.json` plus 20 request records (ten
+constrained and ten unconstrained baseline). The constrained batch is the
+repeat-run result: **10/10 valid, 0 invalid, 0 cutoff**, all nine-token,
+clean-stop Pydantic-valid `{"city":"Paris","country":"France"}` results;
+140 prompt and 90 completion tokens total. The grammar mask cost was 167.74 ms
+total, 1.864 ms/completion token, with p50/p95 per-request mask work of
+16.586/19.139 ms. Mask application alone was 161.763 ms total and mask creation
+was 5.978 ms total.
+
+The optional baseline emitted 16 tokens on each request and therefore reached
+the configured `max_tokens=16` cutoff 10/10. Its decode comparison reports
+557.28 ms/token unconstrained versus 1,037.12 ms/token constrained (+86.10%).
+Do not interpret that delta as a controlled throughput result: another local
+CPU workload was active and three stale agent-launched soaks were found
+concurrently consuming CPU before they were stopped. The direct per-token mask
+measure is the usable local overhead result; the baseline comparison should be
+rerun on an idle host before making a performance claim.
+
+Earlier recovered artifact directories are partial runs, not additional soak
+passes: `...T1010Z` contains valid constrained request indices 0--8 (nine
+records), `...T1015Z` indices 0--3 (four), and `...T1025Z` indices 0--2
+(three). They confirm that the command wrapper did not terminate Python, but
+their overlap and resource contention make them non-authoritative.

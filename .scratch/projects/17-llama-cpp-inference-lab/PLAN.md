@@ -144,6 +144,18 @@ version tuple + bench skeleton runnable.
   facility that permits roughly two minutes of CPU time before declaring the
   Phase-1 exit complete. No prefix-KV or multi-LoRA scope was started.
 
+### 2026-07-24 recovered host evidence
+- The command UI lost its process handle rather than terminating its Python
+  child. A detached Zellij run subsequently completed: ten constrained fresh-
+  matcher requests, all clean-stop and Pydantic-valid (10/10, zero invalid or
+  cutoff), with one compiled grammar. This proves the requested bounded
+  repeat-run safety smoke.
+- Direct local mask cost in that run was 1.864 ms/completion token (p50/p95
+  request mask work 16.586/19.139 ms). The equal-size CPU baseline's +86.10%
+  decode delta is not a controlled claim: other CPU work and stale concurrent
+  soak processes contaminated the machine. Re-run the comparison idle before
+  publishing throughput overhead. No prefix-KV or multi-LoRA scope was started.
+
 ---
 
 ## Phase 1 — Grammar pillar (own the decode loop)
