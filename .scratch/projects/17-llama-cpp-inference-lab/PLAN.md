@@ -126,6 +126,24 @@ version tuple + bench skeleton runnable.
   record or traceback, so repeated-run reliability beyond two requests remains
   a small follow-up investigation before the cache pillar.
 
+### 2026-07-24 Phase-1 soak progress
+- Added `examples/soak_grammar.py`: compile once, fresh matcher per request,
+  fail-closed finish/validation/rejection accounting, one benchmark artifact
+  per request, and a JSON aggregate with phase percentiles and direct mask
+  overhead. It defaults to locally cached tokenizer snapshots and writes only
+  to ignored `artifacts/project17-*` locations.
+- Added CPU-free aggregation/failure-accounting tests. Focused pytest and ruff
+  checks pass; the relevant llama-core suite is 13 passed in 21.39s. The
+  complete repository pytest run is still host-time limited after collection,
+  so it is not claimed as passed.
+- A 10-request CPU Ornith invocation was bounded by the command runner after
+  approximately 28 seconds, leaving two complete valid fresh-matcher records
+  but no aggregate summary. The two-record partial measured 1.82 ms mask work
+  per completion token (0.63% of decode time). This is useful local overhead
+  evidence, but **not** a repeat-run-safe proof; run the same CLI in a host
+  facility that permits roughly two minutes of CPU time before declaring the
+  Phase-1 exit complete. No prefix-KV or multi-LoRA scope was started.
+
 ---
 
 ## Phase 1 — Grammar pillar (own the decode loop)
