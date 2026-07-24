@@ -1,13 +1,13 @@
 # Build-speed optimization (llama.cpp CUDA builds)
 
 Measured env (2026-07-24): **8 cores, 62 GB RAM (48 free), NVMe btrfs /home
-(297 GB free), /tmp on the same NVMe btrfs (not tmpfs).** ccache NOT installed;
-ninja present in nix store; build uses Make + `-j$(nproc)`=`-j8`.
+(297 GB free), /tmp on the same NVMe btrfs (not tmpfs).** ccache and Ninja are
+now provided by the project CUDA shell; the build uses Ninja with `-j8`.
 
 The long pole is **nvcc compiling the CUDA kernels** (`fattn.cu`, `ggml-cuda.cu`,
 mmq, template explosion). Levers, most impactful first.
 
-## 1. ccache — THE big win (missing today)
+## 1. ccache — THE big win
 nvcc object compiles are cacheable. llama.cpp's CMake has `GGML_CCACHE=ON` by
 default and auto-wires ccache as the compiler launcher (C/C++/CUDA) when it finds
 ccache on PATH. `build-llamacpp.sh` does `rm -rf` the build dir each run, so a
@@ -16,23 +16,20 @@ wipe and serve near-instantly across ref/flag-sweep rebuilds.
 
 Done already: created `/home/andrew/.cache/llamacpp-ccache`.
 
-To activate (apply after the in-flight build/agent finishes — see "coordination"):
-- Add `ccache` to the CUDA nix-shell (`cuda-shell.nix` buildInputs).
-- Export in the build shell:
+Activated in `cuda-shell.nix`; the build shell exports a persistent default. To
+override it:
   ```
   export CCACHE_DIR=/home/andrew/.cache/llamacpp-ccache
   export CCACHE_MAXSIZE=25G
   ```
 - Nothing else needed — GGML_CCACHE default ON picks ccache up. (Belt-and-braces:
   pass `-DGGML_CCACHE=ON`.)
-Expected: first build cold (no change); subsequent builds of the same/nearby ref
-or a different flag profile drop from ~tens-of-minutes to a few minutes for the
-unchanged CUDA TUs. Verify with `ccache -s` (hit rate).
+The first post-change build was cold; the second clean build recorded 334 direct
+hits out of 668 cacheable calls (50% overall). Verify future runs with
+`ccache -s`.
 
-## 2. Ninja generator (present in nix store)
-Make is a weaker scheduler than Ninja for large parallel graphs. Switch:
-- `cmake -S "$src" -B "$build" -G Ninja "${flags[@]}"`
-- Add `ninja` to the nix-shell buildInputs.
+## 2. Ninja generator
+Ninja is now enabled in `build-llamacpp.sh` and provided by `cuda-shell.nix`.
 Faster dependency scheduling + much faster null/incremental builds. Modest but
 free.
 
@@ -65,8 +62,6 @@ is not the constraint here.
 Add **ccache (persistent dir)** + **Ninja** to the CUDA build shell. Those two are
 the whole game for our rebuild-often workflow; everything else is already right.
 
-## Coordination note
-Do NOT edit `cuda-shell.nix` / `build-llamacpp.sh` while the CUDA agent is live —
-it re-enters `cuda-shell.nix` for the GPU smoke test. Apply §1–2 after the agent
-completes and its work is committed, then trigger one rebuild to warm the cache
-and confirm `ccache -s` hits on a second build.
+## Verification note
+The rebuild and GPU smoke evidence are recorded in `10-CUDA-BUILD-FINDINGS.md`
+and the dated local artifacts under `artifacts/20260724-postfix/`.

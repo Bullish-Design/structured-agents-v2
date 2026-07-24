@@ -3,9 +3,8 @@
 # that llama-cpp-python can load via LLAMA_CPP_LIB_PATH (Mode B) or that a
 # source rebuild of llama-cpp-python can bundle (Mode A).
 #
-# SCAFFOLD — not yet validated end-to-end on this host (no nvcc on the host;
-# CUDA toolchain must come via devenv/nix). Run inside `devenv shell` so gcc,
-# cmake, and the CUDA toolkit are present. See 06-LLAMACPP-BUILD-WORKFLOW.md.
+# Run inside `devenv shell` or the project CUDA nix-shell so gcc, cmake, and
+# the CUDA toolkit are present. See 06-LLAMACPP-BUILD-WORKFLOW.md.
 #
 # Usage:
 #   build-llamacpp.sh --ref <git-ref|local:PATH> --profile <cpu-light|cuda-3060> [--out DIR]
@@ -50,12 +49,14 @@ fi
 
 # --- flag profiles (workflow doc §3) -----------------------------------------
 common=(
-  -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_BUILD_TYPE=Release
+    -G Ninja
   -DBUILD_SHARED_LIBS=ON
   -DLLAMA_BUILD_TESTS=OFF
   -DLLAMA_BUILD_EXAMPLES=OFF
   -DLLAMA_BUILD_SERVER=OFF
-  -DGGML_NATIVE=ON
+    -DGGML_NATIVE=ON
+    -DGGML_CCACHE=ON
 )
 case "$PROFILE" in
   cpu-light)
@@ -76,12 +77,22 @@ echo ">> building llama.cpp ref=${built_ref} profile=${PROFILE}"
 echo ">> flags: ${flags[*]}"
 
 cmake -S "$src" -B "$build" "${flags[@]}"
-cmake --build "$build" --config Release -j"$(nproc)"
+# Build the shared llama library target only. The default `all` target also
+# builds the `app/llama` executable; with LLAMA_BUILD_SERVER=OFF that executable
+# can still reference the disabled llama-server-impl/llama-cli-impl targets and
+# fail after all required libraries have already built.
+cmake --build "$build" --target llama --config Release -j"$(nproc)"
 
 # --- collect the shared-lib set ----------------------------------------------
 # llama-cpp-python loads libllama + libggml{,-base,-cpu} (+ libmtmd if present).
 find "$build" -name 'libllama.so*' -o -name 'libggml*.so*' -o -name 'libmtmd.so*' \
   | while read -r f; do cp -av "$f" "${OUT}/lib/"; done
+
+# Keep the matching public headers beside the library set so cffi API-mode
+# bindgen can compile against exactly the source that produced these .so files.
+mkdir -p "${OUT}/include"
+cp -a "${src}/include/." "${OUT}/include/"
+cp -a "${src}/ggml/include/." "${OUT}/include/"
 
 # --- build manifest ----------------------------------------------------------
 ggml_ver="$(basename "$(ls "${OUT}"/lib/libggml.so.* 2>/dev/null | head -1 || echo unknown)")"
@@ -97,5 +108,5 @@ cat > "${OUT}/build-manifest.json" <<JSON
 JSON
 
 echo ">> done. lib set in ${OUT}/lib"
-echo ">> Mode B:  export LLAMA_CPP_LIB_PATH=${OUT}"
+echo ">> Mode B:  export LLAMA_CPP_LIB_PATH=${OUT}/lib"
 echo ">> Next:    run the ABI smoke gate (workflow doc §5) before trusting this build."

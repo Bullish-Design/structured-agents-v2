@@ -9,3 +9,5 @@ _llama_cffi*
 *.o
 version-tuple.json
 canary-tuple.json
+.cuda_runtime_ld
+artifacts/
