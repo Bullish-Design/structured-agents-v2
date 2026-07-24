@@ -237,3 +237,6 @@ deploy/vllm/docker-compose.override.yml
 /result
 /result-*
 .scratch/vendor/
+# Project 17 runtime evidence is local and may contain model/runtime details.
+artifacts/project17-*/
+artifacts/benchmarks/

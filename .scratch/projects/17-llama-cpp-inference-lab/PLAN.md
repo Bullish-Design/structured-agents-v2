@@ -99,6 +99,19 @@ docs' parallel-stack duplication).
 **Phase 0 exit:** three gates resolved with evidence; shared fingerprint +
 version tuple + bench skeleton runnable.
 
+### 2026-07-24 implementation progress
+- Added the in-place `structured_agents.llama_core` shared package: frozen
+  engine fingerprints with registration-time hashing/stat validation, boundary
+  Pydantic models, best-effort runtime/build diagnostics, and local JSON
+  benchmark records with nanosecond phase timings.
+- Added a real low-level owned llama.cpp decode baseline.  It uses
+  `llama_decode`, zero-copy logits, `llama_sampler_apply`, and exactly one
+  explicit sampler accept.  CPU Ornith smoke generated a coherent Paris answer.
+- Resolved the xgrammar API boundary in `12-XGRAMMAR-API-FINDINGS.md`: pin
+  `xgrammar==0.2.1` plus `transformers>=4.38,<5`; fill masks through NumPy
+  DLPack and apply packed masks ourselves because xgrammar's public apply
+  helper is torch-only.  Full logits width remains mandatory.
+
 ---
 
 ## Phase 1 — Grammar pillar (own the decode loop)
