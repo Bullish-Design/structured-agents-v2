@@ -1,21 +1,14 @@
-"""Contract checks for the optional XGrammar integration surface.
-
-These tests deliberately need neither an Ornith GGUF nor a Hugging Face download.
-They are skipped in the base development environment, where grammar support is an
-optional dependency.
-"""
+"""Contract checks for the required XGrammar integration surface."""
 
 from __future__ import annotations
 
 import inspect
 
-import pytest
-
 
 def test_xgrammar_compiler_matcher_and_numpy_bitmask_contract() -> None:
     """Keep the Phase-1 construction path honest across XGrammar upgrades."""
-    xgr = pytest.importorskip("xgrammar")
-    numpy = pytest.importorskip("numpy")
+    import numpy
+    import xgrammar as xgr
 
     assert "vocab_size" in inspect.signature(xgr.TokenizerInfo.from_huggingface).parameters
     assert "strict_mode" in inspect.signature(xgr.GrammarCompiler.compile_json_schema).parameters

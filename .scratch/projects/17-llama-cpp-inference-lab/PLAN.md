@@ -110,7 +110,8 @@ version tuple + bench skeleton runnable.
 - Resolved the xgrammar API boundary in `12-XGRAMMAR-API-FINDINGS.md`: pin
   `xgrammar==0.2.1` plus `transformers>=4.38,<5`; fill masks through NumPy
   DLPack and apply packed masks ourselves because xgrammar's public apply
-  helper is torch-only.  Full logits width remains mandatory.
+  helper is torch-only.  xgrammar is a required runtime dependency, and full
+  logits width remains mandatory.
 
 ---
 

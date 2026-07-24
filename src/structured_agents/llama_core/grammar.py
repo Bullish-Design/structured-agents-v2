@@ -45,10 +45,8 @@ class JsonSchemaGrammar:
         vocab_size: int,
     ) -> JsonSchemaGrammar:
         """Compile strict JSON Schema with the true llama.cpp vocabulary width."""
-        try:
-            import xgrammar as xgr
-        except ImportError as exc:
-            raise RuntimeError("Install structured-agents[grammar-check] for XGrammar support") from exc
+        import xgrammar as xgr
+
         tokenizer_info = xgr.TokenizerInfo.from_huggingface(tokenizer, vocab_size=vocab_size)
         compiler = xgr.GrammarCompiler(tokenizer_info, cache_enabled=True)
         return cls(compiler, compiler.compile_json_schema(schema, strict_mode=True), vocab_size=vocab_size)

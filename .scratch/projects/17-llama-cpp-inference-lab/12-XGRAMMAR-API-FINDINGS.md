@@ -8,7 +8,7 @@ tokenizer methods used below are compatible.  Do not float this dependency:
 the xgrammar API and compiled-grammar serialization are versioned integration
 boundaries.
 
-Recommended resolution tuple for the grammar extra:
+Required runtime resolution tuple:
 
 ```text
 xgrammar==0.2.1
@@ -74,8 +74,8 @@ padded logit IDs that must remain masked.
 
 ## Validation added
 
-`tests/test_xgrammar_api_contract.py` is model/download-free and gracefully
-skips when the optional xgrammar package is absent.  When installed, it checks
+`tests/test_xgrammar_api_contract.py` is model/download-free.  Because xgrammar
+is a hard runtime dependency, absence is a test/setup failure.  It checks
 the `TokenizerInfo.from_huggingface(..., vocab_size=...)` / compiler / matcher
 surface and exercises a compiler → matcher → NumPy bitmask fill on a toy
 padded vocabulary.  It is deliberately a dependency/API contract test; the
@@ -83,9 +83,6 @@ Ornith tokenizer-equivalence gate and GPU JSON smoke remain integration tests.
 
 ## Current blocker
 
-No xgrammar, torch, transformers, numpy, or llama-cpp-python distribution is
-installed in the active base interpreter, so no executable local xgrammar
-smoke was possible without changing dependencies (outside this workstream).
-The test is ready to become active once the project-level grammar environment
-is resolved.  Re-run Gate 2 after resolving that tuple, then run the owned-loop
-Ornith smoke with the NumPy mask adapter.
+The project environment must install this tuple before any test or application
+run.  Re-run Gate 2 after resolution, then run the owned-loop Ornith smoke with
+the NumPy mask adapter.
