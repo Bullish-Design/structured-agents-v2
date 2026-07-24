@@ -46,7 +46,10 @@ def test_aggregate_outcomes_counts_failures_cutoffs_and_tokens() -> None:
     assert summary["valid_count"] == 1
     assert summary["invalid_count"] == 2
     assert summary["cutoff_count"] == 1
+    assert summary["hard_failure_count"] == 2
     assert summary["failure_count"] == 3
+    assert summary["performance_result"] == "completed"
+    assert summary["structured_correctness_result"] == "incomplete"
     assert summary["status_counts"] == {"valid": 1, "malformed": 1, "rejected": 1, "cutoff": 1}
     assert summary["token_counts"] == {"prompt": 20, "completion": 12, "total": 32}
     assert summary["phase_timings_ns"]["generation_wall"]["total_ns"] == 100.0

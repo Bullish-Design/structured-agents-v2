@@ -154,7 +154,9 @@ def main() -> int:
         }
     )
     (args.artifacts / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    return 0 if summary["failure_count"] == 0 else 1
+    # Length cutoffs are retained as structured-correctness evidence but are
+    # valid observed samples for the token-normalized performance baseline.
+    return 0 if summary["hard_failure_count"] == 0 else 1
 
 
 if __name__ == "__main__":

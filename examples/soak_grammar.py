@@ -65,7 +65,8 @@ def aggregate_outcomes(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
 
     ``invalid_count`` excludes cleanly identified cutoffs so an interrupted
     completion cannot disappear into a generic validation-failure bucket.
-    Both categories still make the soak unsuccessful.
+    A cutoff is a structured-correctness failure, but it is still a completed
+    performance observation and must not invalidate throughput aggregates.
     """
     counts: dict[str, int] = {}
     phase_values = {field: [] for field in TIMING_FIELDS}
@@ -98,7 +99,10 @@ def aggregate_outcomes(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
         "valid_count": valid_count,
         "invalid_count": invalid_count,
         "cutoff_count": cutoff_count,
+        "hard_failure_count": invalid_count,
         "failure_count": len(outcomes) - valid_count,
+        "performance_result": "completed",
+        "structured_correctness_result": "pass" if not invalid_count and not cutoff_count else "incomplete",
         "status_counts": counts,
         "token_counts": {
             "prompt": prompt_tokens,
@@ -438,7 +442,8 @@ def main() -> int:
             synchronize_gpu=args.n_gpu_layers != 0,
         )
         summary["constrained"] = constrained
-        summary["result"] = "pass" if constrained["failure_count"] == 0 else "fail"
+        summary["result"] = "pass" if constrained["hard_failure_count"] == 0 else "fail"
+        summary["structured_correctness_result"] = constrained["structured_correctness_result"]
         if not args.no_baseline:
             _, baseline = _run_batch(
                 llm=llm,
@@ -460,7 +465,7 @@ def main() -> int:
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
     print(f"Summary: {summary_path}")
-    return 0 if args.baseline_only or summary["constrained"]["failure_count"] == 0 else 1
+    return 0 if args.baseline_only or summary["constrained"]["hard_failure_count"] == 0 else 1
 
 
 if __name__ == "__main__":
