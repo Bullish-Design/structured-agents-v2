@@ -260,3 +260,17 @@ Accordingly, the historical CPU rates and the recovered CPU baseline above are
 provenance, not actionable performance data. GPU artifact manifests must record
 `LLAMA_CPP_LIB_PATH`, CUDA runtime/driver library paths, GPU identity, driver
 version, and `n_gpu_layers`.
+
+## Persistent prefix-cache CUDA result — 2026-07-24
+
+`artifacts/project17-prefix-cache-20260724T175312Z/` exited 0 with the pinned
+postfix2 CUDA build, CUDA_VISIBLE_DEVICES=0, n_ctx=512, n_gpu_layers=-1, and
+GPU1 at 9 MiB. It proves persistent blob/index → fresh context → load → suffix
+decode → matching continuation at 16/32/64/96 exact tokens. State blobs were
+69.1/85.5/118.4/151.2 MB. Synchronized cold/cache means: 92.3/832.3,
+83.1/1472.7, 113.4/1683.4, 145.7/1741.6 ms; p50/p95 cache ms:
+831.9/837.7, 1451.0/1707.3, 1853.4/1862.6, 1639.5/2158.6. Cache completion
+rates were 1.201/.679/.594/.574 tok/s. No measured break-even: disk read plus
+whole-state restore dominates. Async llama_decode enqueue timing is not
+throughput. Unit tests cover incompatible fingerprint/token, corruption, atomic
+publication, hit/miss, and the required restore-before-suffix lifecycle.

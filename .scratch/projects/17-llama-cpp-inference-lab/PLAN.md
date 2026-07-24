@@ -211,6 +211,14 @@ persistent exact-prefix KV snapshot cache. Base model per GATE 3.
 **Exit:** survives process restart with correct continuation; rejects
 incompatible states; no cross-sequence leakage; reproducible break-even data.
 
+### 2026-07-24 Phase 2 MVP evidence
+- Exact whole-state SQLite/blob cache, atomic checksummed publication and manual
+  retention implemented. Restore explicitly loads then decodes a nonempty suffix.
+- `artifacts/project17-prefix-cache-20260724T175312Z/` exited 0. Fresh-context
+  continuations match at 16/32/64/96 tokens; GPU0 was ~5.46 GiB per context and
+  GPU1 9 MiB. Whole-state disk cache lost at every point; timings synchronize
+  CUDA and do not treat async enqueue timing as throughput.
+
 ---
 
 ## Phase 3 — Multi-LoRA agent-router flagship

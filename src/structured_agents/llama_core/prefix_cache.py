@@ -307,28 +307,42 @@ class PersistentPrefixCache:
             temporary.unlink(missing_ok=True)
 
     def lookup(self, key: PrefixCacheKey) -> CacheLookup:
+        entry, reason = self.lookup_entry(key)
+        if entry is None:
+            return CacheLookup(None, None, False, reason)
+        return self.read_entry(entry)
+
+    def lookup_entry(self, key: PrefixCacheKey) -> tuple[PrefixCacheEntry | None, str]:
+        """Return compatible metadata only; caller may time disk read separately."""
         try:
             with self._connect() as db:
                 row = db.execute(
                     "SELECT * FROM prefix_cache_entries WHERE storage_key = ?", (key.storage_key,)
                 ).fetchone()
                 if row is None:
-                    return CacheLookup(None, None, False, "miss_not_found")
+                    return None, "miss_not_found"
                 entry = self._entry(row)
                 compatible = check_compatibility(entry, key)
                 if not compatible.accepted:
-                    return CacheLookup(entry, None, False, str(compatible.reason))
-                state = (self.root / str(entry.state_blob_path)).read_bytes()
-                integrity = check_state_integrity(entry, state)
-                if not integrity.accepted:
-                    return CacheLookup(entry, None, False, str(integrity.reason))
+                    return None, str(compatible.reason)
                 now = time_ns()
                 db.execute(
                     "UPDATE prefix_cache_entries SET accessed_at_ns = ? WHERE storage_key = ?", (now, key.storage_key)
                 )
-                return CacheLookup(entry, state, True, "hit")
+                return entry, "hit"
         except (OSError, sqlite3.Error, ValueError, json.JSONDecodeError) as exc:
-            return CacheLookup(None, None, False, f"miss_storage_error:{type(exc).__name__}")
+            return None, f"miss_storage_error:{type(exc).__name__}"
+
+    def read_entry(self, entry: PrefixCacheEntry) -> CacheLookup:
+        """Read and checksum a previously accepted entry without raising."""
+        try:
+            state = (self.root / str(entry.state_blob_path)).read_bytes()
+            integrity = check_state_integrity(entry, state)
+            if not integrity.accepted:
+                return CacheLookup(entry, None, False, str(integrity.reason))
+            return CacheLookup(entry, state, True, "hit")
+        except OSError as exc:
+            return CacheLookup(entry, None, False, f"miss_storage_error:{type(exc).__name__}")
 
 
 def restore_then_decode_suffix(

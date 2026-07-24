@@ -158,3 +158,14 @@ Run only after correctness and durable restart pass.
   local process and safely degrade to cache misses.
 - A reproducible benchmark record states whether this cache breaks even on the
   target CUDA configuration.
+
+## 2026-07-24 Phase 2 MVP evidence
+
+Implemented `PersistentPrefixCache`: exact checkpoint-boundary SQLite metadata
+plus atomic, fsynced blobs; manual retention. CUDA artifact
+`artifacts/project17-prefix-cache-20260724T175312Z/` exited 0 on GPU 0 with
+GPU 1 at 9 MiB. Fresh-context save → blob → load → suffix decode continuations
+matched at 16/32/64/96 tokens. State blobs were 69.1/85.5/118.4/151.2 MB.
+Synchronized cold/cache means were 92.3/832.3, 83.1/1472.7, 113.4/1683.4,
+145.7/1741.6 ms: no observed disk-cache break-even. Enqueue timing is not
+throughput.
