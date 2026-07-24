@@ -632,3 +632,70 @@ rule: **matching `n_seq_max`**, which fails safe on mismatch. Restore is cheaper
 than whole-state. The remaining gate before production use is a same-context
 break-even measurement and a larger-scale batched-decode check; per-seq LoRA
 remains a distinct, separately-tracked risk.
+
+## Per-sequence reuse — in-context break-even + batched throughput — 2026-07-24
+
+Closes the first two open items above. Runner:
+`benchmarks/project17/run_seq_batch_breakeven.py`. Artifact:
+`artifacts/project17-seq-batch-20260724T202826Z/` (exit 0; GPU 0 active, peak
+6587 MiB / 97%; GPU 1 idle 9 MiB throughout). `n_ctx=2048`, `n_batch=128`,
+CUDA-synchronized, 5 reps.
+
+### 1. Cold-vs-restore break-even inside one multi-sequence context
+
+Same `n_seq_max=2` context and same seq slot for both paths, same fresh-logit
+lifecycle: **cold** = decode K-token prefix + 1 suffix token; **restore** =
+`llama_state_seq_set_data` the matched blob + decode 1 suffix token. Continuation
+matched (cold == restore) at every K — fail-closed. Means (ms):
+
+| K | cold | restore | delta (cold−restore) | restore wins |
+| ---: | ---: | ---: | ---: | :--: |
+| 16 | 53.4 | 130.2 | −76.8 | no |
+| 32 | 45.2 | 127.5 | −82.2 | no |
+| 64 | 63.4 | 128.8 | −65.3 | no |
+| 96 | 80.2 | 130.3 | −50.1 | no |
+| 128 | 110.0 | 133.4 | −23.4 | no |
+| 192 | 151.9 | 139.1 | **+12.8** | **yes** |
+| 256 | 198.8 | 143.1 | **+55.7** | **yes** |
+
+**Per-sequence reuse breaks even at ≈192 tokens (crossover ~170).** Restore is
+nearly flat (~127→143 ms; `set_data` of one sequence's ~54–61 MB state plus a
+~15 ms suffix decode), while cold prefill grows ~0.8 ms/token. This is a genuine
+positive result — unlike the whole-state *disk* cache, per-sequence *in-context*
+reuse pays off for shared prefixes ≳192 tokens, and does so earlier than the
+whole-state in-memory codec (~256). It needs no disk and no `LlamaState` score
+buffer.
+
+### 2. n_seq_max scaling to 8/16 and concurrent batched-decode throughput
+
+Aggregate generation throughput when S sequences decode one token each per
+`llama_decode` step (the router's in-flight-batch path), 32 tokens/seq:
+
+| S (sequences) | aggregate tok/s | per-seq tok/s | step latency | matched-nsm load |
+| ---: | ---: | ---: | ---: | :--: |
+| 1 | 48.1 | 48.1 | 20.8 ms | — |
+| 2 | 75.7 | 37.9 | 26.4 ms | — |
+| 4 | 93.7 | 23.4 | 42.7 ms | — |
+| 8 | 106.1 | 13.3 | 75.4 ms | ok |
+| 16 | 194.8 | 12.2 | 82.1 ms | ok |
+
+**Batching wins: ~4.05× aggregate throughput at S=16 vs S=1**, with per-sequence
+latency degrading as expected (shared compute). Notably the step latency is
+nearly flat from S=8 (75.4 ms) to S=16 (82.1 ms) — decode is **weight-memory-
+bandwidth bound**, so doubling the batch barely raises step time and throughput
+nearly doubles there. This is the quantitative basis for the router pillar's
+"massively parallel batched generation" claim on a single 3060. The matched-
+`n_seq_max` portability rule **still holds at n_seq_max = 8 and 16**
+(`diagonal_set_ok = true`), so cached per-sequence prefixes remain restorable in
+the larger batch contexts a router would use.
+
+### Updated status
+
+Both first-tier open items are resolved: per-sequence reuse **breaks even at
+≈192 tokens in-context** (a real speedup, no disk), and **batched decode scales
+~4× to 16 sequences** with the portability rule intact. Remaining per-sequence
+unknowns are now second-tier: per-sequence LoRA-in-one-batch (separate known-hard
+risk), correctness near per-seq cell capacity, and isolation beyond two live
+sequences. The teaching MVP recommendation stands: whole-state persistent disk
+cache is correct-but-negative; the promising path is in-context per-sequence KV
+reuse (≳192-token shared prefixes) inside a batched multi-sequence router.
