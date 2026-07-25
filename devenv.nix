@@ -119,6 +119,42 @@
     printf 'Project 17 prefix-cache run: zellij attach %s\nArtifacts: %s\n' "$session" "$out"
   '';
 
+  # Foreground entrypoint for the GPU-gated pytest suite (context-tree +
+  # prefix-cache live).  Exports the proven CUDA/llama.cpp runtime env so the
+  # skipif gates (LLAMA_CPP_LIB_PATH / CUDA_VISIBLE_DEVICES / model) pass, then
+  # runs pytest under the spike venv -- the interpreter that carries the
+  # llama-cpp-python bindings matched to the prebuilt out-cuda-3060 libllama.so
+  # (the devenv venv has no llama_cpp).  Extra args pass through to pytest, e.g.
+  #   project17-gpu-pytest -k reconstruct
+  # Overridable: PROJECT17_MODEL, PROJECT17_CUDA_DEVICES (default 0),
+  # PROJECT17_SPIKE_PY (spike venv python).
+  scripts.project17-gpu-pytest.exec = ''
+    set -euo pipefail
+    root="$PWD"
+    spike="$root/.scratch/projects/17-llama-cpp-inference-lab"
+    py="''${PROJECT17_SPIKE_PY:-$spike/.venv-spike/bin/python}"
+    model="''${PROJECT17_MODEL:-/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf}"
+    lib="$spike/.llamacpp-builds/out-cuda-3060-postfix2/lib"
+    cuda_ld="$(tr -d '\n' < "$spike/.cuda_runtime_ld")"
+    if [ ! -x "$py" ]; then echo "spike python not found: $py (set PROJECT17_SPIKE_PY)" >&2; exit 2; fi
+    if [ ! -f "$model" ]; then echo "model not found: $model (set PROJECT17_MODEL)" >&2; exit 2; fi
+    if [ ! -d "$lib" ]; then echo "llama.cpp lib dir not found: $lib" >&2; exit 2; fi
+    export CUDA_VISIBLE_DEVICES="''${PROJECT17_CUDA_DEVICES:-0}"
+    export LLAMA_CPP_LIB_PATH="$lib"
+    export LLAMA_TEST_MODEL="$model"
+    # /run/opengl-driver/lib first so the real libcuda wins over any CUDA stub;
+    # cuda_ld carries gcc-lib (libstdc++) + cudart/cublas the bindings dlopen.
+    export LD_LIBRARY_PATH="/run/opengl-driver/lib:$lib:$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    export PYTHONPATH="src''${PYTHONPATH:+:$PYTHONPATH}"
+    printf 'python=%s\nCUDA_VISIBLE_DEVICES=%s\nLLAMA_CPP_LIB_PATH=%s\nLLAMA_TEST_MODEL=%s\n' \
+      "$py" "$CUDA_VISIBLE_DEVICES" "$LLAMA_CPP_LIB_PATH" "$LLAMA_TEST_MODEL"
+    if [ "$#" -gt 0 ]; then
+      exec "$py" -m pytest "$@"
+    fi
+    exec "$py" -m pytest -o addopts='-rs' \
+      tests/test_node_delta.py tests/test_prefix_cache_live.py -k gpu
+  '';
+
   languages.python = {
     enable = true;
     version = "3.13";
