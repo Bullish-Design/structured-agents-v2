@@ -522,6 +522,45 @@ class ContextPoolRouter:
         finally:
             self.C.llama_free(ctx)
 
+    # ---- P2 fork: true mixed-batch multi-LoRA (one context, per-seq adapters) ----
+
+    def enable_seq_routing(self, pool: list[str]) -> None:
+        """Bind the fork's llama_set_seq_adapters/llama_set_seq_adapter and create a
+        single context holding the ordered adapter pool. Requires the P2 fork lib."""
+        import ctypes
+        C = self.C
+        lib = C._lib
+        if not hasattr(lib, "llama_set_seq_adapters"):
+            raise RuntimeError("loaded libllama has no llama_set_seq_adapters — need the P2 fork build")
+        lib.llama_set_seq_adapters.argtypes = [
+            C.llama_context_p_ctypes, ctypes.POINTER(C.llama_adapter_lora_p_ctypes), ctypes.c_size_t]
+        lib.llama_set_seq_adapters.restype = ctypes.c_int32
+        lib.llama_set_seq_adapter.argtypes = [C.llama_context_p_ctypes, ctypes.c_int32, ctypes.c_int32]
+        lib.llama_set_seq_adapter.restype = ctypes.c_int32
+        self._lib = lib
+        self._seq_pool = list(pool)
+        self._seq_ctx = self._make_ctx(self.n_seq_max)
+        arr = (C.llama_adapter_lora_p_ctypes * len(pool))(*[self.adapter_ptr[n] for n in pool])
+        if lib.llama_set_seq_adapters(self._seq_ctx, arr, len(pool)) != 0:
+            raise RuntimeError("llama_set_seq_adapters failed")
+
+    def run_seq_routed(self, requests: list[Request]) -> list[Generation]:
+        """True mixed-batch: one llama_decode step covers all sequences, each using
+        its own adapter (from the registered pool). BASE (None) -> no adapter (-1)."""
+        ctx = self._seq_ctx
+        out: list[Generation] = []
+        for w in range(0, len(requests), self.n_seq_max):
+            wave = requests[w:w + self.n_seq_max]
+            for i, r in enumerate(wave):
+                idx = -1 if r.adapter is BASE else self._seq_pool.index(r.adapter)
+                self._lib.llama_set_seq_adapter(ctx, i, idx)
+            prompts = [self.tokenize(r.prompt) for r in wave]
+            gen = self._generate_wave(ctx, prompts, max(r.max_tokens for r in wave))
+            for i, r in enumerate(wave):
+                out.append(Generation(rid=r.rid, adapter=r.adapter,
+                                      prompt_tokens=prompts[i], tokens=gen[i][:r.max_tokens]))
+        return out
+
     def detokenize(self, tokens: list[int]) -> str:
         return self.llm.detokenize(tokens).decode("utf-8", errors="replace")
 
