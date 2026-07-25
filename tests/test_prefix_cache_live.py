@@ -215,6 +215,53 @@ def test_persistent_cache_backs_the_bridge_round_trip(tmp_path: Path) -> None:
     assert result.restored and result.next_token == cold
 
 
+class _FakeNativeRestore:
+    """Minimal ``llama_cpp`` stand-in exposing only ``llama_state_seq_set_data``.
+
+    Models the multi-slot restore path used by the context-pool router: the same
+    blob is loaded into several seq slots of one context.  ``reject`` forces the
+    ``0`` return (n_seq_max mismatch / incompatible blob) so the fail-closed
+    branch is exercised without a GPU.
+    """
+
+    def __init__(self, reject: bool = False) -> None:
+        self.reject = reject
+        self.loaded: list[tuple[int, bytes]] = []
+
+    def llama_state_seq_set_data(self, ctx: object, array: object, size: int, seq_id: int) -> int:
+        if self.reject:
+            return 0
+        self.loaded.append((seq_id, bytes(array)))
+        return size
+
+
+def test_restore_blob_into_seq_loads_same_blob_into_multiple_slots() -> None:
+    from structured_agents.llama_core.prefix_cache_live import LlamaSeqStateBridge
+
+    native = _FakeNativeRestore()
+    bridge = LlamaSeqStateBridge(n_batch=8, n_vocab=1009, native=native)
+    blob = b"prefix-kv-blob"
+
+    codes = [bridge.restore_blob_into_seq(None, blob, seq_id) for seq_id in range(3)]
+
+    assert codes == [len(blob)] * 3
+    assert [seq for seq, _ in native.loaded] == [0, 1, 2]
+    assert all(loaded == blob for _, loaded in native.loaded)
+
+
+def test_restore_blob_into_seq_fails_closed_on_zero() -> None:
+    from structured_agents.llama_core.prefix_cache_live import (
+        LlamaSeqStateBridge,
+        SeqRestoreRejected,
+    )
+
+    bridge = LlamaSeqStateBridge(n_batch=8, n_vocab=1009, native=_FakeNativeRestore(reject=True))
+
+    with pytest.raises(SeqRestoreRejected) as excinfo:
+        bridge.restore_blob_into_seq(None, b"blob", seq_id=2)
+    assert excinfo.value.seq_id == 2
+
+
 # --------------------------------------------------------------------------- #
 # GPU-gated integration test: the real correctness bar.
 # --------------------------------------------------------------------------- #

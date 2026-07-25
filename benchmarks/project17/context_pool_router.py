@@ -19,12 +19,23 @@ GPU-only usage (see memory `llama-cpp-gpu-driver-stub-fix`):
 
 from __future__ import annotations
 
-import ctypes
+import sys
 import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
+
+# Dogfood the library's live prefix-cache bridge. The benchmark runners put
+# ``src`` on PYTHONPATH; add it here too so this module imports standalone.
+_SRC = Path(__file__).resolve().parents[2] / "src"
+if _SRC.is_dir() and str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from structured_agents.llama_core.prefix_cache_live import (  # noqa: E402
+    LlamaSeqStateBridge,
+)
 
 BASE = None  # sentinel adapter name for "no adapter" (raw base model)
 
@@ -85,6 +96,12 @@ class ContextPoolRouter:
                          n_gpu_layers=-1, seed=seed, verbose=False)
         self.model = self.llm._model.model
         self.n_vocab = self.llm._n_vocab
+        # Library bridge owns the correctness-critical per-seq KV discipline:
+        # ctypes capture (llama_state_seq_get_data), own-batch suffix decode with
+        # explicit positions, greedy last-token read, and the fail-closed
+        # set_data==0 restore reject. The router keeps only its multi-seq batching.
+        self._bridge = LlamaSeqStateBridge(n_batch=n_batch, n_vocab=self.n_vocab,
+                                           native=self.C)
 
         # Load each adapter against the shared model.
         self.adapter_ptr: dict[str, Any] = {}
@@ -132,38 +149,18 @@ class ContextPoolRouter:
 
     def _decode_prefill(self, ctx: Any, tokens: list[int], seq_id: int,
                         start_pos: int = 0) -> int:
-        """Prefill one sequence at [start_pos, ...); return first sampled token."""
-        n = len(tokens)
-        for off in range(0, n, self.n_batch):
-            chunk = tokens[off:off + self.n_batch]
-            m = len(chunk)
-            batch = self.C.llama_batch_init(m, 0, 1)
-            batch.n_tokens = m
-            for i, t in enumerate(chunk):
-                batch.token[i] = t
-                batch.pos[i] = start_pos + off + i
-                batch.n_seq_id[i] = 1
-                batch.seq_id[i][0] = seq_id
-                batch.logits[i] = 0
-            if off + m == n:
-                batch.logits[m - 1] = 1
-            rc = self.C.llama_decode(ctx, batch)
-            self.C.llama_batch_free(batch)
-            if rc != 0:
-                raise RuntimeError(f"prefill llama_decode rc={rc}")
-        ptr = self.C.llama_get_logits_ith(ctx, -1)
-        return int(np.argmax(np.ctypeslib.as_array(ptr, shape=(self.n_vocab,))))
+        """Prefill one sequence at [start_pos, ...); return first sampled token.
+
+        Own-batch decode with explicit positions (logits only on the last token)
+        and the greedy last-token read are delegated to the library bridge — the
+        same primitive that makes a restored prefix's suffix decode land on the
+        cells right after the restored KV.
+        """
+        self._bridge.decode_tokens(ctx, tokens, seq_id, start_pos)
+        return self._bridge.last_token(ctx)
 
     def _get_seq(self, ctx: Any, seq_id: int) -> bytes:
-        size = int(self.C.llama_state_seq_get_size(ctx, seq_id))
-        buf = (ctypes.c_uint8 * size)()
-        copied = int(self.C.llama_state_seq_get_data(ctx, buf, size, seq_id))
-        return bytes(buf[:copied])
-
-    def _set_seq(self, ctx: Any, blob: bytes, seq_id: int) -> int:
-        arr = (ctypes.c_uint8 * len(blob)).from_buffer_copy(blob)
-        # Returns 0 on failure (e.g. n_seq_max mismatch) — fail-closed, detectable.
-        return int(self.C.llama_state_seq_set_data(ctx, arr, len(blob), seq_id))
+        return self._bridge.capture_seq_state(ctx, seq_id)
 
     def _batched_step(self, ctx: Any, cur: list[int], pos: list[int]) -> list[int]:
         """One token for each of len(cur) sequences (seq_id == row index)."""
@@ -239,9 +236,8 @@ class ContextPoolRouter:
         assert s <= self.n_seq_max, f"{s} > n_seq_max {self.n_seq_max}"
         for i in range(s):
             self._seq_rm(ctx, i)
-            if self._set_seq(ctx, cache.blob, i) == 0:
-                raise RuntimeError(f"llama_state_seq_set_data failed for seq {i} "
-                                   f"(n_seq_max mismatch?)")
+            # Fail-closed restore (set_data==0 reject) via the library bridge.
+            self._bridge.restore_blob_into_seq(ctx, cache.blob, i)
         outputs: list[list[int]] = []
         cur: list[int] = []
         pos: list[int] = []
@@ -445,8 +441,8 @@ class ContextPoolRouter:
         matchers = [self._xgr.GrammarMatcher(grammar) for _ in range(s)]
         for i in range(s):
             self._seq_rm(ctx, i)
-            if self._set_seq(ctx, cache.blob, i) == 0:
-                raise RuntimeError(f"llama_state_seq_set_data failed for seq {i}")
+            # Fail-closed restore (set_data==0 reject) via the library bridge.
+            self._bridge.restore_blob_into_seq(ctx, cache.blob, i)
         outputs: list[list[int]] = [[] for _ in range(s)]
         cur: list[int] = [0] * s
         pos: list[int] = [0] * s
