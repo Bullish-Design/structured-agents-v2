@@ -11,6 +11,11 @@ from .fingerprint import (
 from .grammar import GrammarCacheKey, GrammarCompilerCache, JsonSchemaGrammar
 from .models import EngineConfig, GenerationRequest, GenerationResult
 
+# NOTE: the router (``router.py``) and owned decoder (``decode.py``) are heavy,
+# native-backed modules; like ``decode``, ``router`` is imported directly by
+# callers (``from ...llama_core.router import MultiLoRARouter``) so this shared
+# import path stays lightweight (no numpy/llama_cpp import on ``import llama_core``).
+
 __all__ = [
     "ArtifactIdentity",
     "BenchmarkRecord",
