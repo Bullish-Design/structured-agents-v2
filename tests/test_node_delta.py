@@ -11,6 +11,7 @@ is exercised without a GPU.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -34,7 +35,11 @@ from structured_agents.llama_core.node_delta_live import (
     capture_tree,
     reconstruct_chain,
 )
-from structured_agents.llama_core.prefix_cache import PrefixCacheEntry, PrefixCacheKey
+from structured_agents.llama_core.prefix_cache import (
+    PersistentPrefixCache,
+    PrefixCacheEntry,
+    PrefixCacheKey,
+)
 from structured_agents.llama_core.prefix_cache_live import InMemoryPrefixCache
 
 
@@ -323,3 +328,117 @@ def test_blend_by_reanchor_is_stub_with_position_delta(tmp_path: Path) -> None:
     with pytest.raises(NotImplementedError) as excinfo:
         blend_by_reanchor(FakeTreeBridge(), None, pull_in=delta, new_base_position=4, heal_fraction=0.1)
     assert "position_delta=4" in str(excinfo.value)
+
+
+# --------------------------------------------------------------------------- #
+# GPU-gated integration: the real token-exact correctness bar on a live model.
+#
+# Mirrors test_prefix_cache_live's gate/context setup.  Proves that (1) a chain
+# reconstructed from its captured whole-seq blob continues token-exact with a
+# cold prefill of the same tokens -- with zero codebase prefill -- and that (2) a
+# cross-chain blend that re-decodes a pull-in's tokens over the restored base
+# matches a cold prefill of base + pull-in + prompt.
+# --------------------------------------------------------------------------- #
+
+_MODEL_PATH = Path(
+    os.environ.get(
+        "LLAMA_TEST_MODEL",
+        "/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf",
+    )
+)
+
+
+def _gpu_ready() -> bool:
+    if not os.environ.get("LLAMA_CPP_LIB_PATH") or not os.environ.get("CUDA_VISIBLE_DEVICES"):
+        return False
+    if not _MODEL_PATH.exists():
+        return False
+    try:
+        import llama_cpp  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
+@pytest.mark.skipif(not _gpu_ready(), reason="requires GPU env (LLAMA_CPP_LIB_PATH, CUDA, model)")
+def test_gpu_context_tree_reconstruct_and_blend_match_cold_prefill(tmp_path: Path) -> None:
+    from llama_cpp import Llama, llama_cpp
+
+    from structured_agents.llama_core.prefix_cache_live import LlamaSeqStateBridge
+
+    n_ctx, n_batch, n_seq_max = 2048, 128, 2
+    llm = Llama(model_path=str(_MODEL_PATH), n_ctx=n_ctx, n_batch=n_batch, n_gpu_layers=-1, seed=17018, verbose=False)
+    model = llm._model.model
+    bridge = LlamaSeqStateBridge(n_batch=n_batch, n_vocab=llm._n_vocab)
+
+    def make_ctx() -> object:
+        params = llama_cpp.llama_context_default_params()
+        params.n_ctx = n_ctx
+        params.n_batch = n_batch
+        params.n_ubatch = n_batch
+        params.n_seq_max = n_seq_max
+        return llama_cpp.llama_new_context_with_model(model, params)
+
+    def tok(text: str, *, bos: bool) -> tuple[int, ...]:
+        return tuple(llm.tokenize(text.encode("utf-8"), add_bos=bos, special=True))
+
+    # Build real token spans; only the root span carries BOS so the concatenated
+    # chain is a single valid sequence (spans are sliced, never re-BOS'd).
+    root_span = tok("# repository root: a small service\n", bos=True)
+    file_span = tok("# file: src/models.py\nfrom base import Entity\n", bos=False)
+    sym_span = tok("class User(Entity):\n    def save(self):\n        return self.id\n", bos=False)
+    def_span = tok("class Entity:\n    id: int\n    def key(self):\n        return self.id\n", bos=False)
+    prompt = tok("Explain what save returns.", bos=False)
+
+    # Cold baselines: decode the exact concatenations fresh and read greedy argmax.
+    def cold(tokens: tuple[int, ...]) -> int:
+        ctx = make_ctx()
+        bridge.decode_tokens(ctx, list(tokens), 0, 0)
+        out = bridge.last_token(ctx)
+        llama_cpp.llama_free(ctx)
+        return out
+
+    cold_chain = cold(root_span + file_span + sym_span + prompt)
+    cold_blend = cold(root_span + file_span + def_span + prompt)
+
+    fp = _fingerprint()
+    cache = PersistentPrefixCache(tmp_path)
+    idx = NodeDeltaIndex(tmp_path)
+
+    # Precompute the tree once (root -> file -> sym) plus a separate def chain.
+    capture_ctx = make_ctx()
+    capture_tree(
+        bridge, capture_ctx, cache=cache, index=idx, namespace="gpu", fingerprint=fp,
+        nodes=[
+            TreeNodeSpec("root", None, root_span),
+            TreeNodeSpec("file", "root", file_span),
+            TreeNodeSpec("sym", "file", sym_span),
+            TreeNodeSpec("defEntity", None, def_span),  # its own chain; blend re-decodes its tokens
+        ],
+        n_seq_max=n_seq_max, seq_id=0,
+    )
+    llama_cpp.llama_free(capture_ctx)
+
+    # (1) Zero-prefill chain reconstruction at the symbol, from a fresh cache/ctx.
+    reopened = PersistentPrefixCache(tmp_path)
+    restore_ctx = make_ctx()
+    recon = reconstruct_chain(
+        bridge, restore_ctx, cache=reopened, index=idx, node_id="sym",
+        prompt_token_ids=prompt, n_seq_max=n_seq_max, seq_id=1,
+    )
+    llama_cpp.llama_free(restore_ctx)
+    assert recon.restored, getattr(recon, "reason", recon)
+    assert recon.next_token == cold_chain  # token-exact, no codebase prefill
+
+    # (2) Cross-chain blend: base = file chain, pull in the Entity definition.
+    blend_ctx = make_ctx()
+    blended = blend_by_redecode(
+        bridge, blend_ctx, cache=reopened, index=idx, base_node_id="file",
+        pull_ins=[PullInSpec("defEntity")], prompt_token_ids=prompt, n_seq_max=n_seq_max, seq_id=1,
+    )
+    llama_cpp.llama_free(blend_ctx)
+    llm.close()
+
+    assert blended.ok
+    assert blended.admitted == ("defEntity",)
+    assert blended.prompt_next_token == cold_blend  # base + pull-in + prompt, token-exact
