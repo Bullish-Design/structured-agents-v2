@@ -372,6 +372,39 @@ class ContextPoolRouter:
             raise RuntimeError(f"grammar rejected accepted token {tok} (fail-closed)")
         return tok
 
+    def _constrained_loop(self, ctx: Any, matchers: list[Any], outputs: list[list[int]],
+                          cur: list[int], pos: list[int], done: list[bool],
+                          max_tokens: int) -> list[list[int]]:
+        """Shared batched constrained decode loop. Assumes each seq is already
+        prefilled (prompt or restored-prefix+suffix) and its first token sampled
+        into outputs/cur/pos/done. Runs up to max_tokens-1 further steps."""
+        for _ in range(max_tokens - 1):
+            if all(done):
+                break
+            si = len(cur)  # terminated slots ride along to keep seq_id == row
+            batch = self.C.llama_batch_init(si, 0, 1)
+            batch.n_tokens = si
+            for i in range(si):
+                batch.token[i] = cur[i]
+                batch.pos[i] = pos[i]
+                batch.n_seq_id[i] = 1
+                batch.seq_id[i][0] = i
+                batch.logits[i] = 1
+            rc = self.C.llama_decode(ctx, batch)
+            self.C.llama_batch_free(batch)
+            if rc != 0:
+                raise RuntimeError(f"constrained batched decode rc={rc}")
+            for i in range(si):
+                pos[i] += 1
+                if done[i]:
+                    continue
+                tok = self._constrained_sample(ctx, i, matchers[i])
+                outputs[i].append(tok)
+                cur[i] = tok
+                if matchers[i].is_terminated():
+                    done[i] = True
+        return outputs
+
     def _generate_wave_constrained(self, ctx: Any, prompts: list[list[int]],
                                    grammar: Any, max_tokens: int) -> list[list[int]]:
         """Batched greedy generation with a per-sequence grammar matcher.
@@ -396,33 +429,60 @@ class ContextPoolRouter:
             cur[i] = tok
             pos[i] = len(prompts[i])
             done[i] = matchers[i].is_terminated()
-        for _ in range(max_tokens - 1):
-            if all(done):
-                break
-            # one batched decode step for all slots (terminated ones ride along)
-            si = len(cur)
-            batch = self.C.llama_batch_init(si, 0, 1)
-            batch.n_tokens = si
-            for i in range(si):
-                batch.token[i] = cur[i]
-                batch.pos[i] = pos[i]
-                batch.n_seq_id[i] = 1
-                batch.seq_id[i][0] = i
-                batch.logits[i] = 1
-            rc = self.C.llama_decode(ctx, batch)
-            self.C.llama_batch_free(batch)
-            if rc != 0:
-                raise RuntimeError(f"constrained batched decode rc={rc}")
-            for i in range(si):
-                pos[i] += 1
-                if done[i]:
-                    continue
-                tok = self._constrained_sample(ctx, i, matchers[i])
-                outputs[i].append(tok)
-                cur[i] = tok
-                if matchers[i].is_terminated():
-                    done[i] = True
-        return outputs
+        return self._constrained_loop(ctx, matchers, outputs, cur, pos, done, max_tokens)
+
+    def _generate_wave_constrained_cached(self, ctx: Any, cache: PrefixCache,
+                                          suffixes: list[list[int]], grammar: Any,
+                                          max_tokens: int) -> list[list[int]]:
+        """Cached shared-prefix restore + grammar-constrained generation.
+
+        Restores the shared prefix KV into each seq slot, decodes only the suffix,
+        then samples grammar-constrained. The full path-(a) MVP: shared router
+        prompt cached once, per-request suffix, guaranteed-valid output.
+        """
+        s = len(suffixes)
+        assert s <= self.n_seq_max, f"{s} > n_seq_max {self.n_seq_max}"
+        matchers = [self._xgr.GrammarMatcher(grammar) for _ in range(s)]
+        for i in range(s):
+            self._seq_rm(ctx, i)
+            if self._set_seq(ctx, cache.blob, i) == 0:
+                raise RuntimeError(f"llama_state_seq_set_data failed for seq {i}")
+        outputs: list[list[int]] = [[] for _ in range(s)]
+        cur: list[int] = [0] * s
+        pos: list[int] = [0] * s
+        done: list[bool] = [False] * s
+        for i in range(s):
+            self._decode_prefill(ctx, suffixes[i], seq_id=i, start_pos=cache.n)
+            tok = self._constrained_sample(ctx, -1, matchers[i])
+            outputs[i].append(tok)
+            cur[i] = tok
+            pos[i] = cache.n + len(suffixes[i])
+            done[i] = matchers[i].is_terminated()
+        return self._constrained_loop(ctx, matchers, outputs, cur, pos, done, max_tokens)
+
+    def run_constrained_cached(self, adapter: Optional[str], cache: PrefixCache,
+                               suffix_requests: list[Request], grammar: Any) -> list[Generation]:
+        """Full path-(a) MVP: shared cached prefix + per-request suffix + grammar.
+
+        Each request.prompt is the SUFFIX appended after the cached prefix; every
+        output is constrained to `grammar`. Waves of n_seq_max in the adapter ctx.
+        """
+        if not hasattr(self, "_xgr"):
+            raise RuntimeError("call enable_grammar(...) first")
+        if cache.adapter is not adapter:
+            raise ValueError("cache adapter does not match requested adapter")
+        ctx = self.ctx[adapter]
+        out: list[Generation] = []
+        for w in range(0, len(suffix_requests), self.n_seq_max):
+            wave = suffix_requests[w:w + self.n_seq_max]
+            suffixes = [self.tokenize_suffix(r.prompt) for r in wave]
+            gen = self._generate_wave_constrained_cached(
+                ctx, cache, suffixes, grammar, max(r.max_tokens for r in wave))
+            for slot, r in enumerate(wave):
+                out.append(Generation(rid=r.rid, adapter=adapter,
+                                      prompt_tokens=cache.tokens + suffixes[slot],
+                                      tokens=gen[slot][:r.max_tokens]))
+        return out
 
     def run_constrained(self, requests: list[Request], grammar: Any) -> list[Generation]:
         """Route + batch like run(), but constrain each sequence to `grammar`."""
