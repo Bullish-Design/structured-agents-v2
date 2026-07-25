@@ -1,16 +1,16 @@
-"""Selectable inference-engine plugins. Built-ins only; no out-of-tree discovery."""
+"""Selectable inference-engine plugins. Built-ins only; no out-of-tree discovery.
+
+Since project 17 pivoted to llama.cpp as the single substrate, only the llama.cpp
+wire dialect remains; the sglang/vLLM provider abstraction has been retired.
+"""
 
 from __future__ import annotations
 
 from ..errors import ConfigError
 from .base import Engine
 from .llama_cpp import LlamaCppEngine
-from .sglang import SGLangEngine
-from .vllm import VLLMEngine
 
 _BUILTINS: dict[str, Engine] = {
-    "vllm": VLLMEngine(),
-    "sglang": SGLangEngine(),
     "llama_cpp": LlamaCppEngine(),
 }
 

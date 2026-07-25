@@ -38,7 +38,7 @@ if os.environ.get("SAV_LIVE") != "1":
 BASE_URL = os.environ.get("LLM_BASE_URL", "http://127.0.0.1:8000/v1")
 API_KEY = os.environ.get("LLM_API_KEY", "sk-none")
 MODEL = os.environ.get("LLM_MODEL", "base")
-ENGINE = os.environ.get("LLM_ENGINE", "vllm")
+ENGINE = os.environ.get("LLM_ENGINE", "llama_cpp")
 LORA_NAME = os.environ.get("LORA_NAME")
 SETTINGS = Settings(temperature=0, seed=7, max_tokens=32)
 

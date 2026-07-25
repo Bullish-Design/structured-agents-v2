@@ -42,7 +42,7 @@ class Backend:
     def __init__(
         self,
         *,
-        engine: str | Engine = "vllm",
+        engine: str | Engine = "llama_cpp",
         base_url: str = "http://localhost:8000/v1",
         api_key: str = "sk-none",
         default_model: str = "test",
