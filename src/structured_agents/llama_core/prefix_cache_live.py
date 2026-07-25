@@ -180,6 +180,22 @@ class LlamaSeqStateBridge:
         array = (ctypes.c_uint8 * len(blob)).from_buffer_copy(blob)
         return int(self._native.llama_state_seq_set_data(ctx, array, len(blob), seq_id))
 
+    def restore_blob_into_seq(self, ctx: Any, blob: bytes, seq_id: int) -> int:
+        """Restore a captured blob into ``seq_id``, fail-closed on rejection.
+
+        Centralizes the ``set_data == 0`` reject rule for callers that restore
+        the SAME prefix blob into MULTIPLE seq slots of one context (the
+        context-pool router's batched multi-seq wave).  A ``0`` return means the
+        blob is incompatible with the target context — most often a mismatched
+        ``n_seq_max`` — so this raises :class:`SeqRestoreRejected` rather than
+        letting an unrestored slot decode against stale KV.  Returns the number
+        of bytes read on success.
+        """
+        code = self.restore_seq_state(ctx, blob, seq_id)
+        if code == 0:
+            raise SeqRestoreRejected(seq_id)
+        return code
+
     def decode_tokens(self, ctx: Any, tokens: Sequence[int], seq_id: int, start_pos: int) -> None:
         """Own-batch decode with explicit positions; logits only on the last token.
 
