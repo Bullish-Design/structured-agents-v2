@@ -11,3 +11,7 @@ version-tuple.json
 canary-tuple.json
 .cuda_runtime_ld
 artifacts/
+# generated model/adapter binaries (base GGUF, converted LoRA GGUF, PEFT weights)
+runtime/
+*.gguf
+*.safetensors
