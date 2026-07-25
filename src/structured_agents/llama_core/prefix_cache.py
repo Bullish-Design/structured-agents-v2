@@ -33,6 +33,8 @@ class CacheRejectionReason(StrEnum):
     CHECKPOINT_TOKEN_COUNT_MISMATCH = "checkpoint_token_count_mismatch"
     REQUEST_DOES_NOT_EXTEND_PREFIX = "request_does_not_extend_prefix"
     SUFFIX_DECODE_REQUIRED = "suffix_decode_required"
+    N_SEQ_MAX_MISMATCH = "n_seq_max_mismatch"
+    STATE_SET_DATA_REJECTED = "state_set_data_rejected"
     STATE_SIZE_MISMATCH = "state_size_mismatch"
     STATE_CHECKSUM_MISMATCH = "state_checksum_mismatch"
 
