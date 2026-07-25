@@ -4,15 +4,23 @@ This module deliberately uses ``llama_decode`` and the sampler C API instead
 of the high-level completion helper.  It is the teaching reference for later
 grammar integration: a mask hook receives the zero-copy logits view before
 sampler transforms run.
+
+The two original callbacks (``logits_hook``/``token_hook``) still work, but the
+loop now also drives a composable :class:`~.middleware.MiddlewarePipeline`, so
+new decode concerns plug in as stage-aware middleware instead of new callback
+parameters (Pillar 3).
 """
 
 from __future__ import annotations
 
 import ctypes
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from .middleware import MiddlewarePipeline
 
 
 class LogitsHook(Protocol):
@@ -144,6 +152,7 @@ class OwnedLlamaDecoder:
         logits_hook: LogitsHook | None = None,
         token_hook: TokenHook | None = None,
         stop_tokens: frozenset[int] = frozenset(),
+        middleware: MiddlewarePipeline | Iterable[Any] | None = None,
         benchmark: Any | None = None,
         synchronize: SynchronizeHook | None = None,
     ) -> DecodeOutcome:
@@ -152,6 +161,11 @@ class OwnedLlamaDecoder:
         Returns a :class:`DecodeOutcome` whose ``finish_reason`` distinguishes a
         clean stop-token end from a ``max_tokens`` cutoff, so callers never have
         to infer truncation from a downstream parse failure.
+
+        ``middleware`` composes stage-aware :class:`~.middleware.DecodeMiddleware`
+        into the loop.  It is dispatched *after* the legacy ``logits_hook`` and
+        ``token_hook`` at each stage, so both APIs coexist; a middleware may
+        mutate the logits view or request a stop from ``on_token``.
         """
         if self._closed:
             raise RuntimeError("OwnedLlamaDecoder is closed")
@@ -159,6 +173,11 @@ class OwnedLlamaDecoder:
             raise ValueError("prompt_tokens must contain at least one token")
         if max_tokens < 0:
             raise ValueError("max_tokens must be non-negative")
+
+        from .middleware import as_pipeline
+
+        pipeline = as_pipeline(middleware)
+        pipeline.on_prompt(prompt_tokens)
 
         # A new decoder is normally paired with a fresh context.  Reset is
         # necessary for hybrid models, and keeps lifecycle ownership explicit.
@@ -194,6 +213,7 @@ class OwnedLlamaDecoder:
                     logits, candidates = self._candidate_array()
                 if logits_hook is not None:
                     logits_hook(logits)
+                pipeline.on_logits(logits)
                 # Candidate logits are copied after masking to make the order
                 # visible and unambiguous to readers of the loop.
                 if hasattr(self, "_candidate_view"):
@@ -216,7 +236,8 @@ class OwnedLlamaDecoder:
                     )
                     with matcher_measurement:
                         token_hook(token)
-                if token in stop_tokens:
+                middleware_stop = pipeline.on_token(token)
+                if token in stop_tokens or middleware_stop:
                     finish_reason = FINISH_STOP
                     stop_token = token
                     break
@@ -229,7 +250,9 @@ class OwnedLlamaDecoder:
 
                     benchmark.record_token_latency_ns(perf_counter_ns() - token_started_ns)
                 next_position += 1
-        return DecodeOutcome(tokens=generated, finish_reason=finish_reason, stop_token=stop_token)
+        outcome = DecodeOutcome(tokens=generated, finish_reason=finish_reason, stop_token=stop_token)
+        pipeline.on_finish(outcome)
+        return outcome
 
     def generate_text(
         self,
@@ -238,6 +261,7 @@ class OwnedLlamaDecoder:
         max_tokens: int,
         logits_hook: LogitsHook | None = None,
         token_hook: TokenHook | None = None,
+        middleware: MiddlewarePipeline | Iterable[Any] | None = None,
         benchmark: Any | None = None,
         synchronize: SynchronizeHook | None = None,
     ) -> DecodeText:
@@ -254,6 +278,7 @@ class OwnedLlamaDecoder:
             logits_hook=logits_hook,
             token_hook=token_hook,
             stop_tokens=frozenset({self.llm.token_eos()}),
+            middleware=middleware,
             benchmark=benchmark,
             synchronize=synchronize,
         )
