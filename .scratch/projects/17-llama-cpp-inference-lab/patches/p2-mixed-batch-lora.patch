@@ -1,0 +1,267 @@
+diff --git a/include/llama.h b/include/llama.h
+index a311ac202..6c667a3c5 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -693,6 +693,20 @@ extern "C" {
+             size_t n_adapters,
+             float * scales);
+ 
++    // P2 fork: mixed-batch per-sequence LoRA routing. Register an ordered adapter
++    // pool (index = routing id); then assign each sequence to a pool slot. Within a
++    // single llama_decode, different sequences use different adapters.
++    LLAMA_API int32_t llama_set_seq_adapters(
++            struct llama_context * ctx,
++            struct llama_adapter_lora ** adapters,
++            size_t n_adapters);
++
++    // Assign sequence seq_id to pool index adapter_idx (-1 = no adapter / base).
++    LLAMA_API int32_t llama_set_seq_adapter(
++            struct llama_context * ctx,
++            llama_seq_id seq_id,
++            int32_t adapter_idx);
++
+     // Apply a loaded control vector to a llama_context, or if data is NULL, clear
+     // the currently loaded vector.
+     // n_embd should be the size of a single layer's control, and data should point
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index eed041eef..e5acdf9d4 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -1273,6 +1273,26 @@ void llama_context::set_adapters_lora(llama_adapter_lora ** adapters, size_t n_a
+     sched_need_reserve = true;
+ }
+ 
++void llama_context::set_seq_adapters(llama_adapter_lora ** adapters, size_t n_adapters) {
++    // P2 fork: register the ordered adapter pool for mixed-batch routing.
++    seq_loras.assign(adapters, adapters + n_adapters);
++    if (seq_adapter_map.empty()) {
++        seq_adapter_map.assign((size_t) cparams.n_seq_max, -1);
++    }
++    sched_need_reserve = true;
++}
++
++void llama_context::set_seq_adapter(llama_seq_id seq_id, int32_t adapter_idx) {
++    if (seq_adapter_map.empty()) {
++        seq_adapter_map.assign((size_t) cparams.n_seq_max, -1);
++    }
++    if (seq_id < 0 || (size_t) seq_id >= seq_adapter_map.size()) {
++        LLAMA_LOG_ERROR("%s: seq_id %d out of range [0, %zu)\n", __func__, seq_id, seq_adapter_map.size());
++        return;
++    }
++    seq_adapter_map[seq_id] = adapter_idx;
++}
++
+ bool llama_context::adapters_lora_are_same(llama_adapter_lora ** adapters, size_t n_adapters, float * scales) {
+     LLAMA_LOG_DEBUG("%s: adapters = %p\n", __func__, (void *) adapters);
+ 
+@@ -2426,6 +2446,8 @@ llm_graph_params llama_context::graph_params(
+         /*.backend_cpu =*/ backend_cpu,
+         /*.cvec        =*/ cvec.get(),
+         /*.loras       =*/ loras.get(),
++        /*.seq_loras       =*/ &seq_loras,
++        /*.seq_adapter_map =*/ seq_adapter_map.data(),
+         /*.mctx        =*/ mctx,
+         /*.cross       =*/ &cross,
+         /*.samplers    =*/ sampling.samplers,
+@@ -3825,6 +3847,28 @@ int32_t llama_set_adapters_lora(
+     return 0;
+ }
+ 
++int32_t llama_set_seq_adapters(
++            llama_context * ctx,
++            llama_adapter_lora ** adapters,
++            size_t n_adapters) {
++    if (adapters == nullptr) {
++        GGML_ASSERT(n_adapters == 0 && "invalid llama_set_seq_adapters call");
++    }
++
++    ctx->set_seq_adapters(adapters, n_adapters);
++
++    return 0;
++}
++
++int32_t llama_set_seq_adapter(
++            llama_context * ctx,
++            llama_seq_id seq_id,
++            int32_t adapter_idx) {
++    ctx->set_seq_adapter(seq_id, adapter_idx);
++
++    return 0;
++}
++
+ int32_t llama_set_adapter_cvec(
+         llama_context * ctx,
+           const float * data,
+diff --git a/src/llama-context.h b/src/llama-context.h
+index bf91daa8b..d34972ce7 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -123,6 +123,10 @@ struct llama_context {
+ 
+     bool adapters_lora_are_same(llama_adapter_lora ** adapters, size_t n_adapters, float * scales);
+ 
++    // P2 fork: mixed-batch per-sequence LoRA routing
++    void set_seq_adapters(llama_adapter_lora ** adapters, size_t n_adapters);
++    void set_seq_adapter(llama_seq_id seq_id, int32_t adapter_idx);
++
+     bool set_adapter_cvec(
+             const float * data,
+                  size_t   len,
+@@ -284,6 +288,12 @@ private:
+     llama_adapter_cvec_ptr  cvec;
+     llama_adapter_loras_ptr loras;
+ 
++    // P2 fork: mixed-batch per-sequence LoRA routing.
++    // seq_loras: ordered adapter pool (index = routing id). seq_adapter_map:
++    // per-seq_id adapter index (-1 = no adapter), sized LLAMA_MAX_SEQ.
++    std::vector<llama_adapter_lora *> seq_loras;
++    std::vector<int32_t>              seq_adapter_map;
++
+     llama_cross cross; // TODO: tmp for handling cross-attention - need something better probably
+ 
+     llama_memory_ptr memory;
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index c8ecb0a28..60897de5f 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -1355,6 +1355,8 @@ llm_graph_context::llm_graph_context(const llm_graph_params & params) :
+     backend_cpu      (params.backend_cpu),
+     cvec             (params.cvec),
+     loras            (params.loras),
++    seq_loras        (params.seq_loras),
++    seq_adapter_map  (params.seq_adapter_map),
+     mctx             (params.mctx),
+     cross            (params.cross),
+     samplers         (params.samplers),
+@@ -1389,6 +1391,35 @@ ggml_tensor * llm_graph_context::build_lora_mm(
+         res = ggml_mul(ctx0, res, w_s);
+     }
+ 
++    // P2 fork: mixed-batch per-sequence LoRA routing. Each token's delta comes from
++    // its own sequence's adapter. Correctness-first (unfused): compute every pool
++    // adapter's delta over all tokens and mask it to the tokens that selected it.
++    if (seq_loras != nullptr && !seq_loras->empty()) {
++        if (seq_lora_mask == nullptr) {
++            build_inp_seq_lora_mask();
++        }
++        for (int32_t k = 0; k < (int32_t) seq_loras->size(); ++k) {
++            llama_adapter_lora * ad = (*seq_loras)[k];
++            llama_adapter_lora_weight * lw = ad->get_weight(w);
++            if (lw == nullptr) {
++                continue;
++            }
++            const float scale = lw->get_scale(ad->alpha, 1.0f);
++            ggml_tensor * ab_cur = ggml_mul_mat(
++                    ctx0, lw->b,
++                    ggml_mul_mat(ctx0, lw->a, cur)
++                    );
++            ab_cur = ggml_scale(ctx0, ab_cur, scale);
++            // per-token membership for adapter k: contiguous column -> [1, n_tokens]
++            ggml_tensor * mcol = ggml_view_1d(ctx0, seq_lora_mask, n_tokens,
++                    (size_t) k * n_tokens * ggml_element_size(seq_lora_mask));
++            mcol = ggml_reshape_2d(ctx0, mcol, 1, n_tokens);
++            ab_cur = ggml_mul(ctx0, ab_cur, mcol); // broadcast [1,n_tokens] over [out,n_tokens]
++            res = ggml_add(ctx0, res, ab_cur);
++        }
++        return res;
++    }
++
+     for (const auto & lora : *loras) {
+         llama_adapter_lora_weight * lw = lora.first->get_weight(w);
+         if (lw == nullptr) {
+@@ -2237,6 +2268,40 @@ ggml_tensor * llm_graph_context::build_inp_embd(ggml_tensor * tok_embd) const {
+     return cur;
+ }
+ 
++void llm_graph_input_seq_lora_mask::set_input(const llama_ubatch * ubatch) {
++    if (mask == nullptr) {
++        return;
++    }
++    const int64_t n_tokens = ubatch->n_tokens;
++    std::vector<float> data((size_t) n_adapters * n_tokens, 0.0f);
++    for (int64_t t = 0; t < n_tokens; ++t) {
++        // primary sequence id for this token routes to a pool adapter (or -1 = none)
++        const llama_seq_id sid = ubatch->seq_id[t][0];
++        const int32_t k = seq_adapter_map[sid];
++        if (k >= 0 && k < n_adapters) {
++            data[(size_t) k * n_tokens + t] = 1.0f; // layout [n_tokens, n_adapters]: column k contiguous
++        }
++    }
++    ggml_backend_tensor_set(mask, data.data(), 0, data.size() * sizeof(float));
++}
++
++ggml_tensor * llm_graph_context::build_inp_seq_lora_mask() const {
++    const int32_t n_adapters = (int32_t) seq_loras->size();
++
++    auto inp = std::make_unique<llm_graph_input_seq_lora_mask>(seq_adapter_map, n_adapters);
++
++    auto & cur = inp->mask;
++
++    cur = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, (int64_t) n_tokens, n_adapters);
++    ggml_set_input(cur);
++
++    res->add_input(std::move(inp));
++
++    seq_lora_mask = cur; // cache for build_lora_mm (mutable member)
++
++    return cur;
++}
++
+ ggml_tensor * llm_graph_context::build_inp_pos() const {
+     auto inp = std::make_unique<llm_graph_input_pos>(hparams.n_pos_per_embd());
+ 
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 7ed490ce6..0ad194a09 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -166,6 +166,21 @@ public:
+     const uint32_t n_pos_per_embd = 1;
+ };
+ 
++// per-sequence (mixed-batch) LoRA routing mask (P2 fork)
++class llm_graph_input_seq_lora_mask : public llm_graph_input_i {
++public:
++    llm_graph_input_seq_lora_mask(const int32_t * seq_adapter_map, int32_t n_adapters)
++        : seq_adapter_map(seq_adapter_map), n_adapters(n_adapters) {}
++    virtual ~llm_graph_input_seq_lora_mask() = default;
++
++    void set_input(const llama_ubatch * ubatch) override;
++
++    ggml_tensor * mask = nullptr; // F32 [n_tokens, n_adapters]; column k = 1.0 where token's seq routes to adapter k
++
++    const int32_t * seq_adapter_map;
++    const int32_t   n_adapters;
++};
++
+ // temperature tuning, used by llama4
+ class llm_graph_input_attn_temp : public llm_graph_input_i {
+ public:
+@@ -685,6 +700,9 @@ struct llm_graph_params {
+ 
+     const llama_adapter_cvec     * cvec;
+     const llama_adapter_loras    * loras;
++    // per-sequence (mixed-batch) LoRA routing: ordered adapter pool + seq->idx map
++    const std::vector<llama_adapter_lora *> * seq_loras;
++    const int32_t                           * seq_adapter_map;
+     const llama_memory_context_i * mctx;
+     const llama_cross            * cross;
+ 
+@@ -925,6 +943,10 @@ struct llm_graph_context {
+ 
+     const llama_adapter_cvec     * cvec;
+     const llama_adapter_loras    * loras;
++    // per-sequence (mixed-batch) LoRA routing (P2 fork)
++    const std::vector<llama_adapter_lora *> * seq_loras        = nullptr;
++    const int32_t                           * seq_adapter_map  = nullptr;
++    mutable ggml_tensor                     * seq_lora_mask    = nullptr; // F32 [n_tokens, n_adapters], built lazily
+     const llama_memory_context_i * mctx;
+     const llama_cross            * cross;
+ 
+@@ -1051,6 +1073,7 @@ struct llm_graph_context {
+ 
+     ggml_tensor * build_inp_embd(ggml_tensor * tok_embd) const;
+     ggml_tensor * build_inp_pos() const;
++    ggml_tensor * build_inp_seq_lora_mask() const; // P2 fork: mixed-batch LoRA routing mask
+     ggml_tensor * build_inp_attn_scale() const;
+     ggml_tensor * build_inp_out_ids() const;
+     ggml_tensor * build_inp_mean() const;
