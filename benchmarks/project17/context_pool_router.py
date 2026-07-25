@@ -326,6 +326,128 @@ class ContextPoolRouter:
         finally:
             self.C.llama_free(ctx)
 
+    # ---- grammar-constrained decoding (xgrammar) ----
+
+    def enable_grammar(self, hf_tokenizer_dir: str) -> None:
+        """Build the xgrammar TokenizerInfo + GrammarCompiler once (cached).
+
+        vocab_size MUST be llama.cpp's n_vocab (not len(hf_tokenizer)) so padded
+        logit ids stay masked (see 12-XGRAMMAR-API-FINDINGS.md).
+        """
+        import xgrammar as xgr
+        from transformers import AutoTokenizer
+
+        hf_tok = AutoTokenizer.from_pretrained(hf_tokenizer_dir)
+        self._xgr = xgr
+        self._tok_info = xgr.TokenizerInfo.from_huggingface(hf_tok, vocab_size=self.n_vocab)
+        self._grammar_compiler = xgr.GrammarCompiler(self._tok_info, cache_enabled=True)
+
+    def compile_json_schema(self, schema: Any) -> Any:
+        """Compile a JSON-schema dict (e.g. pydantic .model_json_schema()) to a grammar."""
+        if not hasattr(self, "_grammar_compiler"):
+            raise RuntimeError("call enable_grammar(hf_tokenizer_dir) first")
+        import json as _json
+        s = schema if isinstance(schema, str) else _json.dumps(schema)
+        return self._grammar_compiler.compile_json_schema(s, strict_mode=True)
+
+    def _apply_bitmask(self, logits: "np.ndarray", bitmask_row: "np.ndarray") -> None:
+        """Set logits of disallowed tokens to -inf. bitmask bit=1 means allowed
+        (little-endian within each int32 word); numpy hot path, torch-free."""
+        bits = np.unpackbits(bitmask_row.view(np.uint8), bitorder="little")
+        allowed = bits[: self.n_vocab].astype(bool)
+        logits[: self.n_vocab][~allowed] = -np.inf
+
+    def _constrained_sample(self, ctx: Any, row: int, matcher: Any) -> int:
+        """Greedy argmax under the matcher's mask, then accept the token (fail-closed)."""
+        bitmask = np.zeros(self._xgr.get_bitmask_shape(1, self.n_vocab), dtype=np.int32)
+        if matcher.fill_next_token_bitmask(bitmask):
+            ptr = self.C.llama_get_logits_ith(ctx, row)
+            logits = np.ctypeslib.as_array(ptr, shape=(self.n_vocab,))
+            self._apply_bitmask(logits, bitmask[0])
+            tok = int(np.argmax(logits))
+        else:
+            ptr = self.C.llama_get_logits_ith(ctx, row)
+            tok = int(np.argmax(np.ctypeslib.as_array(ptr, shape=(self.n_vocab,))))
+        if not matcher.accept_token(tok):
+            raise RuntimeError(f"grammar rejected accepted token {tok} (fail-closed)")
+        return tok
+
+    def _generate_wave_constrained(self, ctx: Any, prompts: list[list[int]],
+                                   grammar: Any, max_tokens: int) -> list[list[int]]:
+        """Batched greedy generation with a per-sequence grammar matcher.
+
+        Sequences terminate independently when the grammar completes; terminated
+        slots stay in the batch (their tokens are frozen and discarded) to keep the
+        seq_id==row invariant, until all terminate or max_tokens is hit.
+        """
+        s = len(prompts)
+        assert s <= self.n_seq_max, f"{s} > n_seq_max {self.n_seq_max}"
+        matchers = [self._xgr.GrammarMatcher(grammar) for _ in range(s)]
+        for i in range(s):
+            self._seq_rm(ctx, i)
+        outputs: list[list[int]] = [[] for _ in range(s)]
+        cur: list[int] = [0] * s
+        pos: list[int] = [0] * s
+        done: list[bool] = [False] * s
+        for i in range(s):
+            self._decode_prefill(ctx, prompts[i], seq_id=i, start_pos=0)  # decode; logits at -1
+            tok = self._constrained_sample(ctx, -1, matchers[i])
+            outputs[i].append(tok)
+            cur[i] = tok
+            pos[i] = len(prompts[i])
+            done[i] = matchers[i].is_terminated()
+        for _ in range(max_tokens - 1):
+            if all(done):
+                break
+            # one batched decode step for all slots (terminated ones ride along)
+            si = len(cur)
+            batch = self.C.llama_batch_init(si, 0, 1)
+            batch.n_tokens = si
+            for i in range(si):
+                batch.token[i] = cur[i]
+                batch.pos[i] = pos[i]
+                batch.n_seq_id[i] = 1
+                batch.seq_id[i][0] = i
+                batch.logits[i] = 1
+            rc = self.C.llama_decode(ctx, batch)
+            self.C.llama_batch_free(batch)
+            if rc != 0:
+                raise RuntimeError(f"constrained batched decode rc={rc}")
+            for i in range(si):
+                pos[i] += 1
+                if done[i]:
+                    continue
+                tok = self._constrained_sample(ctx, i, matchers[i])
+                outputs[i].append(tok)
+                cur[i] = tok
+                if matchers[i].is_terminated():
+                    done[i] = True
+        return outputs
+
+    def run_constrained(self, requests: list[Request], grammar: Any) -> list[Generation]:
+        """Route + batch like run(), but constrain each sequence to `grammar`."""
+        if not hasattr(self, "_xgr"):
+            raise RuntimeError("call enable_grammar(...) first")
+        by_adapter: dict[Optional[str], list[int]] = {}
+        for idx, r in enumerate(requests):
+            if r.adapter is not BASE and r.adapter not in self.adapter_ptr:
+                raise KeyError(f"unknown adapter {r.adapter!r}")
+            by_adapter.setdefault(r.adapter, []).append(idx)
+        results: dict[int, Generation] = {}
+        for adapter, idxs in by_adapter.items():
+            ctx = self.ctx[adapter]
+            for w in range(0, len(idxs), self.n_seq_max):
+                wave = idxs[w:w + self.n_seq_max]
+                prompts = [self.tokenize(requests[j].prompt) for j in wave]
+                gen = self._generate_wave_constrained(
+                    ctx, prompts, grammar, max(requests[j].max_tokens for j in wave))
+                for slot, j in enumerate(wave):
+                    r = requests[j]
+                    results[j] = Generation(rid=r.rid, adapter=adapter,
+                                            prompt_tokens=prompts[slot],
+                                            tokens=gen[slot][:r.max_tokens])
+        return [results[i] for i in range(len(requests))]
+
     def baseline_from_tokens(self, adapter: Optional[str], tokens: list[int],
                              max_tokens: int, rid: str = "baseline") -> Generation:
         """Ground truth from an explicit token list (avoids re-tokenizing a joined
