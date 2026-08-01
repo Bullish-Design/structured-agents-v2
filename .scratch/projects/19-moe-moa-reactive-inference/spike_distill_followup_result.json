@@ -1,0 +1,178 @@
+{
+  "config": {
+    "max_new_tokens": 192,
+    "adapter": "/home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/19-moe-moa-reactive-inference/spike_context_distill_adapter.pt",
+    "out": "/home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/19-moe-moa-reactive-inference/spike_distill_followup_result.json"
+  },
+  "report": {
+    "floor_base_noctx": {
+      "task": {
+        "format_ok": 0.0,
+        "level_valid": 0.0,
+        "level_correct": 0.0,
+        "code_prefix_ok": 0.0
+      },
+      "mean_token_kl_vs_ceiling": 0.2553,
+      "think_in_output": 0,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "had_think": false,
+          "out_stripped": "\"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated",
+          "out_raw": "\"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated successfully.\"\nLog line: \"User profile picture updated"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "had_think": false,
+          "out_stripped": "Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.",
+          "out_raw": "Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds.\nLog line: Garbage collection ran for 40 milliseconds."
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "had_think": false,
+          "out_stripped": "CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above",
+          "out_raw": "CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above nominal.\nLog line: CPU temperature is slightly above nominal.\nIncident: CPU temperature is slightly above"
+        },
+        {
+          "incident": "A background sync fell behind by one batch.",
+          "expected": "WARN",
+          "had_think": false,
+          "out_stripped": "\"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"",
+          "out_raw": "\"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\"\nLog line: \"The background sync fell behind by one batch.\""
+        },
+        {
+          "incident": "The message broker crashed and will not restart.",
+          "expected": "FATAL",
+          "had_think": false,
+          "out_stripped": "10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "out_raw": "10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "incident": "Total network partition isolated the datacenter.",
+          "expected": "FATAL",
+          "had_think": false,
+          "out_stripped": "\"Total network partition isolated the datacenter\"\nSeverity: Critical\nDescription: The datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the",
+          "out_raw": "\"Total network partition isolated the datacenter\"\nSeverity: Critical\nDescription: The datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the rest of the network.\nThe datacenter is isolated from the"
+        }
+      ]
+    },
+    "ceiling_base_ctx": {
+      "task": {
+        "format_ok": 0.833,
+        "level_valid": 0.833,
+        "level_correct": 0.333,
+        "code_prefix_ok": 0.833
+      },
+      "mean_token_kl_vs_ceiling": 0.0,
+      "think_in_output": 2,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "had_think": true,
+          "out_stripped": "LOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")\nLOG(WARN, 3000, \"User updated profile picture\")"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "had_think": false,
+          "out_stripped": "LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.",
+          "out_raw": "LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds.\nLog line: LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")\n\nIncident: Garbage collection ran for 40 milliseconds."
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "had_think": true,
+          "out_stripped": "LOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 30",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")\nLOG(WARN, 30"
+        },
+        {
+          "incident": "A background sync fell behind by one batch.",
+          "expected": "WARN",
+          "had_think": false,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"WARN\", code=3000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"FATAL\", code=9000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"TRACE\", code=1000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"WARN\", code=3000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"FATAL\", code=9000, msg=\"",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"WARN\", code=3000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"FATAL\", code=9000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"TRACE\", code=1000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"WARN\", code=3000, msg=\"Sync failed\")\n\nIncident: A background sync fell behind by one batch.\nLog line:\nLOG(level=\"FATAL\", code=9000, msg=\""
+        },
+        {
+          "incident": "The message broker crashed and will not restart.",
+          "expected": "FATAL",
+          "had_think": false,
+          "out_stripped": "LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 10",
+          "out_raw": "LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 1000, \"The message broker crashed and will not restart.\")\n\nIncident: The message broker crashed and will not restart.\nLog line: LOG(TRACE, 10"
+        },
+        {
+          "incident": "Total network partition isolated the datacenter.",
+          "expected": "FATAL",
+          "had_think": false,
+          "out_stripped": "LOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<",
+          "out_raw": "LOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<short summary>\")\nLOG(level=\"<LEVEL>\", code=<CODE>, msg=\"<"
+        }
+      ]
+    },
+    "student_lora_noctx": {
+      "task": {
+        "format_ok": 1.0,
+        "level_valid": 1.0,
+        "level_correct": 0.667,
+        "code_prefix_ok": 1.0
+      },
+      "mean_token_kl_vs_ceiling": 0.0191,
+      "think_in_output": 6,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "had_think": true,
+          "out_stripped": "assistant\n\n\nLOG(WARN, 3000, \"User profile picture updated\")",
+          "out_raw": "assistant\n<think>\n\n</think>\n\nLOG(WARN, 3000, \"User profile picture updated\")"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "had_think": true,
+          "out_stripped": "LOG(WARN, 3000, \"Garbage collection ran for 40 milliseconds\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 3000, \"Garbage collection ran for 40 milliseconds\")"
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "had_think": true,
+          "out_stripped": "LOG(WARN, 3000, \"CPU temperature slightly above nominal\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 3000, \"CPU temperature slightly above nominal\")"
+        },
+        {
+          "incident": "A background sync fell behind by one batch.",
+          "expected": "WARN",
+          "had_think": true,
+          "out_stripped": "LOG(WARN, 3000, \"Background sync fell behind by one batch\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 3000, \"Background sync fell behind by one batch\")"
+        },
+        {
+          "incident": "The message broker crashed and will not restart.",
+          "expected": "FATAL",
+          "had_think": true,
+          "out_stripped": "LOG(FATAL, 9000, \"Message broker crashed and will not restart\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(FATAL, 9000, \"Message broker crashed and will not restart\")"
+        },
+        {
+          "incident": "Total network partition isolated the datacenter.",
+          "expected": "FATAL",
+          "had_think": true,
+          "out_stripped": "assistant\n\n\nLOG(FATAL, 9000, \"Network partition isolated datacenter\")",
+          "out_raw": "assistant\n<think>\n\n</think>\n\nLOG(FATAL, 9000, \"Network partition isolated datacenter\")"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "level_correct_gap_recovered": 2.003,
+    "format_ok_gap_recovered": 1.2,
+    "code_prefix_ok_gap_recovered": 1.2,
+    "student_kl_below_floor_kl": true,
+    "max_new_tokens": 192
+  }
+}
