@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import ctypes
 import json
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
@@ -28,6 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .decode import FINISH_LENGTH, FINISH_STOP
 from .grammar import JsonSchemaGrammar, apply_packed_bitmask_inplace
 from .models import EngineConfig, GenerationResult
+from .seq_routing import NO_ADAPTER, SeqRoutingBinding, SeqRoutingUnavailable
 
 BASE: None = None  # sentinel adapter name meaning "no adapter / raw base model"
 
@@ -44,13 +45,31 @@ class AdapterSpec(_BoundaryModel):
     scale: float = Field(default=1.0, gt=0)
 
 
+Backend = Literal["context_pool", "seq_routed", "auto"]
+
+
 class RouterConfig(_BoundaryModel):
-    """Everything needed to stand up a router over one base model."""
+    """Everything needed to stand up a router over one base model.
+
+    ``backend`` selects how a mixed-adapter workload is served:
+
+    * ``context_pool`` — one pinned-adapter ``llama_context`` per adapter; requests
+      are grouped by adapter and each group multiplexed on its context (the
+      always-available shipping path).
+    * ``seq_routed`` — the P2 fork's true mixed-batch path: one context, the ordered
+      adapter pool registered once, each sequence assigned its adapter, a single
+      ``llama_decode`` carrying the mix. Requires a fork lib; raises at construction
+      if the capability is absent (explicit opt-in).
+    * ``auto`` (default) — ``seq_routed`` when the loaded lib reports the routing
+      capability, else ``context_pool``. Fail-closed: a stock lib silently uses the
+      context-pool path; missing capability is never an inference failure.
+    """
 
     engine: EngineConfig
     adapters: tuple[AdapterSpec, ...]
     n_seq_max: int = Field(default=8, gt=0)
     include_base: bool = True
+    backend: Backend = "auto"
 
 
 class RouteRequest(_BoundaryModel):
@@ -96,14 +115,76 @@ class MultiLoRARouter:
             self._adapter_ptr[spec.name] = ptr
         self._scale = {s.name: s.scale for s in config.adapters}
 
+        # ---- backend selection (fail-closed) ----
+        # ``auto`` uses the fork path only when the loaded lib exports it; ``seq_routed``
+        # is an explicit opt-in that raises here if the fork is absent; ``context_pool``
+        # never touches the fork surface.
+        self.backend = self._resolve_backend(config.backend)
+
+        self._seq_binding: SeqRoutingBinding | None = None
+        self._seq_ctx: Any = None
+        # Ordered adapter pool: pool index == routing id. Fixed at construction so a
+        # sequence's index is stable across waves. BASE maps to the -1 sentinel.
+        self._seq_pool: tuple[str, ...] = tuple(s.name for s in config.adapters)
+        self._seq_index: dict[str, int] = {name: i for i, name in enumerate(self._seq_pool)}
+
         self._ctx: dict[str | None, Any] = {}
-        names: list[str | None] = ([BASE] if config.include_base else []) + [s.name for s in config.adapters]
+        if self.backend == "seq_routed":
+            self._setup_seq_routed()
+        else:
+            self._setup_context_pool()
+        self._grammar: JsonSchemaGrammar | None = None
+
+    # ---- backend setup ----
+
+    def _resolve_backend(self, requested: Backend) -> str:
+        """Pick the concrete backend, honoring the fail-closed rule for ``auto``."""
+        lib = getattr(self.C, "_lib", None)
+        from .seq_routing import library_supports_seq_routing
+
+        capable = lib is not None and library_supports_seq_routing(lib)
+        if requested == "seq_routed":
+            if not capable:
+                raise SeqRoutingUnavailable(
+                    "backend='seq_routed' requires the P2 fork lib "
+                    "(llama_set_seq_adapters/llama_set_seq_adapter absent)"
+                )
+            return "seq_routed"
+        if requested == "auto":
+            return "seq_routed" if capable else "context_pool"
+        return "context_pool"
+
+    def _setup_context_pool(self) -> None:
+        names: list[str | None] = ([BASE] if self.config.include_base else []) + list(self._seq_pool)
         for name in names:
             ctx = self._make_ctx()
             if name is not BASE:
                 self._pin_adapter(ctx, self._adapter_ptr[name], self._scale[name])
             self._ctx[name] = ctx
-        self._grammar: JsonSchemaGrammar | None = None
+
+    def _setup_seq_routed(self) -> None:
+        """One context; register the ordered adapter pool once via the fork binding.
+
+        The fork's ``llama_set_seq_adapters`` takes no per-adapter scale — the masked
+        path applies each adapter's built-in alpha scaling. So an ``AdapterSpec.scale``
+        override is honored only on the ``context_pool`` backend; on ``seq_routed`` a
+        non-default scale is ignored. Warn rather than silently diverge.
+        """
+        off_default = [s.name for s in self.config.adapters if s.scale != 1.0]
+        if off_default:
+            import warnings
+
+            warnings.warn(
+                f"seq_routed backend ignores AdapterSpec.scale overrides for {off_default} "
+                "(the fork applies built-in adapter alpha); use backend='context_pool' to "
+                "apply custom scales.",
+                stacklevel=2,
+            )
+        self._seq_binding = SeqRoutingBinding(self.C)
+        self._seq_ctx = self._make_ctx()
+        self._seq_binding.set_seq_adapters(
+            self._seq_ctx, [self._adapter_ptr[name] for name in self._seq_pool]
+        )
 
     # ---- setup ----
 
@@ -228,15 +309,46 @@ class MultiLoRARouter:
         return list(self.llm.tokenize(text.encode("utf-8"), add_bos=True, special=True))
 
     def run(self, requests: list[RouteRequest], *, constrained: bool = False) -> list[RouteResult]:
-        """Route + batch a mixed workload; optionally constrain to the grammar."""
+        """Route + batch a mixed workload; optionally constrain to the grammar.
+
+        Same public surface on both backends. ``context_pool`` groups by adapter and
+        multiplexes across contexts; ``seq_routed`` carries a mix of adapters in each
+        single-``llama_decode`` wave.
+        """
         if constrained and self._grammar is None:
             raise RuntimeError("constrained=True requires enable_grammar(...) first")
-        by_adapter: dict[str | None, list[int]] = {}
-        for idx, r in enumerate(requests):
+        for r in requests:
             if r.adapter is not BASE and r.adapter not in self._adapter_ptr:
                 raise KeyError(f"unknown adapter {r.adapter!r}")
-            by_adapter.setdefault(r.adapter, []).append(idx)
+        if self.backend == "seq_routed":
+            return self._run_seq_routed(requests, constrained=constrained)
+        return self._run_context_pool(requests, constrained=constrained)
 
+    def _finalize(self, r: RouteRequest, prompt: list[int], gen: tuple[list[int], str],
+                  constrained: bool) -> RouteResult:
+        toks, finish_reason = gen
+        toks = toks[:r.max_tokens]
+        text = self.llm.detokenize(toks).decode("utf-8", errors="replace")
+        # Only parse when the grammar actually completed; a length cut leaves the
+        # JSON truncated, and ``validated`` must reflect that.
+        decision = None
+        if constrained and finish_reason == FINISH_STOP:
+            try:
+                decision = json.loads(text)
+            except ValueError:
+                decision = None
+        return RouteResult(
+            text=text, token_ids=tuple(toks), prompt_token_count=len(prompt),
+            completion_token_count=len(toks),
+            finish_reason=finish_reason, request_id=r.request_id,
+            adapter=r.adapter, decision=decision,
+            validated=(decision is not None) if constrained else None,
+        )
+
+    def _run_context_pool(self, requests: list[RouteRequest], *, constrained: bool) -> list[RouteResult]:
+        by_adapter: dict[str | None, list[int]] = {}
+        for idx, r in enumerate(requests):
+            by_adapter.setdefault(r.adapter, []).append(idx)
         results: dict[int, RouteResult] = {}
         for adapter, idxs in by_adapter.items():
             ctx = self._ctx[adapter]
@@ -246,31 +358,38 @@ class MultiLoRARouter:
                 matchers = [self._grammar.new_matcher() for _ in wave] if constrained else None
                 gen = self._generate_wave(ctx, prompts, max(requests[j].max_tokens for j in wave), matchers)
                 for slot, j in enumerate(wave):
-                    r = requests[j]
-                    toks, finish_reason = gen[slot]
-                    toks = toks[:r.max_tokens]
-                    text = self.llm.detokenize(toks).decode("utf-8", errors="replace")
-                    # Only parse when the grammar actually completed; a length cut
-                    # leaves the JSON truncated, and validated must reflect that.
-                    decision = None
-                    if constrained and finish_reason == FINISH_STOP:
-                        try:
-                            decision = json.loads(text)
-                        except ValueError:
-                            decision = None
-                    results[j] = RouteResult(
-                        text=text, token_ids=tuple(toks), prompt_token_count=len(prompts[slot]),
-                        completion_token_count=len(toks),
-                        finish_reason=finish_reason, request_id=r.request_id,
-                        adapter=adapter, decision=decision,
-                        validated=(decision is not None) if constrained else None,
-                    )
+                    results[j] = self._finalize(requests[j], prompts[slot], gen[slot], constrained)
         return [results[i] for i in range(len(requests))]
+
+    def _run_seq_routed(self, requests: list[RouteRequest], *, constrained: bool) -> list[RouteResult]:
+        """True mixed-batch: each wave is one ``llama_decode`` over a mix of adapters.
+
+        Requests keep submission order; each wave of up to ``n_seq_max`` sequences
+        assigns row ``i`` its own adapter (``-1`` for BASE) before decoding, so a
+        single decode carries the mix — no per-adapter context, no ``n_seq_max`` split.
+        """
+        assert self._seq_binding is not None and self._seq_ctx is not None
+        ctx = self._seq_ctx
+        results: list[RouteResult] = []
+        for w in range(0, len(requests), self.n_seq_max):
+            wave = requests[w:w + self.n_seq_max]
+            for i, r in enumerate(wave):
+                idx = NO_ADAPTER if r.adapter is BASE else self._seq_index[r.adapter]
+                self._seq_binding.set_seq_adapter(ctx, i, idx)
+            prompts = [self._tokenize(r.prompt) for r in wave]
+            matchers = [self._grammar.new_matcher() for _ in wave] if constrained else None
+            gen = self._generate_wave(ctx, prompts, max(r.max_tokens for r in wave), matchers)
+            for i, r in enumerate(wave):
+                results.append(self._finalize(r, prompts[i], gen[i], constrained))
+        return results
 
     def close(self) -> None:
         for ctx in self._ctx.values():
             self.C.llama_free(ctx)
         self._ctx.clear()
+        if self._seq_ctx is not None:
+            self.C.llama_free(self._seq_ctx)
+            self._seq_ctx = None
         self.llm.close()
 
     def __enter__(self) -> MultiLoRARouter:

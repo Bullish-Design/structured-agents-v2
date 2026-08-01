@@ -155,6 +155,37 @@
       tests/test_node_delta.py tests/test_prefix_cache_live.py -k gpu
   '';
 
+  # Project 20: GPU-gated pytest against the P2 FORK lib (mixed-batch multi-LoRA).
+  # Same proven CUDA env as project17-gpu-pytest, but LLAMA_CPP_LIB_PATH points at a
+  # p2fork build so the seq-routing capability is present and the correctness gate
+  # runs (otherwise the tests fail-closed skip). Pins GPU 0 by default (GPU 1 often
+  # hosts a vLLM runner); override with PROJECT20_CUDA_DEVICES. Args pass to pytest.
+  scripts.project20-gpu-pytest.exec = ''
+    set -euo pipefail
+    root="$PWD"
+    spike="$root/.scratch/projects/17-llama-cpp-inference-lab"
+    py="''${PROJECT20_SPIKE_PY:-$spike/.venv-spike/bin/python}"
+    model="''${PROJECT20_MODEL:-/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf}"
+    lib="''${PROJECT20_FORK_LIB:-$spike/.llamacpp-builds/out-p2fork-c588c4f47/lib}"
+    cuda_ld="$(tr -d '\n' < "$spike/.cuda_runtime_ld")"
+    if [ ! -x "$py" ]; then echo "spike python not found: $py (set PROJECT20_SPIKE_PY)" >&2; exit 2; fi
+    if [ ! -f "$model" ]; then echo "model not found: $model (set PROJECT20_MODEL)" >&2; exit 2; fi
+    if [ ! -d "$lib" ]; then echo "fork lib dir not found: $lib (set PROJECT20_FORK_LIB)" >&2; exit 2; fi
+    export CUDA_VISIBLE_DEVICES="''${PROJECT20_CUDA_DEVICES:-0}"
+    export LLAMA_CPP_LIB_PATH="$lib"
+    export LLAMA_TEST_MODEL="$model"
+    # /run/opengl-driver/lib first so the real libcuda wins over any CUDA stub;
+    # cuda_ld carries gcc-lib (libstdc++) + cudart/cublas the bindings dlopen.
+    export LD_LIBRARY_PATH="/run/opengl-driver/lib:$lib:$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    export PYTHONPATH="src''${PYTHONPATH:+:$PYTHONPATH}"
+    printf 'python=%s\nCUDA_VISIBLE_DEVICES=%s\nLLAMA_CPP_LIB_PATH=%s\nLLAMA_TEST_MODEL=%s\n' \
+      "$py" "$CUDA_VISIBLE_DEVICES" "$LLAMA_CPP_LIB_PATH" "$LLAMA_TEST_MODEL"
+    if [ "$#" -gt 0 ]; then
+      exec "$py" -m pytest "$@"
+    fi
+    exec "$py" -m pytest -o addopts='-rs' tests/test_seq_routing_gpu.py
+  '';
+
   languages.python = {
     enable = true;
     version = "3.13";
