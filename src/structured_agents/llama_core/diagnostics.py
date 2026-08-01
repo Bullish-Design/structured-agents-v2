@@ -20,6 +20,10 @@ class RuntimeDiagnostics(BaseModel):
     llama_cpp_library_path: str | None = None
     llama_cpp_commit: str | None = None
     llama_cpp_build_id: str | None = None
+    # Project 20: whether the pointed-at lib is the P2 fork exporting the mixed-batch
+    # per-sequence LoRA routing surface. Read from the build manifest (no native
+    # import), so it reflects the lib on LLAMA_CPP_LIB_PATH even before load.
+    seq_adapter_routing: bool | None = None
     ggml_version: str | None = None
     xgrammar_version: str | None = None
     torch_version: str | None = None
@@ -55,6 +59,13 @@ def _text(manifest: dict[str, object], *names: str) -> str | None:
     return None
 
 
+def _flag(manifest: dict[str, object], name: str) -> bool | None:
+    value = manifest.get(name)
+    if value is None:
+        return None
+    return bool(value)
+
+
 def collect_runtime_diagnostics() -> RuntimeDiagnostics:
     """Report installed/runtime facts, returning ``None`` for unavailable evidence."""
     library_path = os.environ.get("LLAMA_CPP_LIB_PATH")
@@ -66,6 +77,7 @@ def collect_runtime_diagnostics() -> RuntimeDiagnostics:
         llama_cpp_library_path=library_path,
         llama_cpp_commit=_text(manifest, "llama_cpp_commit", "commit", "ref"),
         llama_cpp_build_id=_text(manifest, "build_id", "profile"),
+        seq_adapter_routing=_flag(manifest, "seq_adapter_routing"),
         ggml_version=_text(manifest, "ggml_version"),
         xgrammar_version=_package_version("xgrammar"),
         torch_version=_package_version("torch"),

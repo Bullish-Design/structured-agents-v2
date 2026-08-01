@@ -37,7 +37,7 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -68,12 +68,16 @@ class BatchRequest(_BoundaryModel):
     """One request entering the continuous batch.
 
     ``max_tokens=None`` defers to :attr:`BatchConfig.default_max_tokens`, so the
-    common case stays terse while a request may still cap itself.
+    common case stays terse while a request may still cap itself. ``adapter`` names
+    the LoRA adapter the request should decode under (``None`` = raw base); it is
+    honored only by a seq-routing-capable backend (the P2 fork), where a single
+    decode step can mix adapters — a stock backend ignores it.
     """
 
     prompt: str
     max_tokens: int | None = Field(default=None, gt=0)
     request_id: str | None = None
+    adapter: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -233,6 +237,11 @@ class ContinuousBatchScheduler:
                 if counters["steps"] > 0:
                     counters["admission_waits"] += 1  # a slot had to free before this fit
                 self.backend.free_slot(sid)  # clean slate for a reused slot
+                # Mixed-adapter admission (P2 fork): assign this slot its request's
+                # adapter before prefill so the whole in-flight decode carries the mix.
+                # Stock backends have no such method; the wave is single-adapter.
+                if getattr(self.backend, "supports_seq_routing", False):
+                    self.backend.set_slot_adapter(sid, req.adapter)  # ty: ignore[unresolved-attribute]
                 tokens = self.backend.tokenize(req.prompt)
                 first = self.backend.prefill(tokens, sid)
                 counters["prefills"] += 1
@@ -276,7 +285,8 @@ class LlamaContinuousBatchEngine:
     """
 
     def __init__(self, model_path: str, *, n_ctx: int, n_seq_max: int = 8,
-                 n_batch: int = 512, n_gpu_layers: int = 0, seed: int | None = None) -> None:
+                 n_batch: int = 512, n_gpu_layers: int = 0, seed: int | None = None,
+                 adapters: Sequence[tuple[str, str, float]] = ()) -> None:
         import numpy as np
         from llama_cpp import Llama, llama_cpp
 
@@ -301,6 +311,30 @@ class LlamaContinuousBatchEngine:
         if not self.ctx:
             raise RuntimeError("llama_new_context_with_model returned NULL (out of VRAM?)")
 
+        # Optional P2-fork mixed-adapter routing: register an ordered pool once and
+        # let each slot pick its adapter. Absent a fork lib (or no adapters) the
+        # engine is the plain single-context batcher and ``supports_seq_routing`` is
+        # False, so the scheduler never calls the routing hook.
+        self._seq_binding: Any = None
+        self._seq_index: dict[str, int] = {}
+        if adapters:
+            from .seq_routing import SeqRoutingBinding, SeqRoutingUnavailable
+
+            try:
+                binding = SeqRoutingBinding(self.C)
+            except SeqRoutingUnavailable:
+                binding = None
+            if binding is not None:
+                ptrs = []
+                for name, gguf_path, _scale in adapters:
+                    ptr = self.C.llama_adapter_lora_init(self.model, gguf_path.encode("utf-8"))
+                    if not ptr:
+                        raise RuntimeError(f"failed to load adapter {name!r} from {gguf_path}")
+                    self._seq_index[name] = len(ptrs)
+                    ptrs.append(ptr)
+                binding.set_seq_adapters(self.ctx, ptrs)
+                self._seq_binding = binding
+
     @property
     def n_seq_max(self) -> int:
         return self._n_seq_max
@@ -308,6 +342,20 @@ class LlamaContinuousBatchEngine:
     @property
     def eos(self) -> int:
         return self._eos
+
+    @property
+    def supports_seq_routing(self) -> bool:
+        """True when a fork adapter pool is registered (mixed-adapter admission)."""
+        return self._seq_binding is not None
+
+    def set_slot_adapter(self, seq_id: int, adapter: str | None) -> None:
+        """Route slot ``seq_id`` to ``adapter`` (``None`` = base) before its prefill."""
+        if self._seq_binding is None:
+            return
+        from .seq_routing import NO_ADAPTER
+
+        idx = NO_ADAPTER if adapter is None else self._seq_index[adapter]
+        self._seq_binding.set_seq_adapter(self.ctx, seq_id, idx)
 
     def tokenize(self, prompt: str) -> list[int]:
         return list(self.llm.tokenize(prompt.encode("utf-8"), add_bos=True, special=True))

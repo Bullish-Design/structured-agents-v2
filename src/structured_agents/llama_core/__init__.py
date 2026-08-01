@@ -10,6 +10,12 @@ from .fingerprint import (
 )
 from .grammar import GrammarCacheKey, GrammarCompilerCache, JsonSchemaGrammar
 from .models import EngineConfig, GenerationRequest, GenerationResult
+from .seq_routing import (
+    NO_ADAPTER,
+    SeqRoutingBinding,
+    SeqRoutingUnavailable,
+    library_supports_seq_routing,
+)
 
 # NOTE: the router (``router.py``) and owned decoder (``decode.py``) are heavy,
 # native-backed modules; like ``decode``, ``router`` is imported directly by
@@ -27,9 +33,13 @@ __all__ = [
     "GrammarCompilerCache",
     "JsonSchemaGrammar",
     "LlamaEngineFingerprint",
+    "NO_ADAPTER",
     "RuntimeDiagnostics",
+    "SeqRoutingBinding",
+    "SeqRoutingUnavailable",
     "collect_runtime_diagnostics",
     "file_identity",
+    "library_supports_seq_routing",
     "register_artifact",
     "write_benchmark_record",
 ]

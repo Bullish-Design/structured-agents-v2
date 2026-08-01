@@ -74,6 +74,11 @@ class LlamaEngineFingerprint(_FrozenModel):
     llama_cpp_python_version: str
     llama_cpp_commit: str | None = None
     llama_cpp_build_id: str | None = None
+    # Project 20: True when the loaded libllama exports the mixed-batch per-sequence
+    # LoRA routing surface (llama_set_seq_adapters / llama_set_seq_adapter) — i.e. the
+    # private P2 fork rather than a stock lib. Part of the key so a fork-built engine
+    # and a stock engine over the same model never share cache state.
+    seq_adapter_routing: bool = False
     backend: str
     n_ctx: int = Field(gt=0)
     kv_type_k: str | None = None

@@ -1,0 +1,124 @@
+{
+  "config": {
+    "n_ctx": 2048,
+    "n_seq_max": 8,
+    "max_tokens": 32,
+    "reps": 3,
+    "seed": 17018,
+    "k_sweep_s": 8
+  },
+  "phase1_s_sweep_k2": [
+    {
+      "S": 2,
+      "gen_tokens": 64,
+      "outputs_identical": true,
+      "sequential_ms": 1469.5,
+      "sequential_tok_s": 43.6,
+      "router_ms": 1371.3,
+      "router_tok_s": 46.7,
+      "fork_ms": 944.1,
+      "fork_tok_s": 67.8,
+      "fork_vs_router": 1.45,
+      "fork_vs_sequential": 1.56
+    },
+    {
+      "S": 4,
+      "gen_tokens": 128,
+      "outputs_identical": false,
+      "sequential_ms": 2950.9,
+      "sequential_tok_s": 43.4,
+      "router_ms": 1802.9,
+      "router_tok_s": 71.0,
+      "fork_ms": 1539.0,
+      "fork_tok_s": 83.2,
+      "fork_vs_router": 1.17,
+      "fork_vs_sequential": 1.92
+    },
+    {
+      "S": 8,
+      "gen_tokens": 256,
+      "outputs_identical": false,
+      "sequential_ms": 5890.8,
+      "sequential_tok_s": 43.5,
+      "router_ms": 2974.2,
+      "router_tok_s": 86.1,
+      "fork_ms": 2695.6,
+      "fork_tok_s": 95.0,
+      "fork_vs_router": 1.1,
+      "fork_vs_sequential": 2.19
+    }
+  ],
+  "phase2_k_sweep": [
+    {
+      "K": 2,
+      "S": 8,
+      "gen_tokens": 256,
+      "fork_ms": 2705.8,
+      "fork_tok_s": 94.6,
+      "router_ms": 2964.6,
+      "router_tok_s": 86.4,
+      "fork_vs_router": 1.1,
+      "predicted_masked_overhead": 0.016
+    },
+    {
+      "K": 4,
+      "S": 8,
+      "gen_tokens": 256,
+      "fork_ms": 2714.2,
+      "fork_tok_s": 94.3,
+      "router_ms": 3588.0,
+      "router_tok_s": 71.3,
+      "fork_vs_router": 1.32,
+      "predicted_masked_overhead": 0.031
+    },
+    {
+      "K": 8,
+      "S": 8,
+      "gen_tokens": 256,
+      "fork_ms": 2741.8,
+      "fork_tok_s": 93.4,
+      "router_ms": 5471.3,
+      "router_tok_s": 46.8,
+      "fork_vs_router": 2.0,
+      "predicted_masked_overhead": 0.062
+    },
+    {
+      "K": 16,
+      "S": 8,
+      "gen_tokens": 256,
+      "fork_ms": 2801.4,
+      "fork_tok_s": 91.4,
+      "router_ms": null,
+      "router_tok_s": null,
+      "fork_vs_router": null,
+      "predicted_masked_overhead": 0.125
+    },
+    {
+      "K": 24,
+      "S": 8,
+      "gen_tokens": 256,
+      "fork_ms": null,
+      "fork_tok_s": null,
+      "router_ms": null,
+      "router_tok_s": null,
+      "fork_vs_router": null,
+      "predicted_masked_overhead": 0.188
+    },
+    {
+      "K": 32,
+      "S": 8,
+      "gen_tokens": 256,
+      "fork_ms": null,
+      "fork_tok_s": null,
+      "router_ms": null,
+      "router_tok_s": null,
+      "fork_vs_router": null,
+      "predicted_masked_overhead": 0.25
+    }
+  ],
+  "gpu_before": "0, 1 MiB, 0 %\n1, 10801 MiB, 0 %",
+  "gpu_after": "0, 6049 MiB, 97 %\n1, 10801 MiB, 0 %",
+  "model": "/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf",
+  "lib": "/home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/17-llama-cpp-inference-lab/.llamacpp-builds/out-p2fork-c588c4f47/lib",
+  "all_outputs_identical": false
+}
