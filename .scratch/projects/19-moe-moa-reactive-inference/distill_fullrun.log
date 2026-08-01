@@ -1,0 +1,31 @@
+[transformers] The fast path is not available because one of the required library is not installed. Falling back to torch implementation. To install follow https://github.com/fla-org/flash-linear-attention#installation and https://github.com/Dao-AILab/causal-conv1d
+[cfg] device=cuda dtype=bfloat16 smoke=False steps=400 rank=16 CUDA_VISIBLE_DEVICES=1
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 4054.73it/s]
+[load] loaded via AutoModelForCausalLM: Qwen3_5ForCausalLM
+[load] done in 1.8s
+[lora] injected into 84 linears; 5.95M trainable params; e.g. ['model.layers.0.mlp.gate_proj', 'model.layers.0.mlp.up_proj', 'model.layers.0.mlp.down_proj']
+[teacher] generating target continuations (base + context)...
+[train] 400 steps (KL context distillation)...
+  step    0  KL=0.5526
+  step   40  KL=0.0515
+  step   80  KL=0.0475
+  step  120  KL=0.0278
+  step  160  KL=0.0191
+  step  200  KL=0.0367
+  step  240  KL=0.0308
+  step  280  KL=0.0276
+  step  320  KL=0.0394
+  step  360  KL=0.0211
+[eval] held-out: floor(base,noctx) / ceiling(base,ctx) / student(lora,noctx)
+  floor_base_noctx: task={'format_ok': 0.0, 'level_valid': 0.0, 'level_correct': 0.0, 'code_prefix_ok': 0.0} kl_vs_ceiling=0.9059
+  ceiling_base_ctx: task={'format_ok': 0.5, 'level_valid': 0.5, 'level_correct': 0.167, 'code_prefix_ok': 0.5} kl_vs_ceiling=0.0
+  student_lora_noctx: task={'format_ok': 0.0, 'level_valid': 0.0, 'level_correct': 0.0, 'code_prefix_ok': 0.0} kl_vs_ceiling=0.0396
+[done] wrote /home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/17-llama-cpp-inference-lab/../19-moe-moa-reactive-inference/spike_context_distill_result.json
+[done] wrote /home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/17-llama-cpp-inference-lab/../19-moe-moa-reactive-inference/spike_context_distill_adapter.pt
+[verdict] {
+  "level_correct_gap_recovered": 0.0,
+  "format_ok_gap_recovered": 0.0,
+  "student_kl_below_floor_kl": true,
+  "note": "GO if gap_recovered >= 0.5 on level_correct AND student_kl_below_floor_kl is True (see SPIKE-DISTILL-PLAN.md).",
+  "smoke": false
+}

@@ -1,0 +1,20 @@
+[transformers] The fast path is not available because one of the required library is not installed. Falling back to torch implementation. To install follow https://github.com/fla-org/flash-linear-attention#installation and https://github.com/Dao-AILab/causal-conv1d
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 6324.94it/s]
+[load] loaded via AutoModelForCausalLM: Qwen3_5ForCausalLM
+[load] done in 2.0s on cuda
+[lora] injected into 84 linears
+[adapter] loaded 168 tensors; missing=321 unexpected=0
+[eval] 24 held-out queries via chat template (enable_thinking=False), max_new_tokens=384
+  floor_base_noctx: task={'format_ok': 0.0, 'level_valid': 0.0, 'level_correct': 0.0, 'code_prefix_ok': 0.0} kl=1.7517 think=0 hit_budget=5 max_out=384
+  ceiling_base_ctx: task={'format_ok': 0.958, 'level_valid': 0.958, 'level_correct': 0.625, 'code_prefix_ok': 0.958} kl=0.0 think=0 hit_budget=0 max_out=25
+  student_lora_noctx: task={'format_ok': 1.0, 'level_valid': 1.0, 'level_correct': 0.625, 'code_prefix_ok': 1.0} kl=0.0954 think=0 hit_budget=0 max_out=25
+[done] wrote /home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/17-llama-cpp-inference-lab/../19-moe-moa-reactive-inference/spike_distill_template_result.json
+[verdict] {
+  "n_held_out": 24,
+  "max_new_tokens": 384,
+  "any_hit_budget": true,
+  "level_correct_gap_recovered": 1.0,
+  "format_ok_gap_recovered": 1.044,
+  "code_prefix_ok_gap_recovered": 1.044,
+  "student_kl_below_floor_kl": true
+}

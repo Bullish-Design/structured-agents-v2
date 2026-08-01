@@ -1,0 +1,54 @@
+=== [1/2] re-distill v2 (teacher-fixed CONTEXT) ===
+[cfg] device=cuda dtype=bfloat16 smoke=False steps=400 rank=16 CUDA_VISIBLE_DEVICES=1
+[transformers] The fast path is not available because one of the required library is not installed. Falling back to torch implementation. To install follow https://github.com/fla-org/flash-linear-attention#installation and https://github.com/Dao-AILab/causal-conv1d
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 5323.65it/s]
+[load] loaded via AutoModelForCausalLM: Qwen3_5ForCausalLM
+[load] done in 2.2s
+[lora] injected into 84 linears; 5.95M trainable params; e.g. ['model.layers.0.mlp.gate_proj', 'model.layers.0.mlp.up_proj', 'model.layers.0.mlp.down_proj']
+[teacher] generating target continuations (base + context)...
+[train] 400 steps (KL context distillation)...
+  step    0  KL=0.9657
+  step   40  KL=0.0389
+  step   80  KL=0.0398
+  step  120  KL=0.0633
+  step  160  KL=0.0154
+  step  200  KL=0.0215
+  step  240  KL=0.0314
+  step  280  KL=0.0091
+  step  320  KL=0.0304
+  step  360  KL=0.0254
+[eval] held-out: floor(base,noctx) / ceiling(base,ctx) / student(lora,noctx)
+  floor_base_noctx: task={'format_ok': 0.0, 'level_valid': 0.0, 'level_correct': 0.0, 'code_prefix_ok': 0.0} kl_vs_ceiling=1.2597
+  ceiling_base_ctx: task={'format_ok': 1.0, 'level_valid': 1.0, 'level_correct': 1.0, 'code_prefix_ok': 1.0} kl_vs_ceiling=0.0
+  student_lora_noctx: task={'format_ok': 1.0, 'level_valid': 1.0, 'level_correct': 0.333, 'code_prefix_ok': 1.0} kl_vs_ceiling=0.0379
+[done] wrote ../19-moe-moa-reactive-inference/spike_distill_result_v2.json
+[done] wrote ../19-moe-moa-reactive-inference/spike_context_distill_adapter_v2.pt
+[verdict] {
+  "level_correct_gap_recovered": 0.333,
+  "format_ok_gap_recovered": 1.0,
+  "student_kl_below_floor_kl": true,
+  "note": "GO if gap_recovered >= 0.5 on level_correct AND student_kl_below_floor_kl is True (see SPIKE-DISTILL-PLAN.md).",
+  "smoke": false
+}
+=== [2/2] template-path eval on v2 adapter ===
+[transformers] The fast path is not available because one of the required library is not installed. Falling back to torch implementation. To install follow https://github.com/fla-org/flash-linear-attention#installation and https://github.com/Dao-AILab/causal-conv1d
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 5492.49it/s]
+[load] loaded via AutoModelForCausalLM: Qwen3_5ForCausalLM
+[load] done in 2.0s on cuda
+[lora] injected into 84 linears
+[adapter] loaded 168 tensors; missing=321 unexpected=0
+[eval] 24 held-out queries via chat template (enable_thinking=False), max_new_tokens=384
+  floor_base_noctx: task={'format_ok': 0.0, 'level_valid': 0.0, 'level_correct': 0.0, 'code_prefix_ok': 0.0} kl=1.8435 think=0 hit_budget=5 max_out=384
+  ceiling_base_ctx: task={'format_ok': 1.0, 'level_valid': 1.0, 'level_correct': 0.833, 'code_prefix_ok': 1.0} kl=0.0 think=0 hit_budget=0 max_out=28
+  student_lora_noctx: task={'format_ok': 1.0, 'level_valid': 1.0, 'level_correct': 0.625, 'code_prefix_ok': 1.0} kl=0.1246 think=0 hit_budget=0 max_out=27
+[done] wrote ../19-moe-moa-reactive-inference/spike_distill_template_v2_result.json
+[verdict] {
+  "n_held_out": 24,
+  "max_new_tokens": 384,
+  "any_hit_budget": true,
+  "level_correct_gap_recovered": 0.75,
+  "format_ok_gap_recovered": 1.0,
+  "code_prefix_ok_gap_recovered": 1.0,
+  "student_kl_below_floor_kl": true
+}
+=== ALL DONE ===
