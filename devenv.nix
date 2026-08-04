@@ -28,7 +28,7 @@
     project17_stamp="$(date -u +%Y%m%dT%H%M%SZ)"
     project17_session="project17-json-$project17_stamp"
     project17_artifacts="$PWD/artifacts/project17-json-$project17_mode-$project17_stamp"
-    project17_lib="$PWD/.scratch/projects/17-llama-cpp-inference-lab/.llamacpp-builds/out-cuda-3060-postfix2/lib"
+    project17_lib="''${PROJECT17_LIB_PATH:-$PWD/.devenv/state/venv/lib/python3.13/site-packages/llama_cpp/lib}"
     project17_cuda_ld="$(tr -d '\n' < "$PWD/.scratch/projects/17-llama-cpp-inference-lab/.cuda_runtime_ld")"
     mkdir -p "$project17_artifacts"
     {
@@ -61,13 +61,13 @@
         export LD_LIBRARY_PATH="$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
         export PYTHONPATH="src:.devenv/state/venv/lib/python3.13/site-packages''${PYTHONPATH:+:$PYTHONPATH}"
         printf "CUDA_VISIBLE_DEVICES=%s\\nLLAMA_CPP_LIB_PATH=%s\\nLD_LIBRARY_PATH=%s\\nPYTHONPATH=%s\\n" "$CUDA_VISIBLE_DEVICES" "$LLAMA_CPP_LIB_PATH" "$LD_LIBRARY_PATH" "$PYTHONPATH" > "$out/runtime-environment.txt"
-        printf "%q " .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_json_workload.py --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/command.txt"
+        printf "%q " .devenv/state/venv/bin/python benchmarks/project17/run_json_workload.py --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/command.txt"
         printf "\\n" >> "$out/command.txt"
         ( while :; do date -u +%FT%TZ; nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader; sleep 15; done ) > "$out/gpu-during.csv" 2>&1 &
         monitor=$!
         trap "kill $monitor 2>/dev/null || true" EXIT
         set +e
-        .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_json_workload.py --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/stdout-stderr.log" 2>&1
+        .devenv/state/venv/bin/python benchmarks/project17/run_json_workload.py --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/stdout-stderr.log" 2>&1
         rc=$?
         set -e
         printf "%s\\n" "$rc" > "$out/exit-status.txt"
@@ -87,7 +87,7 @@
     session="project17-prefix-cache-$stamp"
     out="$PWD/artifacts/project17-prefix-cache-$stamp"
     cache="$PWD/artifacts/project17-prefix-cache-store-$stamp"
-    lib="$PWD/.scratch/projects/17-llama-cpp-inference-lab/.llamacpp-builds/out-cuda-3060-postfix2/lib"
+    lib="''${PROJECT17_LIB_PATH:-$PWD/.devenv/state/venv/lib/python3.13/site-packages/llama_cpp/lib}"
     cuda_ld="$(tr -d '\n' < "$PWD/.scratch/projects/17-llama-cpp-inference-lab/.cuda_runtime_ld")"
     mkdir -p "$out" "$cache"
     git status --short > "$out/git-status-before.txt"
@@ -104,11 +104,11 @@
         export PYTHONPATH="src:.devenv/state/venv/lib/python3.13/site-packages''${PYTHONPATH:+:$PYTHONPATH}"
         env | rg "^(CUDA_VISIBLE_DEVICES|LLAMA_CPP_LIB_PATH|LD_LIBRARY_PATH|PYTHONPATH)=" > "$out/runtime-environment.txt"
         extra="''${PROJECT17_PREFIX_CACHE_ARGS:-}"
-        printf "%q " .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/command.txt"; printf "\n" >> "$out/command.txt"
+        printf "%q " .devenv/state/venv/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/command.txt"; printf "\n" >> "$out/command.txt"
         ( while :; do date -u +%FT%TZ; nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader; sleep 15; done ) > "$out/gpu-during.csv" 2>&1 & monitor=$!
         trap "kill $monitor 2>/dev/null || true" EXIT
         set +e
-        .scratch/projects/17-llama-cpp-inference-lab/.venv-spike/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/stdout-stderr.log" 2>&1
+        .devenv/state/venv/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/stdout-stderr.log" 2>&1
         rc=$?
         set -e
         printf "%s\n" "$rc" > "$out/exit-status.txt"
@@ -119,24 +119,26 @@
     printf 'Project 17 prefix-cache run: zellij attach %s\nArtifacts: %s\n' "$session" "$out"
   '';
 
-  # Foreground entrypoint for the GPU-gated pytest suite (context-tree +
-  # prefix-cache live).  Exports the proven CUDA/llama.cpp runtime env so the
-  # skipif gates (LLAMA_CPP_LIB_PATH / CUDA_VISIBLE_DEVICES / model) pass, then
-  # runs pytest under the spike venv -- the interpreter that carries the
-  # llama-cpp-python bindings matched to the prebuilt out-cuda-3060 libllama.so
-  # (the devenv venv has no llama_cpp).  Extra args pass through to pytest, e.g.
+  # Foreground entrypoint for the GPU-gated pytest suite. Exports the proven
+  # CUDA/llama.cpp runtime env, then runs pytest under the reference
+  # interpreter (the devenv venv, which after the step-7 refactor carries the
+  # llama-cpp-python binding + inferference). LLAMA_CPP_LIB_PATH defaults to the
+  # Mode A wheel's bundled lib dir (the ABI-anchor unit inside this repo); set
+  # PROJECT17_LIB_PATH to the Mode B out-p2fork-24c5d3dbc lib for nan-fix
+  # iteration. Extra args pass through to pytest, e.g.
   #   project17-gpu-pytest -k reconstruct
   # Overridable: PROJECT17_MODEL, PROJECT17_CUDA_DEVICES (default 0),
-  # PROJECT17_SPIKE_PY (spike venv python).
+  # PROJECT17_LIB_PATH, PROJECT17_SPIKE_PY (selects the reference interpreter;
+  # default .devenv/state/venv/bin/python).
   scripts.project17-gpu-pytest.exec = ''
     set -euo pipefail
     root="$PWD"
     spike="$root/.scratch/projects/17-llama-cpp-inference-lab"
-    py="''${PROJECT17_SPIKE_PY:-$spike/.venv-spike/bin/python}"
+    py="''${PROJECT17_SPIKE_PY:-$PWD/.devenv/state/venv/bin/python}"
     model="''${PROJECT17_MODEL:-/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf}"
-    lib="$spike/.llamacpp-builds/out-cuda-3060-postfix2/lib"
+    lib="''${PROJECT17_LIB_PATH:-$PWD/.devenv/state/venv/lib/python3.13/site-packages/llama_cpp/lib}"
     cuda_ld="$(tr -d '\n' < "$spike/.cuda_runtime_ld")"
-    if [ ! -x "$py" ]; then echo "spike python not found: $py (set PROJECT17_SPIKE_PY)" >&2; exit 2; fi
+    if [ ! -x "$py" ]; then echo "reference python not found: $py (set PROJECT17_SPIKE_PY)" >&2; exit 2; fi
     if [ ! -f "$model" ]; then echo "model not found: $model (set PROJECT17_MODEL)" >&2; exit 2; fi
     if [ ! -d "$lib" ]; then echo "llama.cpp lib dir not found: $lib" >&2; exit 2; fi
     export CUDA_VISIBLE_DEVICES="''${PROJECT17_CUDA_DEVICES:-0}"
@@ -151,24 +153,27 @@
     if [ "$#" -gt 0 ]; then
       exec "$py" -m pytest "$@"
     fi
-    exec "$py" -m pytest -o addopts='-rs' \
-      tests/test_node_delta.py tests/test_prefix_cache_live.py -k gpu
+    exec "$py" -m pytest -o addopts='-rs' tests/ -q
   '';
 
   # Project 20: GPU-gated pytest against the P2 FORK lib (mixed-batch multi-LoRA).
   # Same proven CUDA env as project17-gpu-pytest, but LLAMA_CPP_LIB_PATH points at a
-  # p2fork build so the seq-routing capability is present and the correctness gate
-  # runs (otherwise the tests fail-closed skip). Pins GPU 0 by default (GPU 1 often
-  # hosts a vLLM runner); override with PROJECT20_CUDA_DEVICES. Args pass to pytest.
+  # p2fork build so the seq-routing capability is present. After the step-7
+  # refactor the reference owns no GPU-gated tests — the no-arg default runs the
+  # framework suite; PROJECT20_FORK_LIB defaults to the Mode B
+  # out-p2fork-24c5d3dbc lib (b10233 + P2 + hats + nan-fix). Pins GPU 0 by default
+  # (GPU 1 often hosts a vLLM runner); override with PROJECT20_CUDA_DEVICES.
+  # PROJECT20_SPIKE_PY selects the reference interpreter
+  # (default .devenv/state/venv/bin/python). Args pass to pytest.
   scripts.project20-gpu-pytest.exec = ''
     set -euo pipefail
     root="$PWD"
     spike="$root/.scratch/projects/17-llama-cpp-inference-lab"
-    py="''${PROJECT20_SPIKE_PY:-$spike/.venv-spike/bin/python}"
+    py="''${PROJECT20_SPIKE_PY:-$PWD/.devenv/state/venv/bin/python}"
     model="''${PROJECT20_MODEL:-/home/andrew/.cache/structured-agents/models/Ornith-1.0-9B-UD-Q4_K_XL.gguf}"
-    lib="''${PROJECT20_FORK_LIB:-$spike/.llamacpp-builds/out-p2fork-c588c4f47/lib}"
+    lib="''${PROJECT20_FORK_LIB:-/home/andrew/Documents/Projects/inferference/ci/build/.llamacpp-builds/out-p2fork-24c5d3dbc/lib}"
     cuda_ld="$(tr -d '\n' < "$spike/.cuda_runtime_ld")"
-    if [ ! -x "$py" ]; then echo "spike python not found: $py (set PROJECT20_SPIKE_PY)" >&2; exit 2; fi
+    if [ ! -x "$py" ]; then echo "reference python not found: $py (set PROJECT20_SPIKE_PY)" >&2; exit 2; fi
     if [ ! -f "$model" ]; then echo "model not found: $model (set PROJECT20_MODEL)" >&2; exit 2; fi
     if [ ! -d "$lib" ]; then echo "fork lib dir not found: $lib (set PROJECT20_FORK_LIB)" >&2; exit 2; fi
     export CUDA_VISIBLE_DEVICES="''${PROJECT20_CUDA_DEVICES:-0}"
@@ -183,7 +188,24 @@
     if [ "$#" -gt 0 ]; then
       exec "$py" -m pytest "$@"
     fi
-    exec "$py" -m pytest -o addopts='-rs' tests/test_seq_routing_gpu.py
+    exec "$py" -m pytest -o addopts='-rs' tests/ -q
+  '';
+
+  # Project 23: cross-repo GPU contract suite. The inferference test suite is
+  # the source of truth for the shared llama.cpp core; this runs it under the
+  # inferference library venv, serialized on GPU 0 via the gpu-serialized flock
+  # (GPU 1 often hosts a vLLM runner). LLAMA_CPP_LIB_PATH pins the Mode A unit
+  # (the library venv's bundled lib dir — the report's reproduction recipe), so
+  # the GPU-gated tests run instead of skip; the spike's .cuda_runtime_ld
+  # carries the gcc/cudart/cublas libs the bindings dlopen. The reference keeps
+  # no GPU-gated tests after the step-7 refactor — this is the GPU contract gate.
+  scripts.project23-gpu-contract.exec = ''
+    set -euo pipefail
+    INF=/home/andrew/Documents/Projects/inferference
+    export LLAMA_CPP_LIB_PATH="$INF/ci/library/.venv/lib/python3.13/site-packages/llama_cpp/lib"
+    cuda_ld="$(tr -d '\n' < "$PWD/.scratch/projects/17-llama-cpp-inference-lab/.cuda_runtime_ld")"
+    export LD_LIBRARY_PATH="/run/opengl-driver/lib:$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    exec "$INF/ci/runner/gpu-serialized.sh" "$INF/ci/library/.venv/bin/python" -m pytest "$INF/tests/" -q
   '';
 
   languages.python = {

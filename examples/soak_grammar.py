@@ -23,16 +23,15 @@ from pathlib import Path
 from time import perf_counter_ns
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, ValidationError, create_model
-
-from structured_agents.llama_core.benchmark import (
+from inferference.benchmark import (
     TIMING_FIELDS,
     BenchmarkRecord,
     BenchmarkTimer,
     write_benchmark_record,
 )
-from structured_agents.llama_core.decode import FINISH_STOP, OwnedLlamaDecoder
-from structured_agents.llama_core.grammar import JsonSchemaGrammar
+from inferference.decode import FINISH_STOP, OwnedLlamaDecoder
+from inferference.grammar import JsonSchemaGrammar
+from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
 
 class CapitalAnswer(BaseModel):

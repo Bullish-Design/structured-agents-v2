@@ -10,11 +10,10 @@ import argparse
 import json
 from pathlib import Path
 
+from inferference.benchmark import BenchmarkTimer, write_benchmark_record
+from inferference.decode import OwnedLlamaDecoder
+from inferference.grammar import JsonSchemaGrammar
 from pydantic import BaseModel
-
-from structured_agents.llama_core.benchmark import BenchmarkTimer, write_benchmark_record
-from structured_agents.llama_core.decode import OwnedLlamaDecoder
-from structured_agents.llama_core.grammar import JsonSchemaGrammar
 
 
 class CapitalAnswer(BaseModel):

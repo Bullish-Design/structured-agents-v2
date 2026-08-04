@@ -14,7 +14,26 @@ dependencies = [
   "numpy>=2",
   "transformers>=4.38,<5",
   "xgrammar==0.2.1",
+  # Step-7 refactor (003-reference-consumer-refactor): the shared llama.cpp
+  # teaching core is consumed from inferference (one library, one ABI, one
+  # test suite) instead of the ported-in llama_core copy. The ABI-anchor pair
+  # (llama-cpp-python 0.3.34 binding + the integration libllama) must stay
+  # exactly the unit inferference pins: the Mode A wheel
+  # (ci/modea/wheels/llama_cpp_python-0.3.34-*.whl, built 97ad953ef) or a Mode B
+  # LLAMA_CPP_LIB_PATH pointing at the same tree. The CUDA-LoRA-NaN fix
+  # (24c5d3dbc) is NOT in the 81a5dba8… wheel — see 02-REPORT.md §wheel gap.
+  "inferference==0.1.0",
+  "llama-cpp-python==0.3.34",
 ]
+
+[tool.uv.sources]
+# Dev wiring: path dependency on the sibling inferference checkout (the flat
+# package src/inferference). Release: install the built inferference wheel.
+inferference = { path = "../inferference" }
+# ABI-anchor pair: the binding must come from the Mode A wheel (b10233, anchor
+# 0ab9d6fed) — NEVER a PyPI cp313 wheel or a source build (stock llama.cpp).
+# (Path source pinned to the wheel file; uv rejects file:// URLs in url sources.)
+llama-cpp-python = { path = "/home/andrew/Documents/Projects/inferference/ci/modea/wheels/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl" }
 
 [project.optional-dependencies]
 dev = [

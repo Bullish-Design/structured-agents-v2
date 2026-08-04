@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import assert_type
 
-from structured_agents.llama_core.prefix_cache import (
+from inferference.prefix_cache import (
     CacheCompatibility,
     PrefixCacheBlobStore,
     PrefixCacheEntry,

@@ -2,7 +2,7 @@
 
 One base model, several LoRA adapters, one mixed batch of requests routed to their
 adapters, optionally with grammar-guaranteed JSON decisions. Uses the typed library
-surface in ``structured_agents.llama_core.router``.
+surface in ``inferference.router``.
 
 Run inside the pinned project environment (CUDA build on PATH via LLAMA_CPP_LIB_PATH;
 real driver ahead of the CUDA stub on LD_LIBRARY_PATH). Example:
@@ -22,8 +22,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from structured_agents.llama_core.models import EngineConfig
-from structured_agents.llama_core.router import (
+from inferference.models import EngineConfig
+from inferference.router import (
     AdapterSpec,
     MultiLoRARouter,
     RouteRequest,
