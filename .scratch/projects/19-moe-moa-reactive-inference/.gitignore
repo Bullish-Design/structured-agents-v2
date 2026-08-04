@@ -1,0 +1,4 @@
+# Python virtualenv (torch/CUDA build ~4.9G) — never commit
+.venv-distill/
+__pycache__/
+*.pyc

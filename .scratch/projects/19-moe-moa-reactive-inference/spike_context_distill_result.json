@@ -1,0 +1,105 @@
+{
+  "config": {
+    "smoke": false,
+    "steps": 400,
+    "rank": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "lr": 0.0002,
+    "max_new_tokens": 48,
+    "dtype": "bfloat16",
+    "targets": "q_proj,v_proj,gate_proj,up_proj,down_proj",
+    "out": "/home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/17-llama-cpp-inference-lab/../19-moe-moa-reactive-inference/spike_context_distill_result.json",
+    "save_adapter": "/home/andrew/Documents/Projects/structured-agents-v2/.scratch/projects/17-llama-cpp-inference-lab/../19-moe-moa-reactive-inference/spike_context_distill_adapter.pt"
+  },
+  "context_tokens": 197,
+  "n_lora_params": 5947392,
+  "lora_targets_matched": 84,
+  "report": {
+    "floor_base_noctx": {
+      "task": {
+        "format_ok": 0.0,
+        "level_valid": 0.0,
+        "level_correct": 0.0,
+        "code_prefix_ok": 0.0
+      },
+      "mean_token_kl_vs_ceiling": 0.9059,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "out": "\"User profile picture updated successfully.\""
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "out": "Garbage collection ran for 40 milliseconds."
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "out": "CPU temperature is slightly above nominal."
+        }
+      ]
+    },
+    "ceiling_base_ctx": {
+      "task": {
+        "format_ok": 0.5,
+        "level_valid": 0.5,
+        "level_correct": 0.167,
+        "code_prefix_ok": 0.5
+      },
+      "mean_token_kl_vs_ceiling": 0.0,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "out": "<think>"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "out": "LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")"
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "out": "<think>"
+        }
+      ]
+    },
+    "student_lora_noctx": {
+      "task": {
+        "format_ok": 0.0,
+        "level_valid": 0.0,
+        "level_correct": 0.0,
+        "code_prefix_ok": 0.0
+      },
+      "mean_token_kl_vs_ceiling": 0.0396,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "out": "assistant"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "out": "<think>"
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "out": "<think>"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "level_correct_gap_recovered": 0.0,
+    "format_ok_gap_recovered": 0.0,
+    "student_kl_below_floor_kl": true,
+    "note": "GO if gap_recovered >= 0.5 on level_correct AND student_kl_below_floor_kl is True (see SPIKE-DISTILL-PLAN.md).",
+    "smoke": false
+  }
+}

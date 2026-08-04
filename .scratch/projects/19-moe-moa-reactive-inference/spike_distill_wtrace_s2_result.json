@@ -1,0 +1,98 @@
+{
+  "config": {
+    "steps": 400,
+    "rank": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "lr": 0.0002,
+    "max_new_tokens": 48,
+    "dtype": "bfloat16",
+    "trace_weight": 1.0,
+    "seed": 2,
+    "targets": "q_proj,v_proj,gate_proj,up_proj,down_proj",
+    "out": "spike_distill_wtrace_s2_result.json",
+    "save_adapter": "spike_context_distill_adapter_s2.pt"
+  },
+  "n_lora_params": 5947392,
+  "n_trace_weighted_steps": 0,
+  "report": {
+    "floor_base_noctx": {
+      "task": {
+        "format_ok": 0.0,
+        "level_valid": 0.0,
+        "level_correct": 0.0,
+        "code_prefix_ok": 0.0
+      },
+      "mean_token_kl_vs_ceiling": 0.9059,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "out": "\"User profile picture updated successfully.\""
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "out": "Garbage collection ran for 40 milliseconds."
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "out": "CPU temperature is slightly above nominal."
+        }
+      ]
+    },
+    "ceiling_base_ctx": {
+      "task": {
+        "format_ok": 0.5,
+        "level_valid": 0.5,
+        "level_correct": 0.167,
+        "code_prefix_ok": 0.5
+      },
+      "mean_token_kl_vs_ceiling": 0.0,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "out": "<think>"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "out": "LOG(TRACE, 1000, \"Garbage collection ran for 40 milliseconds.\")"
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "out": "<think>"
+        }
+      ]
+    },
+    "student_lora_noctx": {
+      "task": {
+        "format_ok": 0.667,
+        "level_valid": 0.667,
+        "level_correct": 0.333,
+        "code_prefix_ok": 0.667
+      },
+      "mean_token_kl_vs_ceiling": 0.0409,
+      "samples": [
+        {
+          "incident": "A user updated their profile picture.",
+          "expected": "TRACE",
+          "out": "LOG(TRACE, 1000, \"User updated their profile picture.\")"
+        },
+        {
+          "incident": "Garbage collection ran for 40 milliseconds.",
+          "expected": "TRACE",
+          "out": "<think>"
+        },
+        {
+          "incident": "CPU temperature is slightly above nominal.",
+          "expected": "WARN",
+          "out": "<think>"
+        }
+      ]
+    }
+  }
+}
