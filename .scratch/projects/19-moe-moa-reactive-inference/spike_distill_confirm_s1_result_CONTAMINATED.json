@@ -1,0 +1,250 @@
+{
+  "config": {
+    "max_new_tokens": 192,
+    "smoke": 0,
+    "adapter": "spike_context_distill_adapter_s1.pt",
+    "out": "spike_distill_confirm_s1_result.json"
+  },
+  "report": {
+    "floor_base_noctx": {
+      "task": {
+        "format_ok": 0.0,
+        "level_valid": 0.0,
+        "level_correct": 0.0,
+        "code_prefix_ok": 0.0
+      },
+      "mean_token_kl_vs_ceiling": 0.7708,
+      "think_in_output": 0,
+      "think_tokens_total": 0,
+      "samples": [
+        {
+          "incident": "The log rotation job completed on schedule.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "\"2024-01-15 10:00:00\"\nLog line: \"2024-01-15 10:00:01\"\nLog line: \"2024-01-15 10:00:02\"\nLog line: \"2024-01-15 10:00:03\"\nLog line: \"2024-01-15 10:00:04\"\nLog line: \"2024-01-15 10:00:05\"\nLog line: \"2024-01-15 10:00:06\"\nLog line: \"2024-01-15 10:00",
+          "out_raw": "\"2024-01-15 10:00:00\"\nLog line: \"2024-01-15 10:00:01\"\nLog line: \"2024-01-15 10:00:02\"\nLog line: \"2024-01-15 10:00:03\"\nLog line: \"2024-01-15 10:00:04\"\nLog line: \"2024-01-15 10:00:05\"\nLog line: \"2024-01-15 10:00:06\"\nLog line: \"2024-01-15 10:00"
+        },
+        {
+          "incident": "A new user account was created.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was",
+          "out_raw": "A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was created.\nLog line: A new user account was"
+        },
+        {
+          "incident": "The nightly report was generated successfully.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated",
+          "out_raw": "The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated successfully.\nLog line: The nightly report was generated"
+        },
+        {
+          "incident": "Cache hit ratio stayed above 99 percent.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "\"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"",
+          "out_raw": "\"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\"\nLog line: \"Cache hit ratio stayed above 99 percent.\""
+        },
+        {
+          "incident": "A heartbeat was received from every worker.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "\"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of",
+          "out_raw": "\"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of every worker is 100.\"\nLog line: \"The heart rate of"
+        },
+        {
+          "incident": "The configuration file was validated successfully.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:",
+          "out_raw": "10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:22: 10.1.1.1:"
+        },
+        {
+          "incident": "A fresh backup snapshot was taken.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "\"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line:",
+          "out_raw": "\"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line: \"The system is running in a state of normal operation.\"\nLog line:"
+        },
+        {
+          "incident": "The service began listening on its primary port.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "The service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service",
+          "out_raw": "The service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service began listening on its primary port.\nThe service"
+        }
+      ]
+    },
+    "ceiling_base_ctx": {
+      "task": {
+        "format_ok": 1.0,
+        "level_valid": 1.0,
+        "level_correct": 0.75,
+        "code_prefix_ok": 1.0
+      },
+      "mean_token_kl_vs_ceiling": 0.0,
+      "think_in_output": 0,
+      "think_tokens_total": 0,
+      "samples": [
+        {
+          "incident": "The log rotation job completed on schedule.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Log rotation job completed on schedule\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Log rotation job completed on schedule\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup"
+        },
+        {
+          "incident": "A new user account was created.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident",
+          "out_raw": "LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident: A new user account was created.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"New user account created\")\n\nIncident"
+        },
+        {
+          "incident": "The nightly report was generated successfully.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(level=\"TRACE\", code=1000, msg=\"Report generated on demand\")\n\nIncident"
+        },
+        {
+          "incident": "Cache hit ratio stayed above 99 percent.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Cache hit ratio stayed above 99 percent\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler tick fired.\nLog line: LOG(level=\"TRACE\", code=1002, msg=\"Scheduler tick fired\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Cache hit ratio stayed above 99 percent\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler tick fired.\nLog line: LOG(level=\"TRACE\", code=1002, msg=\"Scheduler tick fired\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")"
+        },
+        {
+          "incident": "A heartbeat was received from every worker.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Heartbeat received from every worker\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler tick fired.\nLog line: LOG(level=\"TRACE\", code=1002, msg=\"Scheduler tick fired\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Heartbeat received from every worker\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler tick fired.\nLog line: LOG(level=\"TRACE\", code=1002, msg=\"Scheduler tick fired\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")"
+        },
+        {
+          "incident": "The configuration file was validated successfully.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Configuration file validated successfully\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Configuration file validated successfully\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: The backup volume is"
+        },
+        {
+          "incident": "A fresh backup snapshot was taken.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1000, msg=\"Backup snapshot taken\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler tick fired.\nLog line: LOG(level=\"TRACE\", code=1002, msg=\"Scheduler tick fired\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler",
+          "out_raw": "LOG(level=\"TRACE\", code=1000, msg=\"Backup snapshot taken\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler tick fired.\nLog line: LOG(level=\"TRACE\", code=1002, msg=\"Scheduler tick fired\")\n\nIncident: A replica is lagging slightly behind.\nLog line: LOG(level=\"WARN\", code=3000, msg=\"Replica lagging behind\")\n\nIncident: The backup volume is offline.\nLog line: LOG(level=\"FATAL\", code=9000, msg=\"Backup volume offline\")\n\nIncident: A user logged out of the console.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"User logged out\")\n\nIncident: The scheduler"
+        },
+        {
+          "incident": "The service began listening on its primary port.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=",
+          "out_raw": "LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code=1001, msg=\"Service listening on primary port\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(level=\"TRACE\", code="
+        }
+      ]
+    },
+    "student_lora_noctx": {
+      "task": {
+        "format_ok": 0.583,
+        "level_valid": 0.583,
+        "level_correct": 0.333,
+        "code_prefix_ok": 0.5
+      },
+      "mean_token_kl_vs_ceiling": 0.4959,
+      "think_in_output": 11,
+      "think_tokens_total": 33,
+      "samples": [
+        {
+          "incident": "The log rotation job completed on schedule.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line:",
+          "out_raw": "LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line: LOG(1000, \"The log rotation job completed on schedule.\")\n\nIncident: The log rotation job completed on schedule.\nLog line:"
+        },
+        {
+          "incident": "A new user account was created.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1",
+          "out_raw": "LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1000, \"User account created\")\n\nIncident: A new user account was created.\nLog line: LOG(1"
+        },
+        {
+          "incident": "The nightly report was generated successfully.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was",
+          "out_raw": "LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was generated successfully.\")\n\nIncident: The nightly report was generated successfully.\nLog line: LOG(1000, \"The nightly report was"
+        },
+        {
+          "incident": "Cache hit ratio stayed above 99 percent.",
+          "expected": "TRACE",
+          "had_think": true,
+          "think_tokens": 3,
+          "out_stripped": "LOG(WARN, 1000, \"Cache hit ratio stayed above 99 percent\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 1000, \"Cache hit ratio stayed above 99 percent\")"
+        },
+        {
+          "incident": "A heartbeat was received from every worker.",
+          "expected": "TRACE",
+          "had_think": true,
+          "think_tokens": 3,
+          "out_stripped": "LOG(WARN, 1000, \"Heartbeat received from every worker\")",
+          "out_raw": "<think>\n\n</think>\n\nLOG(WARN, 1000, \"Heartbeat received from every worker\")"
+        },
+        {
+          "incident": "The configuration file was validated successfully.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was",
+          "out_raw": "LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was validated successfully.\")\n\nIncident: The configuration file was validated successfully.\nLog line: LOG(1000, \"The configuration file was"
+        },
+        {
+          "incident": "A fresh backup snapshot was taken.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot",
+          "out_raw": "LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot was taken.\")\n\nIncident: A fresh backup snapshot was taken.\nLog line: LOG(1000, \"A fresh backup snapshot"
+        },
+        {
+          "incident": "The service began listening on its primary port.",
+          "expected": "TRACE",
+          "had_think": false,
+          "think_tokens": 0,
+          "out_stripped": "LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The",
+          "out_raw": "LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The service began listening on its primary port.\nLog line: LOG(1000, \"The service began listening on its primary port.\")\n\nIncident: The"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "n_held_out": 24,
+    "no_think_kwarg_supported": false,
+    "level_correct_gap_recovered": 0.444,
+    "format_ok_gap_recovered": 0.583,
+    "code_prefix_ok_gap_recovered": 0.5,
+    "student_kl_below_floor_kl": true,
+    "max_new_tokens": 192
+  }
+}

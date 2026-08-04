@@ -17,11 +17,10 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from examples.soak_grammar import _model_for_schema, _resolve_tokenizer, _run_once, aggregate_outcomes
+from inferference.benchmark import write_benchmark_record
+from inferference.diagnostics import collect_runtime_diagnostics
+from inferference.grammar import JsonSchemaGrammar
 from workload import read_jsonl, select, sha256, validate_corpus
-
-from structured_agents.llama_core.benchmark import write_benchmark_record
-from structured_agents.llama_core.diagnostics import collect_runtime_diagnostics
-from structured_agents.llama_core.grammar import JsonSchemaGrammar
 
 
 def gpu_snapshot() -> dict[str, Any]:

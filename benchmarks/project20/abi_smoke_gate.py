@@ -29,9 +29,8 @@ def main() -> int:
         raise RuntimeError("LLAMA_CPP_LIB_PATH must point at the fork lib dir")
 
     import llama_cpp
+    from inferference.seq_routing import SEQ_ROUTING_SYMBOLS, library_supports_seq_routing
     from llama_cpp import Llama
-
-    from structured_agents.llama_core.seq_routing import SEQ_ROUTING_SYMBOLS, library_supports_seq_routing
 
     lib = llama_cpp.llama_cpp._lib
 

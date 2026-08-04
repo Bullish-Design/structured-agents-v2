@@ -98,14 +98,14 @@ def test_only_config_imports_importlib_in_package_source() -> None:
                 importlib_users.append(path)
 
     # Dynamic import is deliberately confined to a small, auditable set: config's
-    # entry-point loader, diagnostics' version tuple, grammar's xgrammar version,
-    # and the package __init__'s PEP 562 lazy loader (keeps heavy agent deps off
-    # the shared-core import path). Sorted so this does not depend on rglob order.
+    # entry-point loader and the package __init__'s PEP 562 lazy loader (keeps
+    # heavy agent deps off the shared-core import path). Step-7 refactor: the
+    # llama_core package is gone — diagnostics' version tuple and grammar's
+    # xgrammar version now live in the inferference dependency, outside this
+    # walk. Sorted so this does not depend on rglob order.
     assert sorted(importlib_users) == sorted(
         [
             package / "__init__.py",
             package / "config.py",
-            package / "llama_core" / "diagnostics.py",
-            package / "llama_core" / "grammar.py",
         ]
     )

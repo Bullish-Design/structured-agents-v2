@@ -62,15 +62,15 @@ def _sync() -> None:
 
 
 def _pool(k: int, lora_a: Path, lora_b: Path):
-    from structured_agents.llama_core.router import AdapterSpec
+    from inferference.router import AdapterSpec
 
     paths = [str(lora_a), str(lora_b)]
     return tuple(AdapterSpec(name=f"probe-{i}", gguf_path=paths[i % 2]) for i in range(k))
 
 
 def _make_router(model: Path, adapters, *, backend: str, n_ctx: int, n_seq_max: int, seed: int):
-    from structured_agents.llama_core.models import EngineConfig
-    from structured_agents.llama_core.router import MultiLoRARouter, RouterConfig
+    from inferference.models import EngineConfig
+    from inferference.router import MultiLoRARouter, RouterConfig
 
     return MultiLoRARouter(
         RouterConfig(
@@ -86,7 +86,7 @@ def _make_router(model: Path, adapters, *, backend: str, n_ctx: int, n_seq_max: 
 
 
 def _requests(s: int, pool_names: list[str], max_tokens: int):
-    from structured_agents.llama_core.router import RouteRequest
+    from inferference.router import RouteRequest
 
     return [
         RouteRequest(

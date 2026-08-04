@@ -1,0 +1,417 @@
+diff --git a/conversion/__init__.py b/conversion/__init__.py
+index 7936f1159..2cf910064 100644
+--- a/conversion/__init__.py
++++ b/conversion/__init__.py
+@@ -165,6 +165,7 @@ TEXT_MODEL_MAP: dict[str, str] = {
+     "ModernBertForMaskedLM": "bert",
+     "ModernBertForSequenceClassification": "bert",
+     "ModernBertModel": "bert",
++    "NanbeigeForCausalLM": "nanbeige",
+     "NemotronForCausalLM": "nemotron",
+     "NemotronHForCausalLM": "nemotron",
+     "NeoBERT": "bert",
+diff --git a/conversion/nanbeige.py b/conversion/nanbeige.py
+new file mode 100644
+index 000000000..f1fc425b3
+--- /dev/null
++++ b/conversion/nanbeige.py
+@@ -0,0 +1,24 @@
++from __future__ import annotations
++
++from .base import ModelBase, gguf, logger
++from .llama import LlamaModel
++
++
++@ModelBase.register("NanbeigeForCausalLM")
++class NanbeigeModel(LlamaModel):
++    model_arch = gguf.MODEL_ARCH.NANBEIGE
++    undo_permute = True
++
++    def set_gguf_parameters(self):
++        super().set_gguf_parameters()
++        hparams = self.hparams
++
++        n_loops = int(hparams.get("num_loops", 1) or 1)
++        if n_loops < 1:
++            n_loops = 1
++        self.gguf_writer.add_num_loops(n_loops)
++        logger.info(f"gguf: num_loops = {n_loops}")
++
++        skip_loop_final_norm = bool(hparams.get("skip_loop_final_norm", False))
++        self.gguf_writer.add_skip_loop_final_norm(skip_loop_final_norm)
++        logger.info(f"gguf: skip_loop_final_norm = {skip_loop_final_norm}")
+diff --git a/gguf-py/gguf/constants.py b/gguf-py/gguf/constants.py
+index 4391bd11d..10e04c9b0 100644
+--- a/gguf-py/gguf/constants.py
++++ b/gguf-py/gguf/constants.py
+@@ -145,6 +145,8 @@ class Keys:
+         TOKEN_SHIFT_COUNT                 = "{arch}.token_shift_count"
+         INTERLEAVE_MOE_LAYER_STEP         = "{arch}.interleave_moe_layer_step"
+         FULL_ATTENTION_INTERVAL           = "{arch}.full_attention_interval"
++        NUM_LOOPS                         = "{arch}.num_loops"
++        SKIP_LOOP_FINAL_NORM              = "{arch}.skip_loop_final_norm"
+         HASH_LAYER_COUNT                  = "{arch}.hash_layer_count"
+         ACTIVATION_SPARSITY_SCALE         = "{arch}.activation_sparsity_scale"
+         ALTUP_ACTIVE_IDX                  = "{arch}.altup.active_idx"
+@@ -541,6 +543,7 @@ class MODEL_ARCH(IntEnum):
+     KIMI_LINEAR      = auto()
+     TALKIE           = auto()
+     MELLUM           = auto()
++    NANBEIGE         = auto()
+ 
+ 
+ class VISION_PROJECTOR_TYPE(IntEnum):
+@@ -1124,6 +1127,7 @@ MODEL_ARCH_NAMES: dict[MODEL_ARCH, str] = {
+     MODEL_ARCH.KIMI_LINEAR:      "kimi-linear",
+     MODEL_ARCH.TALKIE:           "talkie",
+     MODEL_ARCH.MELLUM:           "mellum",
++    MODEL_ARCH.NANBEIGE:         "nanbeige",
+ }
+ 
+ VISION_PROJECTOR_TYPE_NAMES: dict[VISION_PROJECTOR_TYPE, str] = {
+@@ -4460,7 +4464,22 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
+         MODEL_TENSOR.FFN_DOWN_EXP,
+         MODEL_TENSOR.FFN_UP_EXP,
+     ],
+-    # TODO
++    MODEL_ARCH.NANBEIGE: [
++        MODEL_TENSOR.TOKEN_EMBD,
++        MODEL_TENSOR.OUTPUT_NORM,
++        MODEL_TENSOR.OUTPUT,
++        MODEL_TENSOR.ROPE_FREQS,
++        MODEL_TENSOR.ATTN_NORM,
++        MODEL_TENSOR.ATTN_Q,
++        MODEL_TENSOR.ATTN_K,
++        MODEL_TENSOR.ATTN_V,
++        MODEL_TENSOR.ATTN_OUT,
++        MODEL_TENSOR.ATTN_ROT_EMBD,
++        MODEL_TENSOR.FFN_NORM,
++        MODEL_TENSOR.FFN_GATE,
++        MODEL_TENSOR.FFN_DOWN,
++        MODEL_TENSOR.FFN_UP,
++    ],
+ }
+ 
+ # tensors that will not be serialized
+@@ -4527,6 +4546,10 @@ MODEL_TENSOR_SKIP: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
+         MODEL_TENSOR.ROPE_FREQS,
+         MODEL_TENSOR.ATTN_ROT_EMBD,
+     ],
++    MODEL_ARCH.NANBEIGE: [
++        MODEL_TENSOR.ROPE_FREQS,
++        MODEL_TENSOR.ATTN_ROT_EMBD,
++    ],
+ }
+ 
+ #
+diff --git a/gguf-py/gguf/gguf_writer.py b/gguf-py/gguf/gguf_writer.py
+index 1e277f068..06d9a80b0 100644
+--- a/gguf-py/gguf/gguf_writer.py
++++ b/gguf-py/gguf/gguf_writer.py
+@@ -898,6 +898,12 @@ class GGUFWriter:
+     def add_token_shift_count(self, count: int) -> None:
+         self.add_uint32(Keys.LLM.TOKEN_SHIFT_COUNT.format(arch=self.arch), count)
+ 
++    def add_num_loops(self, count: int) -> None:
++        self.add_uint32(Keys.LLM.NUM_LOOPS.format(arch=self.arch), count)
++
++    def add_skip_loop_final_norm(self, value: bool) -> None:
++        self.add_bool(Keys.LLM.SKIP_LOOP_FINAL_NORM.format(arch=self.arch), value)
++
+     def add_interleave_moe_layer_step(self, value: int) -> None:
+         self.add_uint32(Keys.LLM.INTERLEAVE_MOE_LAYER_STEP.format(arch=self.arch), value)
+ 
+diff --git a/src/llama-arch.cpp b/src/llama-arch.cpp
+index e5a9a29c7..5aa2fa2a8 100644
+--- a/src/llama-arch.cpp
++++ b/src/llama-arch.cpp
+@@ -142,6 +142,7 @@ static const std::map<llm_arch, const char *> LLM_ARCH_NAMES = {
+     { LLM_ARCH_KIMI_LINEAR,      "kimi-linear"      },
+     { LLM_ARCH_TALKIE,           "talkie"           },
+     { LLM_ARCH_MELLUM,           "mellum"           },
++    { LLM_ARCH_NANBEIGE,         "nanbeige"         },
+     { LLM_ARCH_UNKNOWN,          "(unknown)"        },
+ };
+ 
+@@ -220,6 +221,8 @@ static const std::map<llm_kv, const char *> LLM_KV_NAMES = {
+     { LLM_KV_TOKEN_SHIFT_COUNT,                 "%s.token_shift_count"                 },
+     { LLM_KV_INTERLEAVE_MOE_LAYER_STEP,         "%s.interleave_moe_layer_step"         },
+     { LLM_KV_FULL_ATTENTION_INTERVAL,           "%s.full_attention_interval"           },
++    { LLM_KV_NUM_LOOPS,                         "%s.num_loops"                         },
++    { LLM_KV_SKIP_LOOP_FINAL_NORM,              "%s.skip_loop_final_norm"              },
+ 
+     { LLM_KV_ATTENTION_HEAD_COUNT,                   "%s.attention.head_count"                   },
+     { LLM_KV_ATTENTION_HEAD_COUNT_KV,                "%s.attention.head_count_kv"                },
+diff --git a/src/llama-arch.h b/src/llama-arch.h
+index 0ef95b01b..1d12d62c9 100644
+--- a/src/llama-arch.h
++++ b/src/llama-arch.h
+@@ -147,6 +147,7 @@ enum llm_arch {
+     LLM_ARCH_MELLUM,
+     LLM_ARCH_EAGLE3,
+     LLM_ARCH_DFLASH,
++    LLM_ARCH_NANBEIGE,
+     LLM_ARCH_UNKNOWN,
+ };
+ 
+@@ -225,6 +226,8 @@ enum llm_kv {
+     LLM_KV_TOKEN_SHIFT_COUNT,
+     LLM_KV_INTERLEAVE_MOE_LAYER_STEP,
+     LLM_KV_FULL_ATTENTION_INTERVAL,
++    LLM_KV_NUM_LOOPS,
++    LLM_KV_SKIP_LOOP_FINAL_NORM,
+ 
+     LLM_KV_ATTENTION_HEAD_COUNT,
+     LLM_KV_ATTENTION_HEAD_COUNT_KV,
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index eed041eef..438957fa5 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -2338,7 +2338,8 @@ uint32_t llama_context::graph_max_nodes(uint32_t n_tokens) const {
+         model.arch == LLM_ARCH_KIMI_LINEAR ||
+         model.arch == LLM_ARCH_QWEN35 ||
+         model.arch == LLM_ARCH_QWEN35MOE ||
+-        model.arch == LLM_ARCH_DEEPSEEK4) {
++        model.arch == LLM_ARCH_DEEPSEEK4 ||
++        model.arch == LLM_ARCH_NANBEIGE) {
+         return std::max<uint32_t>(n_tokens * 40, 32u * model.n_tensors());
+     }
+     uint32_t res = std::max<uint32_t>(1024u, 8u*model.n_tensors());
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 7e5bab26c..0cc7c2d8d 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -84,6 +84,8 @@ static llama_model * llama_model_mapping(llm_arch arch, const llama_model_params
+             return new llama_model_stablelm(params);
+         case LLM_ARCH_MELLUM:
+             return new llama_model_mellum(params);
++        case LLM_ARCH_NANBEIGE:
++            return new llama_model_nanbeige(params);
+         case LLM_ARCH_QWEN:
+             return new llama_model_qwen(params);
+         case LLM_ARCH_QWEN2:
+@@ -2486,6 +2488,7 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
+         case LLM_ARCH_LLAMA_EMBED:
+         case LLM_ARCH_MAINCODER:
+         case LLM_ARCH_GLM_DSA:
++        case LLM_ARCH_NANBEIGE:
+             return LLAMA_ROPE_TYPE_NORM;
+ 
+         // the pairs of head values are offset by n_rot/2
+diff --git a/src/models/models.h b/src/models/models.h
+index 916b83929..a04b82792 100644
+--- a/src/models/models.h
++++ b/src/models/models.h
+@@ -424,6 +424,22 @@ struct llama_model_mellum : public llama_model_base {
+     std::unique_ptr<llm_graph_context> build_arch_graph(const llm_graph_params & params) const override;
+ };
+ 
++struct llama_model_nanbeige : public llama_model_base {
++    llama_model_nanbeige(const struct llama_model_params & params) : llama_model_base(params) {}
++    void load_arch_hparams(llama_model_loader & ml) override;
++    void load_arch_tensors(llama_model_loader & ml) override;
++
++    int  n_loops = 1;
++    int  n_layer_phys = 0;
++    bool skip_loop_final_norm = false;
++
++    struct graph : public llm_graph_context {
++        graph(const llama_model & model, const llm_graph_params & params);
++    };
++
++    std::unique_ptr<llm_graph_context> build_arch_graph(const llm_graph_params & params) const override;
++};
++
+ struct llama_model_qwen : public llama_model_base {
+     llama_model_qwen(const struct llama_model_params & params) : llama_model_base(params) {}
+     void load_arch_hparams(llama_model_loader & ml) override;
+diff --git a/src/models/nanbeige.cpp b/src/models/nanbeige.cpp
+new file mode 100644
+index 000000000..3a546600f
+--- /dev/null
++++ b/src/models/nanbeige.cpp
+@@ -0,0 +1,184 @@
++#include "models.h"
++
++void llama_model_nanbeige::load_arch_hparams(llama_model_loader & ml) {
++    ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
++
++    uint32_t n_loops_u = 1;
++    ml.get_key(LLM_KV_NUM_LOOPS, n_loops_u, false);
++    GGML_ASSERT(n_loops_u >= 1);
++
++    skip_loop_final_norm = false;
++    ml.get_key(LLM_KV_SKIP_LOOP_FINAL_NORM, skip_loop_final_norm, false);
++
++    n_layer_phys = (int) hparams.n_layer();
++
++    // Bound-check before casting: signed int mul can overflow and bypass the guard.
++    GGML_ASSERT((size_t) n_layer_phys * (size_t) n_loops_u <= (size_t) LLAMA_MAX_LAYERS);
++    n_loops = (int) n_loops_u;
++
++    // Expand logical layer count before load_tensors() allocates layers / KV.
++    if (n_loops > 1) {
++        for (int j = 1; j < n_loops; ++j) {
++            for (int i = 0; i < n_layer_phys; ++i) {
++                const int dst = i + j * n_layer_phys;
++                hparams.n_head_arr[dst]    = hparams.n_head_arr[i];
++                hparams.n_head_kv_arr[dst] = hparams.n_head_kv_arr[i];
++                hparams.n_ff_arr[dst]      = hparams.n_ff_arr[i];
++                hparams.is_swa_impl[dst]   = hparams.is_swa_impl[i];
++                hparams.is_recr_impl[dst]  = hparams.is_recr_impl[i];
++            }
++        }
++        hparams.n_layer_all = (uint32_t) ((size_t) n_layer_phys * (size_t) n_loops);
++    }
++
++    type = LLM_TYPE_UNKNOWN;
++}
++
++void llama_model_nanbeige::load_arch_tensors(llama_model_loader &) {
++    LLAMA_LOAD_LOCALS;
++
++    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
++
++    output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
++    output      = create_tensor(tn(LLM_TENSOR_OUTPUT,      "weight"), {n_embd, n_vocab}, TENSOR_NOT_REQUIRED);
++    if (output == NULL) {
++        output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, TENSOR_DUPLICATED);
++    }
++
++    const int n_phys = n_layer_phys > 0 ? n_layer_phys : n_layer;
++    for (int i = 0; i < n_phys; ++i) {
++        auto & layer = layers[i];
++
++        layer.attn_norm = create_tensor(tn(LLM_TENSOR_ATTN_NORM, "weight", i), {n_embd}, 0);
++
++        create_tensor_qkv(layer, i, n_embd, n_embd_head_k * n_head, n_embd_k_gqa, n_embd_v_gqa, 0);
++        layer.wo = create_tensor(tn(LLM_TENSOR_ATTN_OUT, "weight", i), {n_embd_head_k * n_head, n_embd}, 0);
++
++        layer.rope_freqs = create_tensor(tn(LLM_TENSOR_ROPE_FREQS, "weight", i), {n_rot/2},
++                TENSOR_NOT_REQUIRED | (i != 0 ? TENSOR_DUPLICATED : 0));
++
++        layer.ffn_norm = create_tensor(tn(LLM_TENSOR_FFN_NORM, "weight", i), {n_embd}, 0);
++        layer.ffn_gate = create_tensor(tn(LLM_TENSOR_FFN_GATE, "weight", i), {n_embd,   n_ff}, 0);
++        layer.ffn_down = create_tensor(tn(LLM_TENSOR_FFN_DOWN, "weight", i), {  n_ff, n_embd}, 0);
++        layer.ffn_up   = create_tensor(tn(LLM_TENSOR_FFN_UP,   "weight", i), {n_embd,   n_ff}, 0);
++    }
++
++    // Share physical weights across loops; each slot still has its own KV index.
++    if (n_loops > 1) {
++        for (int j = 1; j < n_loops; ++j) {
++            for (int i = 0; i < n_phys; ++i) {
++                layers[i + j * n_phys] = layers[i];
++            }
++        }
++    }
++}
++
++std::unique_ptr<llm_graph_context> llama_model_nanbeige::build_arch_graph(const llm_graph_params & params) const {
++    return std::make_unique<graph>(*this, params);
++}
++
++llama_model_nanbeige::graph::graph(const llama_model & model, const llm_graph_params & params) :
++        llm_graph_context(params) {
++    const auto & nb = static_cast<const llama_model_nanbeige &>(model);
++
++    const int64_t n_embd_head = hparams.n_embd_head_v();
++    GGML_ASSERT(n_embd_head == hparams.n_embd_head_k());
++
++    const int n_phys  = nb.n_layer_phys > 0 ? nb.n_layer_phys : (int) n_layer;
++    const int n_loops = nb.n_loops > 0 ? nb.n_loops : 1;
++
++    ggml_tensor * cur;
++    ggml_tensor * inpL;
++
++    inpL = build_inp_embd(model.tok_embd);
++
++    ggml_tensor * inp_pos = build_inp_pos();
++
++    auto * inp_attn = build_attn_inp_kv();
++
++    const float kq_scale = hparams.f_attention_scale == 0.0f
++        ? 1.0f / sqrtf(float(n_embd_head))
++        : hparams.f_attention_scale;
++
++    ggml_tensor * inp_out_ids = build_inp_out_ids();
++
++    for (int il = 0; il < n_layer; ++il) {
++        ggml_tensor * inpSA = inpL;
++
++        cur = build_norm(inpL, model.layers[il].attn_norm, NULL, LLM_NORM_RMS, il);
++        cb(cur, "attn_norm", il);
++
++        {
++            ggml_tensor * rope_factors = model.get_rope_factors(cparams, il);
++
++            auto [Qcur, Kcur, Vcur] = build_qkv(model.layers[il], cur,
++                    n_embd_head, n_head, n_head_kv, il);
++
++            Qcur = ggml_rope_ext(
++                    ctx0, Qcur, inp_pos, rope_factors,
++                    n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                    ext_factor, attn_factor, beta_fast, beta_slow);
++
++            Kcur = ggml_rope_ext(
++                    ctx0, Kcur, inp_pos, rope_factors,
++                    n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                    ext_factor, attn_factor, beta_fast, beta_slow);
++
++            cb(Qcur, "Qcur", il);
++            cb(Kcur, "Kcur", il);
++            cb(Vcur, "Vcur", il);
++
++            cur = build_attn(inp_attn,
++                    model.layers[il].wo, model.layers[il].wo_b, model.layers[il].wo_s,
++                    Qcur, Kcur, Vcur, nullptr, nullptr, nullptr, kq_scale, il);
++            cb(cur, "attn_out", il);
++        }
++
++        if (il == n_layer - 1 && inp_out_ids) {
++            cur   = ggml_get_rows(ctx0, cur,   inp_out_ids);
++            inpSA = ggml_get_rows(ctx0, inpSA, inp_out_ids);
++        }
++
++        ggml_tensor * ffn_inp = ggml_add(ctx0, cur, inpSA);
++        cb(ffn_inp, "ffn_inp", il);
++
++        cur = build_norm(ffn_inp, model.layers[il].ffn_norm, NULL, LLM_NORM_RMS, il);
++        cb(cur, "ffn_norm", il);
++
++        cur = build_ffn(cur,
++                model.layers[il].ffn_up,   model.layers[il].ffn_up_b,   model.layers[il].ffn_up_s,
++                model.layers[il].ffn_gate, model.layers[il].ffn_gate_b, model.layers[il].ffn_gate_s,
++                model.layers[il].ffn_down, model.layers[il].ffn_down_b, model.layers[il].ffn_down_s,
++                NULL, LLM_FFN_SILU, LLM_FFN_PAR, il);
++        cb(cur, "ffn_out", il);
++
++        cur = ggml_add(ctx0, cur, ffn_inp);
++        cb(cur, "ffn_out", il);
++
++        cur = build_cvec(cur, il);
++        cb(cur, "l_out", il);
++
++        inpL = cur;
++
++        if (n_loops > 1 &&
++            ((il + 1) % n_phys) == 0 &&
++            (il + 1) < n_layer &&
++            !nb.skip_loop_final_norm) {
++            cur = build_norm(inpL, model.output_norm, NULL, LLM_NORM_RMS, il);
++            cb(cur, "loop_norm", il);
++            inpL = cur;
++        }
++    }
++
++    cur = inpL;
++
++    cur = build_norm(cur, model.output_norm, NULL, LLM_NORM_RMS, -1);
++    cb(cur, "result_norm", -1);
++    res->t_embd = cur;
++
++    cur = build_lora_mm(model.output, cur, model.output_s);
++    cb(cur, "result_output", -1);
++    res->t_logits = cur;
++
++    ggml_build_forward_expand(gf, cur);
++}

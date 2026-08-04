@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from structured_agents.llama_core.benchmark import BenchmarkTimer, write_benchmark_record
+from inferference.benchmark import BenchmarkTimer, write_benchmark_record
 
 
 def main() -> None:

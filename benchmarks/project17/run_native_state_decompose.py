@@ -41,8 +41,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from structured_agents.llama_core.diagnostics import collect_runtime_diagnostics
-from structured_agents.llama_core.fingerprint import LlamaEngineFingerprint, register_artifact
+from inferference.diagnostics import collect_runtime_diagnostics
+from inferference.fingerprint import LlamaEngineFingerprint, register_artifact
 
 
 def gpu() -> dict[str, Any]:

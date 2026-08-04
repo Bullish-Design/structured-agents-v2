@@ -16,9 +16,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from structured_agents.llama_core.diagnostics import collect_runtime_diagnostics
-from structured_agents.llama_core.fingerprint import LlamaEngineFingerprint, register_artifact
-from structured_agents.llama_core.prefix_cache import PersistentPrefixCache, PrefixCacheKey
+from inferference.diagnostics import collect_runtime_diagnostics
+from inferference.fingerprint import LlamaEngineFingerprint, register_artifact
+from inferference.prefix_cache import PersistentPrefixCache, PrefixCacheKey
 
 
 def gpu() -> dict[str, Any]:
