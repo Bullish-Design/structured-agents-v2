@@ -20,15 +20,14 @@ import json
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel
-
 from inferference.models import EngineConfig
 from inferference.router import (
     AdapterSpec,
     MultiLoRARouter,
-    RouteRequest,
     RouterConfig,
+    RouteRequest,
 )
+from pydantic import BaseModel
 
 
 class Route(BaseModel):

@@ -394,6 +394,22 @@ checks, all under the devenv venv python with the §P2 unit env.
 | 7 | Deleted-test defaults in `project17/project20-gpu-pytest` | **Repoint to the framework suite; add `project23-gpu-contract`** | P4 — without this the scripts exit 4 after the flip |
 | 8 | **Stale AGENTS.md anchor text** (inferference side: says `c588c4f47`/b10103; actual `0ab9d6fed`/b10233) | **Fix in inferference AGENTS.md** (owner doc action) | Informational; operative anchor for this refactor is `0ab9d6fed` |
 
+### P6.1 — RESOLUTION NOTE (2026-08-04, project 24: Mode A wheel rebuild)
+
+Decision 1 (wheel rebuild: prerequisite vs interim gap) is **RESOLVED — the
+rebuild is done and the reference is wired to it**. The Mode A wheel was
+rebuilt from integration `24c5d3dbc` (the CUDA-LoRA NaN fix) and shipped at
+`ci/modea/wheels/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl`
+(sha256 `b1b48902…`, replacing `81a5dba8…`; old wheel backed up at
+`ci/modea/wheels/backup-81a5dba8/`). Record:
+`inferference/.scratch/projects/004-modea-wheel-rebuild-nanfix/01-REPORT.md`.
+Verified Mode A (no lib swap): smoke/bindgen/nanbeige gates, contract suite
+89/89, P2 17/17, hats 6/6, nan-fix probe `nan_count=0`; reference gates green
+under the rebuilt wheel (lazy surface, 11/11 flipped files, AST assertion,
+framework 43+1 skipped-live, `project23-gpu-contract` 89/89, ruff `--select I`
+clean). Mode B `out-p2fork-24c5d3dbc` remains the iteration unit; Mode A is now
+release-grade.
+
 ---
 
 ## P7 — the runnable execution sequence + risk register

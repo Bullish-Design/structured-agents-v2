@@ -19,9 +19,11 @@ dependencies = [
   # test suite) instead of the ported-in llama_core copy. The ABI-anchor pair
   # (llama-cpp-python 0.3.34 binding + the integration libllama) must stay
   # exactly the unit inferference pins: the Mode A wheel
-  # (ci/modea/wheels/llama_cpp_python-0.3.34-*.whl, built 97ad953ef) or a Mode B
-  # LLAMA_CPP_LIB_PATH pointing at the same tree. The CUDA-LoRA-NaN fix
-  # (24c5d3dbc) is NOT in the 81a5dba8… wheel — see 02-REPORT.md §wheel gap.
+  # (ci/modea/wheels/llama_cpp_python-0.3.34-*.whl, rebuilt from integration
+  # 24c5d3dbc — the CUDA-LoRA-NaN fix — sha256 b1b48902…) or a Mode B
+  # LLAMA_CPP_LIB_PATH pointing at the same tree. The wheel gap documented in
+  # 02-REPORT.md §Q2.2 is RESOLVED 2026-08-04 (004-modea-wheel-rebuild-nanfix):
+  # the nan-fix is now IN the shipped wheel.
   "inferference==0.1.0",
   "llama-cpp-python==0.3.34",
 ]
@@ -32,6 +34,7 @@ dependencies = [
 inferference = { path = "../inferference" }
 # ABI-anchor pair: the binding must come from the Mode A wheel (b10233, anchor
 # 0ab9d6fed) — NEVER a PyPI cp313 wheel or a source build (stock llama.cpp).
+# Rebuilt from integration 24c5d3dbc (nan-fix included) on 2026-08-04.
 # (Path source pinned to the wheel file; uv rejects file:// URLs in url sources.)
 llama-cpp-python = { path = "/home/andrew/Documents/Projects/inferference/ci/modea/wheels/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl" }
 
