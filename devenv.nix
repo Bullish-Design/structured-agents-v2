@@ -22,7 +22,8 @@
   scripts.project17-json-workload-zellij.exec = ''
     set -euo pipefail
     : "''${PROJECT17_MODEL:?set PROJECT17_MODEL to the Ornith GGUF path}"
-    project17_corpus="''${PROJECT17_CORPUS:-benchmarks/project17/json_workload_100.jsonl}"
+    project17_corpus="''${PROJECT17_CORPUS:-json_workload}"
+    INF="/home/andrew/Documents/Projects/inferference"
     project17_requests="''${PROJECT17_REQUESTS:-100}"
     project17_mode="''${PROJECT17_MODE:-constrained}"
     project17_stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -46,7 +47,7 @@
     ZELLIJ_SESSION_NAME="$project17_session" zellij run --name project17-json --close-on-exit --cwd "$PWD" -- \
       ${pkgs.bash}/bin/bash -lc '
         set -euo pipefail
-        out="$1"; mode="$2"; corpus="$3"; requests="$4"; model="$5"; lib="$6"; cuda_ld="$7"; root="$8"
+        out="$1"; mode="$2"; corpus="$3"; requests="$4"; model="$5"; lib="$6"; cuda_ld="$7"; root="$8"; inf="$9"
         cd "$root"
         baseline=""
         same=""
@@ -61,13 +62,14 @@
         export LD_LIBRARY_PATH="$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
         export PYTHONPATH="src:.devenv/state/venv/lib/python3.13/site-packages''${PYTHONPATH:+:$PYTHONPATH}"
         printf "CUDA_VISIBLE_DEVICES=%s\\nLLAMA_CPP_LIB_PATH=%s\\nLD_LIBRARY_PATH=%s\\nPYTHONPATH=%s\\n" "$CUDA_VISIBLE_DEVICES" "$LLAMA_CPP_LIB_PATH" "$LD_LIBRARY_PATH" "$PYTHONPATH" > "$out/runtime-environment.txt"
-        printf "%q " .devenv/state/venv/bin/python benchmarks/project17/run_json_workload.py --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/command.txt"
+        cd "$inf"   # benchkit runners run from the inferference root (python -m bench...)
+        printf "%q " "$inf/ci/library/.venv/bin/python" -m bench.benchkit.runners.json_workload --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/command.txt"
         printf "\\n" >> "$out/command.txt"
         ( while :; do date -u +%FT%TZ; nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader; sleep 15; done ) > "$out/gpu-during.csv" 2>&1 &
         monitor=$!
         trap "kill $monitor 2>/dev/null || true" EXIT
         set +e
-        .devenv/state/venv/bin/python benchmarks/project17/run_json_workload.py --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/stdout-stderr.log" 2>&1
+        "$inf/ci/library/.venv/bin/python" -m bench.benchkit.runners.json_workload --model "$model" --corpus "$corpus" --requests "$requests" --artifacts "$out" $baseline $same > "$out/stdout-stderr.log" 2>&1
         rc=$?
         set -e
         printf "%s\\n" "$rc" > "$out/exit-status.txt"
@@ -75,7 +77,7 @@
         nvidia-smi --query-compute-apps=gpu_uuid,pid,process_name,used_memory --format=csv,noheader > "$out/gpu-processes-after.csv" || true
         ps -eo pid,ppid,stat,args > "$out/processes-after.txt"
         exit "$rc"
-      ' -- "$project17_artifacts" "$project17_mode" "$project17_corpus" "$project17_requests" "$PROJECT17_MODEL" "$project17_lib" "$project17_cuda_ld" "$PWD"
+      ' -- "$project17_artifacts" "$project17_mode" "$project17_corpus" "$project17_requests" "$PROJECT17_MODEL" "$project17_lib" "$project17_cuda_ld" "$PWD" "$INF"
     printf 'Project 17 benchmark running in Zellij: zellij attach %s\n' "$project17_session"
     printf 'Artifacts: %s\n' "$project17_artifacts"
   '';
@@ -89,6 +91,7 @@
     cache="$PWD/artifacts/project17-prefix-cache-store-$stamp"
     lib="''${PROJECT17_LIB_PATH:-$PWD/.devenv/state/venv/lib/python3.13/site-packages/llama_cpp/lib}"
     cuda_ld="$(tr -d '\n' < "$PWD/.scratch/projects/17-llama-cpp-inference-lab/.cuda_runtime_ld")"
+    INF="/home/andrew/Documents/Projects/inferference"
     mkdir -p "$out" "$cache"
     git status --short > "$out/git-status-before.txt"
     nvidia-smi --query-gpu=index,name,uuid,driver_version,memory.total,memory.used --format=csv,noheader > "$out/gpu-before.csv"
@@ -97,25 +100,26 @@
     ZELLIJ_SESSION_NAME="$session" zellij run --name project17-prefix-cache --close-on-exit --cwd "$PWD" -- \
       ${pkgs.bash}/bin/bash -lc '
         set -euo pipefail
-        out="$1"; cache="$2"; model="$3"; lib="$4"; cuda_ld="$5"; root="$6"
+        out="$1"; cache="$2"; model="$3"; lib="$4"; cuda_ld="$5"; root="$6"; inf="$7"
         cd "$root"
         export CUDA_VISIBLE_DEVICES=0 LLAMA_CPP_LIB_PATH="$lib"
         export LD_LIBRARY_PATH="$cuda_ld''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
         export PYTHONPATH="src:.devenv/state/venv/lib/python3.13/site-packages''${PYTHONPATH:+:$PYTHONPATH}"
         env | rg "^(CUDA_VISIBLE_DEVICES|LLAMA_CPP_LIB_PATH|LD_LIBRARY_PATH|PYTHONPATH)=" > "$out/runtime-environment.txt"
         extra="''${PROJECT17_PREFIX_CACHE_ARGS:-}"
-        printf "%q " .devenv/state/venv/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/command.txt"; printf "\n" >> "$out/command.txt"
+        cd "$inf"   # benchkit runners run from the inferference root (python -m bench...)
+        printf "%q " "$inf/ci/library/.venv/bin/python" -m bench.benchkit.runners.prefix_cache_sweep --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/command.txt"; printf "\n" >> "$out/command.txt"
         ( while :; do date -u +%FT%TZ; nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv,noheader; sleep 15; done ) > "$out/gpu-during.csv" 2>&1 & monitor=$!
         trap "kill $monitor 2>/dev/null || true" EXIT
         set +e
-        .devenv/state/venv/bin/python benchmarks/project17/run_prefix_cache.py --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/stdout-stderr.log" 2>&1
+        "$inf/ci/library/.venv/bin/python" -m bench.benchkit.runners.prefix_cache_sweep --model "$model" --artifacts "$out" --cache-root "$cache" $extra > "$out/stdout-stderr.log" 2>&1
         rc=$?
         set -e
         printf "%s\n" "$rc" > "$out/exit-status.txt"
         nvidia-smi --query-gpu=index,name,uuid,driver_version,memory.total,memory.used --format=csv,noheader > "$out/gpu-after.csv" || true
         ps -eo pid,ppid,stat,args > "$out/processes-after.txt"
         exit "$rc"
-      ' -- "$out" "$cache" "$PROJECT17_MODEL" "$lib" "$cuda_ld" "$PWD"
+      ' -- "$out" "$cache" "$PROJECT17_MODEL" "$lib" "$cuda_ld" "$PWD" "$INF"
     printf 'Project 17 prefix-cache run: zellij attach %s\nArtifacts: %s\n' "$session" "$out"
   '';
 
