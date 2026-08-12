@@ -240,3 +240,12 @@ deploy/vllm/docker-compose.override.yml
 # Project 17 runtime evidence is local and may contain model/runtime details.
 artifacts/project17-*/
 artifacts/benchmarks/
+
+# Agent-files convention (copyroom docs/user/agent-files.md): `.agents/` is
+# dual-use. `.agents/skills/` IS tracked, as are AGENTS.md and CLAUDE.md; the
+# rest of `.agents/` is platform/tool runtime state and stays ignored.
+.agents/**
+!.agents/skills/
+!.agents/skills/**
+!AGENTS.md
+!CLAUDE.md
