@@ -222,4 +222,28 @@
   enterShell = ''
     git --version
   '';
+
+  # devman — the automation plane (CONCEPT.md §5). `base` alone: this repository
+  # ships no scheduled work and writes none of its own files.
+  devman = {
+    enable = true;
+    project = "structured-agents-v2";
+    groups = [ "base" ];
+  };
+
+  # https://devenv.sh/tasks/
+  #
+  # The two task names the `base` group calls (groups/base/README.md). devenv
+  # owns each implementation; Dagu owns the composition (§6). `uv run --extra
+  # dev` rather than bare names: the venv bin is on the interactive shell's PATH
+  # but not on the task runner's PATH (STAGE_7_LOG.md, wave 2b). `ruff check
+  # src` matches the repo's own scope; the tree carries 9 findings today
+  # (recorded, not repaired).
+  tasks = {
+    "structured-agents-v2:lint".exec = "uv run --extra dev ruff check src";
+    "structured-agents-v2:test".exec = "uv run --extra dev pytest";
+
+    "base:check".after = [ "structured-agents-v2:lint" ];
+    "base:test".after = [ "structured-agents-v2:test" ];
+  };
 }
