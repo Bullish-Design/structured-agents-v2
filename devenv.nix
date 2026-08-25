@@ -220,6 +220,20 @@
   };
 
   enterShell = ''
+    # Native shared libs the venv's manylinux wheels dlopen at import time. Without them
+    # `import numpy` fails with `libz.so.1: cannot open shared object file`: NixOS has no
+    # /usr/lib, so the loader finds nothing, and devenv's own python wrapper carries only
+    # `.devenv/profile/lib` + stdenv's gcc — neither holds libz.
+    #
+    # Verbatim the export llgym and inferference already run (rig finding 2026-08-05). Kept
+    # in enterShell rather than `languages.python.manylinux.enable` on purpose: that option
+    # changes the interpreter's store path, so devenv recreates the venv — and this one
+    # carries torch plus eleven nvidia-* wheels, which is gigabytes of re-download to
+    # supply one missing library.
+    #
+    # The CUDA scripts above prepend /run/opengl-driver/lib AHEAD of this value, so the
+    # driver still wins for libcuda.so.1.
+    export LD_LIBRARY_PATH="${pkgs.zlib}/lib:${pkgs.gcc.cc.lib}/lib:''${LD_LIBRARY_PATH:-}"
     git --version
   '';
 
