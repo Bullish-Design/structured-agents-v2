@@ -7,6 +7,7 @@ from typing import Any, cast
 
 import httpx
 from dbos import DBOS
+from inferference.client import InferferenceClient
 from pydantic_ai import Agent as PydanticAgent
 from pydantic_ai.durable_exec.dbos import DBOSAgent
 from pydantic_ai.models import Model
@@ -15,6 +16,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from .constraint import Constraint
 from .engine import Engine, select
+from .engine.inferference import InferferenceEngine
 from .errors import BackendCapabilityError
 
 
@@ -60,10 +62,11 @@ class Backend:
                 f"Agent {spec.name!r} requires {constraint.kind} constraints, "
                 f"unsupported by engine {self.engine.name!r}."
             )
-        if spec.adapter and "lora" not in self.engine.supports:
-            raise BackendCapabilityError(
-                f"Agent {spec.name!r} requires LoRA, unsupported by engine {self.engine.name!r}."
-            )
+        # Naming a model is the engine's call, not a coarse capability flag: an engine
+        # that negotiated with its server knows whether this adapter is addressable.
+        model_name = self.default_model if self.model is not None else self.engine.resolve_model(
+            spec.adapter, self.default_model
+        )
         constraint.check()
         wire = self.engine.render(constraint)
         settings = {k: v for k, v in spec.settings.__dict__.items() if v is not None and k != "extra_body"}
@@ -72,7 +75,7 @@ class Backend:
             cast(Model[Any], self.model)
             if self.model is not None
             else OpenAIChatModel(
-                spec.adapter or self.default_model,
+                model_name,
                 provider=OpenAIProvider(base_url=self.base_url, api_key=self.api_key, http_client=self.client),
             )
         )
@@ -88,6 +91,30 @@ class Backend:
                 ),
                 name=spec.name,
             ),
+        )
+
+    @classmethod
+    async def negotiate(
+        cls,
+        base_url: str,
+        *,
+        api_key: str = "sk-none",
+        default_model: str = "base",
+        http_client: httpx.AsyncClient | None = None,
+    ) -> Backend:
+        """Ask the server what it can do, then build a backend that knows.
+
+        This is the supported way to reach a LoRA adapter: an engine built from a
+        constant cannot establish that a server publishes one, so it refuses.
+        """
+        client = http_client or httpx.AsyncClient()
+        capabilities = await InferferenceClient(base_url, api_key=api_key, http_client=client).capabilities()
+        return cls(
+            engine=InferferenceEngine(capabilities),
+            base_url=base_url,
+            api_key=api_key,
+            default_model=default_model,
+            http_client=client,
         )
 
     async def aclose(self) -> None:

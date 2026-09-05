@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from ..errors import ConfigError
 from .base import Engine
+from .inferference import InferferenceEngine
 from .llama_cpp import LlamaCppEngine
 
 _BUILTINS: dict[str, Engine] = {
@@ -23,4 +24,7 @@ def select(name: str) -> Engine:
         raise ConfigError(f"Unknown engine {name!r}.") from None
 
 
-__all__ = ["Engine", "select"]
+# ``InferferenceEngine`` is absent from ``_BUILTINS`` on purpose: it is built from a
+# server's negotiated capabilities, so there is no name that resolves to a correct
+# singleton. Build one through ``Backend.negotiate``.
+__all__ = ["Engine", "InferferenceEngine", "select"]

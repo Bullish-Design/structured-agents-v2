@@ -15,3 +15,7 @@ class Engine(Protocol):
     supports: frozenset[str]
 
     def render(self, constraint: Constraint) -> WireSpec: ...
+
+    def resolve_model(self, adapter: str | None, default: str) -> str:
+        """Return the model name to put on the wire, or refuse the adapter."""
+        ...

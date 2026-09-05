@@ -22,6 +22,16 @@ class LlamaCppEngine:
     name = "llama_cpp"
     supports = frozenset({"schema", "choice", "grammar"})
 
+    def resolve_model(self, adapter: str | None, default: str) -> str:
+        """Refuse an adapter: this engine negotiates nothing, so it can prove nothing."""
+        if adapter is not None:
+            raise BackendCapabilityError(
+                f"engine {self.name!r} cannot address LoRA adapter {adapter!r}: it declares its abilities as a "
+                "constant, so nothing establishes that this server publishes the adapter. Use "
+                "Backend.negotiate(...) to ask the server instead."
+            )
+        return default
+
     def render(self, constraint: Constraint) -> WireSpec:
         match constraint:
             case _Schema():

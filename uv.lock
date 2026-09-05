@@ -523,22 +523,31 @@ wheels = [
 
 [[package]]
 name = "inferference"
-version = "0.1.0"
+version = "0.2.0"
 source = { directory = "../inferference" }
 dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+]
+
+[package.optional-dependencies]
+runtime = [
     { name = "llama-cpp-python" },
     { name = "numpy" },
-    { name = "pydantic" },
     { name = "xgrammar" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "llama-cpp-python", specifier = "==0.3.34" },
-    { name = "numpy", specifier = ">=2" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "llama-cpp-python", marker = "extra == 'runtime'", specifier = "==0.3.34" },
+    { name = "numpy", marker = "extra == 'runtime'", specifier = ">=2" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "xgrammar", specifier = "==0.2.1" },
+    { name = "pyyaml", specifier = ">=6" },
+    { name = "xgrammar", marker = "extra == 'runtime'", specifier = "==0.2.1" },
 ]
+provides-extras = ["runtime"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "testee", directory = "/home/andrew/Documents/Projects/testee" }]
@@ -621,47 +630,14 @@ wheels = [
 [[package]]
 name = "llama-cpp-python"
 version = "0.3.34"
-source = { path = "/home/andrew/Documents/Projects/inferference/ci/modea/wheels/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "diskcache" },
     { name = "jinja2" },
     { name = "numpy" },
     { name = "typing-extensions" },
 ]
-wheels = [
-    { filename = "llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl", hash = "sha256:b1b489027dcd0ee780cf9561092851758cb30e076e42ee272d928a6393b13147" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "diskcache", specifier = ">=5.6.1" },
-    { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.100.0" },
-    { name = "fastapi", marker = "extra == 'test'", specifier = ">=0.100.0" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.24.1" },
-    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.24.1" },
-    { name = "huggingface-hub", marker = "extra == 'test'", specifier = ">=0.23.0" },
-    { name = "jinja2", specifier = ">=2.11.3" },
-    { name = "llama-cpp-python", extras = ["dev", "server", "test"], marker = "extra == 'all'" },
-    { name = "mkdocs", marker = "extra == 'dev'", specifier = ">=1.4.3" },
-    { name = "mkdocs-material", marker = "extra == 'dev'", specifier = ">=9.1.18" },
-    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'", specifier = ">=0.22.0" },
-    { name = "numpy", specifier = ">=1.20.0" },
-    { name = "pydantic-settings", marker = "extra == 'server'", specifier = ">=2.0.1" },
-    { name = "pydantic-settings", marker = "extra == 'test'", specifier = ">=2.0.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=7.4.0" },
-    { name = "pyyaml", marker = "extra == 'server'", specifier = ">=5.1" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.7" },
-    { name = "scipy", marker = "extra == 'test'", specifier = ">=1.10" },
-    { name = "sse-starlette", marker = "extra == 'server'", specifier = ">=1.6.1" },
-    { name = "sse-starlette", marker = "extra == 'test'", specifier = ">=1.6.1" },
-    { name = "starlette-context", marker = "extra == 'server'", specifier = ">=0.3.6,<0.4" },
-    { name = "starlette-context", marker = "extra == 'test'", specifier = ">=0.3.6,<0.4" },
-    { name = "twine", marker = "extra == 'dev'", specifier = ">=4.0.2" },
-    { name = "typing-extensions", specifier = ">=4.5.0" },
-    { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.22.0" },
-]
-provides-extras = ["server", "test", "dev", "all"]
+sdist = { url = "https://files.pythonhosted.org/packages/c1/2f/46487e949da42b31847853793ddbfd44c7414e94d4364c9a41f91f30af27/llama_cpp_python-0.3.34.tar.gz", hash = "sha256:d849d286d808284f1d3ec1bd6875572430d29d1f9574a010232caa4e9cef0e35", size = 71617302, upload-time = "2026-07-12T04:33:41.928Z" }
 
 [[package]]
 name = "logfire-api"
@@ -1497,21 +1473,25 @@ dependencies = [
     { name = "dbos" },
     { name = "httpx" },
     { name = "inferference" },
-    { name = "llama-cpp-python" },
-    { name = "numpy" },
     { name = "pydantic" },
     { name = "pydantic-ai-slim", extra = ["openai"] },
-    { name = "transformers" },
-    { name = "xgrammar" },
 ]
 
 [package.optional-dependencies]
 dev = [
     { name = "hypothesis" },
+    { name = "numpy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
     { name = "ty" },
+    { name = "xgrammar" },
+]
+runtime = [
+    { name = "inferference", extra = ["runtime"] },
+]
+training = [
+    { name = "transformers" },
 ]
 
 [package.metadata]
@@ -1520,18 +1500,18 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.120" },
     { name = "inferference", directory = "../inferference" },
-    { name = "llama-cpp-python", path = "/home/andrew/Documents/Projects/inferference/ci/modea/wheels/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl" },
-    { name = "numpy", specifier = ">=2" },
+    { name = "inferference", extras = ["runtime"], marker = "extra == 'runtime'", directory = "../inferference" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=2" },
     { name = "pydantic", specifier = ">=2.13.3" },
     { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.11,<3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11" },
-    { name = "transformers", specifier = ">=4.38,<5" },
+    { name = "transformers", marker = "extra == 'training'", specifier = ">=4.38,<5" },
     { name = "ty", marker = "extra == 'dev'", specifier = ">=0.0.46" },
-    { name = "xgrammar", specifier = "==0.2.1" },
+    { name = "xgrammar", marker = "extra == 'dev'", specifier = "==0.2.1" },
 ]
-provides-extras = ["dev", "fornix"]
+provides-extras = ["runtime", "training", "dev", "fornix"]
 
 [[package]]
 name = "sympy"

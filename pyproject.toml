@@ -6,45 +6,47 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 authors = [{ name = "Bullish Design", email = "BullishDesignEngineering@gmail.com" }]
+# The CONTROL plane's dependency set. This package owns durable operations; it
+# holds no card and never loads a model, so the ABI-anchored native stack is NOT
+# here. `inferference` is the serving plane's contract (pydantic + httpx + pyyaml
+# after its own project-009 install split); its decode path sits behind
+# `inferference[runtime]`, which only a process holding a card should ask for.
 dependencies = [
   "pydantic>=2.13.3",
   "pydantic-ai-slim[openai]>=2.11,<3",
   "dbos>=2.23",
   "httpx>=0.28",
-  "numpy>=2",
-  "transformers>=4.38,<5",
-  "xgrammar==0.2.1",
-  # Step-7 refactor (003-reference-consumer-refactor): the shared llama.cpp
-  # teaching core is consumed from inferference (one library, one ABI, one
-  # test suite) instead of the ported-in llama_core copy. The ABI-anchor pair
-  # (llama-cpp-python 0.3.34 binding + the integration libllama) must stay
-  # exactly the unit inferference pins: the Mode A wheel
-  # (ci/modea/wheels/llama_cpp_python-0.3.34-*.whl, rebuilt from integration
-  # 24c5d3dbc — the CUDA-LoRA-NaN fix — sha256 b1b48902…) or a Mode B
-  # LLAMA_CPP_LIB_PATH pointing at the same tree. The wheel gap documented in
-  # 02-REPORT.md §Q2.2 is RESOLVED 2026-08-04 (004-modea-wheel-rebuild-nanfix):
-  # the nan-fix is now IN the shipped wheel.
   "inferference==0.1.0",
-  "llama-cpp-python==0.3.34",
 ]
 
 [tool.uv.sources]
 # Dev wiring: path dependency on the sibling inferference checkout (the flat
 # package src/inferference). Release: install the built inferference wheel.
 inferference = { path = "../inferference" }
-# ABI-anchor pair: the binding must come from the Mode A wheel (b10233, anchor
-# 0ab9d6fed) — NEVER a PyPI cp313 wheel or a source build (stock llama.cpp).
-# Rebuilt from integration 24c5d3dbc (nan-fix included) on 2026-08-04.
+# ABI-anchor pair. This applies ONLY when something pulls `llama-cpp-python` into
+# the graph — the `runtime` extra below. The binding must come from the Mode A
+# wheel (b10233, anchor 0ab9d6fed), NEVER a PyPI cp313 wheel or a source build
+# against stock llama.cpp. Rebuilt from integration 24c5d3dbc (nan-fix included)
+# on 2026-08-04.
 # (Path source pinned to the wheel file; uv rejects file:// URLs in url sources.)
 llama-cpp-python = { path = "/home/andrew/Documents/Projects/inferference/ci/modea/wheels/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl" }
 
 [project.optional-dependencies]
+# Only for a process that holds a card. Drags in the ABI-anchor pair.
+runtime = ["inferference[runtime]"]
+# `training/token_monitor.py` is the sole importer of transformers.
+training = ["transformers>=4.38,<5"]
 dev = [
   "hypothesis>=6.120",
   "pytest>=8",
   "pytest-asyncio>=0.24",
   "ty>=0.0.46",
   "ruff>=0.11",
+  # `constraint.check()` compiles through xgrammar when it is importable, and
+  # tests/test_xgrammar_api_contract.py pins that surface. Neither is needed at
+  # runtime: check() degrades to a no-op when the import fails.
+  "numpy>=2",
+  "xgrammar==0.2.1",
 ]
 fornix = []
 
