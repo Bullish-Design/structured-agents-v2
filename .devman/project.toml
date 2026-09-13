@@ -1,0 +1,4 @@
+schema = 1
+project = "structured-agents-v2"
+groups = ["base"]
+policy = "stable"
