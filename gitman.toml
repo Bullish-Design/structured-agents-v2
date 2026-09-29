@@ -1,1 +1,3 @@
 trunk = "main"
+verify = ["bash", "-c", "uv run --frozen --extra dev ruff check src && uv run --frozen --extra dev pytest"]
+verify_timeout = 3600
