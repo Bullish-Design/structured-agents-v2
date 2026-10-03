@@ -523,7 +523,7 @@ wheels = [
 
 [[package]]
 name = "inferference"
-version = "0.2.0"
+version = "0.3.0"
 source = { directory = "../inferference" }
 dependencies = [
     { name = "httpx" },
@@ -550,7 +550,7 @@ requires-dist = [
 provides-extras = ["runtime"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "testee", directory = "/home/andrew/Documents/Projects/testee" }]
+dev = [{ name = "testee", git = "https://github.com/Bullish-Design/testee?tag=v0.5.0" }]
 
 [[package]]
 name = "iniconfig"
