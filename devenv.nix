@@ -248,10 +248,12 @@
   # src` matches the repo's own scope; the tree carries 9 findings today
   # (recorded, not repaired).
   tasks = {
+    # A stale uv.lock fails here. `uv run` would silently rewrite it instead.
+    "structured-agents-v2:lock".exec = "uv lock --check";
     "structured-agents-v2:lint".exec = "uv run --extra dev ruff check src";
     "structured-agents-v2:test".exec = "uv run --extra dev pytest";
 
-    "base:check".after = [ "structured-agents-v2:lint" ];
+    "base:check".after = [ "structured-agents-v2:lock" "structured-agents-v2:lint" ];
     "base:test".after = [ "structured-agents-v2:test" ];
   };
 }
