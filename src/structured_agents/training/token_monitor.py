@@ -29,8 +29,8 @@ hook point, but they are intentionally not baked in here.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Sequence
 
 import torch
 from transformers import (
@@ -60,7 +60,7 @@ class TokenSpec:
     @classmethod
     def from_tokenizer(
         cls, tokenizer, token: str, *, is_new: bool = False
-    ) -> "TokenSpec":
+    ) -> TokenSpec:
         """Resolve a token *string* to a spec, asserting it is atomic.
 
         Guards the classic footgun: a special token that silently re-splits into
@@ -94,20 +94,20 @@ class TokenMonitorCallback(TrainerCallback):
         tokens: Sequence[TokenSpec],
         *,
         log_grads: bool = True,
-        emit_prob_hook: Optional[Callable[[torch.nn.Module], Dict[str, float]]] = None,
+        emit_prob_hook: Callable[[torch.nn.Module], dict[str, float]] | None = None,
     ) -> None:
         if not tokens:
             raise ValueError("TokenMonitorCallback needs at least one TokenSpec.")
-        self.tokens: List[TokenSpec] = list(tokens)
+        self.tokens: list[TokenSpec] = list(tokens)
         self.log_grads = log_grads
         self.emit_prob_hook = emit_prob_hook
 
         self._ids = torch.tensor([t.token_id for t in tokens], dtype=torch.long)
         # Init snapshots, filled lazily on first access to the real weights.
-        self._init_in: Optional[torch.Tensor] = None
-        self._init_out: Optional[torch.Tensor] = None
+        self._init_in: torch.Tensor | None = None
+        self._init_out: torch.Tensor | None = None
         # Grad norms captured on the pre-optimizer-step hook, consumed at eval.
-        self._pending_grad: Dict[str, float] = {}
+        self._pending_grad: dict[str, float] = {}
 
     # --- weight access -----------------------------------------------------
 
@@ -153,7 +153,7 @@ class TokenMonitorCallback(TrainerCallback):
                 continue
             rows = grad.index_select(0, self._ids.to(grad.device)).float()
             norms = rows.norm(dim=1)
-            for spec, n in zip(self.tokens, norms.tolist()):
+            for spec, n in zip(self.tokens, norms.tolist(), strict=False):
                 self._pending_grad[f"grad/{name}/{spec.label}"] = n
 
     # --- eval-time logging -------------------------------------------------
@@ -173,7 +173,7 @@ class TokenMonitorCallback(TrainerCallback):
         in_rows = self._rows(self._in_weight(model)).cpu()
         out_rows = self._rows(self._out_weight(model)).cpu()
 
-        metrics: Dict[str, float] = {}
+        metrics: dict[str, float] = {}
         for i, spec in enumerate(self.tokens):
             metrics[f"norm/in/{spec.label}"] = in_rows[i].norm().item()
             metrics[f"norm/out/{spec.label}"] = out_rows[i].norm().item()
